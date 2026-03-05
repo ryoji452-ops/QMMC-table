@@ -313,7 +313,6 @@
 
     <!-- Header -->
     <div class="doc-header mb-2">
-        <div class="logo">QMMC<br>SEAL</div>
         <div class="center-title">
             <h1>QUIRINO MEMORIAL MEDICAL CENTER</h1>
             <h2>DIVISION PERFORMANCE COMMITMENT AND REVIEW (DPCR)</h2>
