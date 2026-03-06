@@ -1,20 +1,30 @@
 <?php
 
+// app/Http/Controllers/SPCRRatingMatrixController.php
+
 namespace App\Http\Controllers;
 
 use App\Models\SPCRRatingMatrix;
 use App\Models\SPCRRatingMatrixItem;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class SPCRRatingMatrixController extends Controller
 {
-    public function index()
+    /**
+     * Return all matrices as JSON (used by JS to populate the saved list).
+     */
+    public function index(): JsonResponse
     {
         $matrices = SPCRRatingMatrix::latest()->get();
-        return view('spcr.rating_matrix', compact('matrices'));
+        return response()->json($matrices);
     }
 
-    public function store(Request $request)
+    /**
+     * Save a new SPCR Rating Matrix + its items.
+     * Called via JS fetch POST /api/spcr-matrix
+     */
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'prepared_by'                    => 'required|string|max:255',
@@ -27,14 +37,14 @@ class SPCRRatingMatrixController extends Controller
             'reviewed_date'                  => 'nullable|date',
             'approved_date'                  => 'nullable|date',
             'items'                          => 'required|array|min:1',
-            'items.*.is_section'             => 'nullable|boolean',
-            'items.*.section_label'          => 'nullable|string|max:255',
-            'items.*.performance_measure'    => 'nullable|string',
-            'items.*.operational_definition' => 'nullable|string',
-            'items.*.quality'                => 'nullable|string',
-            'items.*.efficiency'             => 'nullable|string',
-            'items.*.timeliness'             => 'nullable|string',
-            'items.*.source_monitoring'      => 'nullable|string',
+            'items.*.is_section'             => 'sometimes|nullable|boolean',
+            'items.*.section_label'          => 'sometimes|nullable|string|max:255',
+            'items.*.performance_measure'    => 'sometimes|nullable|string',
+            'items.*.operational_definition' => 'sometimes|nullable|string',
+            'items.*.quality'                => 'sometimes|nullable|string',
+            'items.*.efficiency'             => 'sometimes|nullable|string',
+            'items.*.timeliness'             => 'sometimes|nullable|string',
+            'items.*.source_monitoring'      => 'sometimes|nullable|string',
         ]);
 
         $matrix = SPCRRatingMatrix::create([
@@ -64,20 +74,34 @@ class SPCRRatingMatrixController extends Controller
             ]);
         }
 
-        return redirect()->route('spcr.matrix.index')
-                         ->with('success', 'SPCR Rating Matrix saved successfully.');
+        $matrix->load('items');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'SPCR Rating Matrix saved successfully.',
+            'matrix'  => $matrix,
+        ], 201);
     }
 
-    public function show(SPCRRatingMatrix $matrix)
+    /**
+     * Return a single matrix with its items as JSON.
+     * Called by JS when user clicks "View".
+     */
+    public function show(SPCRRatingMatrix $matrix): JsonResponse
     {
         $matrix->load('items');
-        return view('spcr.rating_matrix_show', compact('matrix'));
+        return response()->json($matrix);
     }
 
-    public function destroy(SPCRRatingMatrix $matrix)
+    /**
+     * Delete a matrix (cascade deletes items via DB constraint).
+     */
+    public function destroy(SPCRRatingMatrix $matrix): JsonResponse
     {
         $matrix->delete();
-        return redirect()->route('spcr.matrix.index')
-                         ->with('success', 'Rating matrix deleted.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Rating matrix deleted.',
+        ]);
     }
 }

@@ -1,8 +1,11 @@
 <?php
 
+// app/Models/SPCRItem.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SPCRItem extends Model
 {
@@ -21,7 +24,7 @@ class SPCRItem extends Model
         'rating_e',
         'rating_t',
         'rating_a',
-        'remarks'
+        'remarks',
     ];
 
     protected $casts = [
@@ -31,8 +34,8 @@ class SPCRItem extends Model
         'rating_a' => 'boolean',
     ];
 
-    public function spcrForm()
+    public function form(): BelongsTo
     {
-        return $this->belongsTo(SPCRForm::class);
+        return $this->belongsTo(SPCRForm::class, 'sprc_form_id');
     }
 }

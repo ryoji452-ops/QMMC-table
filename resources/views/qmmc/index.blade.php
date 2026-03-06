@@ -15,9 +15,19 @@
     @include('partials.spcr')
 
     {{-- DPCR Page --}}
-    @include('partials.dpcr')
+    @include('partials.dpcr', ['sections' => $sections])
 
     {{-- Shared Modals --}}
     @include('partials.modals')
 
 @endsection
+
+@push('scripts')
+<script>
+    window.CSRF_TOKEN       = @json(csrf_token());
+    window.SECTIONS         = @json($sections);
+    window.DB_MATRICES      = @json($matricesJson);
+    window.DB_LATEST_MATRIX = @json($latestMatrixJson);
+    window.DB_LATEST_DPCR   = @json($latestDpcrJson);
+</script>
+@endpush

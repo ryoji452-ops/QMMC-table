@@ -4,15 +4,89 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SPCRRatingMatrix;
+use App\Models\SPCRForm;
 use Illuminate\Http\Request;
 
 class QmmcController extends Controller
 {
-    /**
-     * Display the SPCR Rating Matrix & DPCR form.
-     */
     public function index()
     {
-        return view('qmmc.index');
+        $sections = [
+            'ALL SECTIONS', 'EFMS', 'IMISS', 'PMG / EFMS / PROCUREMENT',
+            'NURSING', 'MEDICAL', 'ADMINISTRATIVE', 'FINANCE', 'PHARMACY',
+        ];
+
+        // Saved Matrices list for the bottom table
+        $matricesRaw = SPCRRatingMatrix::latest()->get();
+        $matricesJson = $matricesRaw->map(function ($m) {
+            return [
+                'id'                => $m->id,
+                'prepared_by'       => $m->prepared_by,
+                'prepared_by_title' => $m->prepared_by_title,
+                'reviewed_by'       => $m->reviewed_by,
+                'approved_by'       => $m->approved_by,
+                'saved_at'          => $m->created_at->format('m/d/Y, h:i:s A'),
+            ];
+        })->values()->toArray();
+
+        // Latest SPCR matrix to pre-fill the form
+        $latestMatrixRaw = SPCRRatingMatrix::with('items')->latest()->first();
+        $latestMatrixJson = null;
+        if ($latestMatrixRaw) {
+            $latestMatrixJson = [
+                'prepared_by'       => $latestMatrixRaw->prepared_by,
+                'prepared_by_title' => $latestMatrixRaw->prepared_by_title,
+                'reviewed_by'       => $latestMatrixRaw->reviewed_by,
+                'reviewed_by_title' => $latestMatrixRaw->reviewed_by_title,
+                'approved_by'       => $latestMatrixRaw->approved_by,
+                'approved_by_title' => $latestMatrixRaw->approved_by_title,
+                'items'             => $latestMatrixRaw->items->map(function ($i) {
+                    return [
+                        'type'                   => $i->is_section ? 'section' : 'data',
+                        'section_label'          => $i->section_label,
+                        'performance_measure'    => $i->performance_measure,
+                        'operational_definition' => $i->operational_definition,
+                        'quality'                => $i->quality,
+                        'efficiency'             => $i->efficiency,
+                        'timeliness'             => $i->timeliness,
+                        'source_monitoring'      => $i->source_monitoring,
+                    ];
+                })->values()->toArray(),
+            ];
+        }
+
+        // Latest DPCR form to pre-fill the DPCR tab
+        $latestDpcrRaw = SPCRForm::with('items')->latest()->first();
+        $latestDpcrJson = null;
+        if ($latestDpcrRaw) {
+            $latestDpcrJson = [
+                'employee_name'  => $latestDpcrRaw->employee_name,
+                'employee_title' => $latestDpcrRaw->employee_title,
+                'approved_by'    => $latestDpcrRaw->approved_by,
+                'items'          => $latestDpcrRaw->items->map(function ($i) {
+                    return [
+                        'strategic_goal'        => $i->strategic_goal,
+                        'performance_indicator' => $i->performance_indicator,
+                        'allotted_budget'       => $i->allotted_budget,
+                        'section_accountable'   => $i->section_accountable,
+                        'actual_accomplishment' => $i->actual_accomplishment,
+                        'accomplishment_rate'   => $i->accomplishment_rate,
+                        'rating_q'              => $i->rating_q,
+                        'rating_e'              => $i->rating_e,
+                        'rating_t'              => $i->rating_t,
+                        'rating_a'              => $i->rating_a,
+                        'remarks'               => $i->remarks,
+                    ];
+                })->values()->toArray(),
+            ];
+        }
+
+        return view('qmmc.index', compact(
+            'sections',
+            'matricesJson',
+            'latestMatrixJson',
+            'latestDpcrJson'
+        ));
     }
 }
