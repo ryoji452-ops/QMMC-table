@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SPCRRatingMatrix;
 use App\Models\SPCRForm;
+use App\Models\IPCRForm;
 use Illuminate\Http\Request;
 
 class QmmcController extends Controller
@@ -82,11 +83,45 @@ class QmmcController extends Controller
             ];
         }
 
+        // Latest IPCR form to pre-fill the IPCR tab
+        $latestIpcrRaw  = IPCRForm::with('items')->latest()->first();
+        $latestIpcrJson = null;
+        if ($latestIpcrRaw) {
+            $latestIpcrJson = [
+                'employee_name'     => $latestIpcrRaw->employee_name,
+                'employee_position' => $latestIpcrRaw->employee_position,
+                'employee_unit'     => $latestIpcrRaw->employee_unit,
+                'period'            => $latestIpcrRaw->period,
+                'supervisor'        => $latestIpcrRaw->supervisor,
+                'approved_by'       => $latestIpcrRaw->approved_by,
+                'recommending'      => $latestIpcrRaw->recommending,
+                'pct_core'          => $latestIpcrRaw->pct_core,
+                'pct_support'       => $latestIpcrRaw->pct_support,
+                'avg_core'          => $latestIpcrRaw->avg_core,
+                'avg_support'       => $latestIpcrRaw->avg_support,
+                'items'             => $latestIpcrRaw->items->map(function ($i) {
+                    return [
+                        'function_type'         => $i->function_type,
+                        'strategic_goal'        => $i->strategic_goal,
+                        'performance_indicator' => $i->performance_indicator,
+                        'actual_accomplishment' => $i->actual_accomplishment,
+                        'accomplishment_rate'   => $i->accomplishment_rate,
+                        'rating_q'              => $i->rating_q,
+                        'rating_e'              => $i->rating_e,
+                        'rating_t'              => $i->rating_t,
+                        'rating_a'              => $i->rating_a,
+                        'remarks'               => $i->remarks,
+                    ];
+                })->values()->toArray(),
+            ];
+        }
+
         return view('qmmc.index', compact(
             'sections',
             'matricesJson',
             'latestMatrixJson',
-            'latestDpcrJson'
+            'latestDpcrJson',
+            'latestIpcrJson'
         ));
     }
 }
