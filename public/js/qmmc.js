@@ -12,8 +12,25 @@
    window.DB_LATEST_DPCR
 ══════════════════════════════════════════ */
 const CSRF  = window.CSRF_TOKEN  || '';
-const SECTS = window.SECTIONS    || ['ALL SECTIONS','EFMS','IMISS','PMG / EFMS / PROCUREMENT',
-                                     'NURSING','MEDICAL','ADMINISTRATIVE','FINANCE','PHARMACY'];
+const SECTS = window.SECTIONS    || [
+    'ALL SECTIONS', 'EFMS', 'IMISS', 'PMG / EFMS / PROCUREMENT',
+    'CAO', 'EFMS AND HEMS', 'HRMS/HRMPSB',
+    'NURSING', 'MEDICAL', 'ADMINISTRATIVE', 'FINANCE', 'PHARMACY'
+];
+
+/* Performance/Success Indicator options (DPCR dropdown — each has a unique ID) */
+const PERF_INDICATORS = [
+    { id: 'PI-001', label: '100%' },
+    { id: 'PI-002', label: '90%'  },
+    { id: 'PI-003', label: '73%'  },
+    { id: 'PI-004', label: '50%'  },
+    { id: 'PI-005', label: 'At least 1' },
+];
+
+/* In-memory DPCR indicator registry: id → { rowEl, label, text } */
+const DPCR_INDICATORS = new Map();   // keyed by PI-xxx id
+/* In-memory SPCR indicator registry: rowEl → text */
+const SPCR_INDICATORS = [];          // array of { rowEl }
 
 /* In-memory list of matrices (seeded from DB on load) */
 let DB_matrices = window.DB_MATRICES || [];
@@ -63,15 +80,18 @@ async function apiFetch(url, method = 'GET', body = null) {
 /* ══════════════════════════════════════════
    TAB SWITCHING
 ══════════════════════════════════════════ */
-function switchTab(tab) {
+function switchTab(tab, clickedBtn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + tab).classList.add('active');
-    event.currentTarget.classList.add('active');
+    // Support both direct click (event.currentTarget) and programmatic call
+    const btn = clickedBtn || (typeof event !== 'undefined' && event?.currentTarget)
+              || [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick')?.includes(`'${tab}'`));
+    if (btn) btn.classList.add('active');
 }
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeScaleModal(); closeViewModal(); }
+    if (e.key === 'Escape') { closeScaleModal(); closeViewModal(); closeLinkModal(); }
 });
 
 /* ══════════════════════════════════════════
@@ -79,310 +99,362 @@ document.addEventListener('keydown', e => {
 ══════════════════════════════════════════ */
 function openScaleModal()  { document.getElementById('scaleModal').classList.add('open'); }
 function closeScaleModal() { document.getElementById('scaleModal').classList.remove('open'); }
-function closeViewModal()  { document.getElementById('viewModal').classList.remove('open'); }
+function closeViewModal()  {
+    document.getElementById('viewModal').classList.remove('open');
+    document.getElementById('linkModal').classList.remove('open');
+}
+
+/* ── Link Modal: show a picker of rows from another table ── */
+function openLinkModal(title, rows, onSelect) {
+    const modal = document.getElementById('linkModal');
+    document.getElementById('linkModalTitle').textContent = title;
+    const list = document.getElementById('linkModalList');
+    list.innerHTML = '';
+
+    if (!rows.length) {
+        list.innerHTML = '<p style="color:#888;font-style:italic;padding:10px 0;">No rows available. Add rows first.</p>';
+    } else {
+        rows.forEach((row, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'link-row-btn';
+            btn.innerHTML = `<span class="link-row-num">#${idx + 1}</span> ${esc(row.label || row.text || '(empty)')}`;
+            btn.onclick = () => { onSelect(row); modal.classList.remove('open'); };
+            list.appendChild(btn);
+        });
+    }
+    modal.classList.add('open');
+}
+function closeLinkModal() { document.getElementById('linkModal').classList.remove('open'); }
 
 /* ══════════════════════════════════════════
-   SYNC: SPCR signatories → DPCR
+   SYNC: SPCR employee info → DPCR header
 ══════════════════════════════════════════ */
 function syncShared() {
-    const name     = document.getElementById('s_prepared_by').value;
-    const title    = document.getElementById('s_prepared_by_title').value;
-    const approved = document.getElementById('s_approved_by').value;
-    document.getElementById('d_emp_name').value    = name;
-    document.getElementById('d_emp_title').value   = title;
-    document.getElementById('d_approved_by').value = approved;
-    document.getElementById('d_disp_name').textContent = name || '\u00a0';
+    const name     = document.getElementById('s_emp_name')?.value || '';
+    const title    = document.getElementById('s_emp_position')?.value || '';
+    const approved = document.getElementById('s_approved_by')?.value || '';
+    const nameEl   = document.getElementById('d_emp_name');
+    const titleEl  = document.getElementById('d_emp_title');
+    const approvedEl = document.getElementById('d_approved_by');
+    const dispEl   = document.getElementById('d_disp_name');
+    if (nameEl)    nameEl.value    = name;
+    if (titleEl)   titleEl.value   = title;
+    if (approvedEl) approvedEl.value = approved;
+    if (dispEl)    dispEl.textContent = name || '\u00a0';
 }
 
 /* ══════════════════════════════════════════
    SPCR — ROW / SECTION FACTORIES
+   Columns: Goal | Indicator | Budget | Person | Actual | Rate | Q E T A | Remarks | → IPCR | Del
 ══════════════════════════════════════════ */
 function makeTA(placeholder, minH) {
     const ta = document.createElement('textarea');
     ta.placeholder = placeholder;
-    ta.style.minHeight = (minH || 58) + 'px';
+    ta.style.minHeight = (minH || 52) + 'px';
     ta.addEventListener('input', () => autoExpand(ta));
     return ta;
 }
 
-function createMatrixRow(data = {}) {
+function createSpcrRow(data = {}) {
     const tr = document.createElement('tr');
-    tr.dataset.type = 'data';
 
-    // Performance Measure
-    const tdPM = document.createElement('td');
-    const taPM = makeTA('Performance measure...');
-    taPM.dataset.key = 'performance_measure';
-    taPM.value = data.performance_measure || '';
-    tdPM.appendChild(taPM); tr.appendChild(tdPM);
+    // Strategic Goals and Objectives
+    const tdGoal = document.createElement('td');
+    const goalTA = document.createElement('textarea');
+    goalTA.placeholder = 'Strategic goal / objective…';
+    goalTA.dataset.key  = 'strategic_goal';
+    goalTA.value = data.strategic_goal || '';
+    goalTA.addEventListener('input', () => autoExpand(goalTA));
+    tdGoal.appendChild(goalTA); tr.appendChild(tdGoal);
 
-    // Operational Definition
-    const tdOD = document.createElement('td');
-    const taOD = makeTA('Operational definition...');
-    taOD.dataset.key = 'operational_definition';
-    taOD.value = data.operational_definition || '';
-    tdOD.appendChild(taOD); tr.appendChild(tdOD);
+    // Performance / Success Indicator — freetext + → IPCR push button
+    const tdInd = document.createElement('td');
+    tdInd.style.cssText = 'vertical-align:top;padding:3px 4px;';
 
-    // Dimension cells (Q, E, T) — display only
-    ['quality','efficiency','timeliness'].forEach(key => {
+    if (data.pushed_from_dpcr) {
+        const badge = document.createElement('div');
+        badge.className = 'spcr-lock-badge';
+        tdInd.appendChild(badge);
+    }
+
+    const piTA = document.createElement('textarea');
+    piTA.className   = 'pi-custom';
+    piTA.placeholder = 'Performance/Success Indicator (Targets + Measure)…';
+    piTA.dataset.key = 'performance_indicator';
+    piTA.value = data.performance_indicator || '';
+    if (data.pushed_from_dpcr) { piTA.readOnly = true; piTA.style.color = '#555'; }
+    piTA.addEventListener('input', () => autoExpand(piTA));
+
+    const ipcrBtn = document.createElement('button');
+    ipcrBtn.type = 'button'; ipcrBtn.className = 'row-view-btn row-link-btn';
+    ipcrBtn.title = 'Push this row to IPCR';
+    ipcrBtn.textContent = '→ IPCR'; ipcrBtn.style.color = '#6a3e9e';
+    ipcrBtn.onclick = () => {
+        const pmText = piTA.value.trim();
+        const odText = goalTA.value.trim();
+        if (!pmText && !odText) { alert('Please fill in the Performance Indicator before pushing to IPCR.'); return; }
+        const newRow = createIpcrRow({ strategic_goal: odText, performance_indicator: pmText, linked_spcr_id: 'spcr-linked' });
+        document.getElementById('ipcrBody').appendChild(newRow);
+        newRow.querySelectorAll('textarea').forEach(autoExpand);
+        ipcrBtn.textContent = '✔ sent'; ipcrBtn.style.color = '#1e6e3a';
+        setTimeout(() => { ipcrBtn.textContent = '→ IPCR'; ipcrBtn.style.color = '#6a3e9e'; }, 2000);
+        switchTab('ipcr');
+        setTimeout(() => {
+            newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            newRow.classList.add('row-highlight');
+            setTimeout(() => newRow.classList.remove('row-highlight'), 2000);
+        }, 100);
+    };
+    tdInd.appendChild(piTA); tdInd.appendChild(ipcrBtn);
+    tr.appendChild(tdInd);
+
+    // Allotted Budget
+    const tdB = document.createElement('td'); tdB.style.textAlign = 'center';
+    const bIn = document.createElement('input'); bIn.type = 'text'; bIn.placeholder = '—';
+    bIn.dataset.key = 'allotted_budget'; bIn.value = data.allotted_budget || '';
+    bIn.style.textAlign = 'center';
+    tdB.appendChild(bIn); tr.appendChild(tdB);
+
+    // Person Accountable
+    const tdP = document.createElement('td');
+    const pIn = document.createElement('input'); pIn.type = 'text'; pIn.placeholder = '—';
+    pIn.dataset.key = 'person_accountable'; pIn.value = data.person_accountable || '';
+    tdP.appendChild(pIn); tr.appendChild(tdP);
+
+    // Actual Accomplishment
+    const tdA = document.createElement('td');
+    const aTA = document.createElement('textarea');
+    aTA.placeholder = '—'; aTA.dataset.key = 'actual_accomplishment';
+    aTA.value = data.actual_accomplishment || '';
+    aTA.addEventListener('input', () => autoExpand(aTA));
+    tdA.appendChild(aTA); tr.appendChild(tdA);
+
+    // Accomplishment Rate
+    const tdR = document.createElement('td'); tdR.style.textAlign = 'center';
+    const rIn = document.createElement('input'); rIn.type = 'text'; rIn.placeholder = '—';
+    rIn.dataset.key = 'accomplishment_rate'; rIn.value = data.accomplishment_rate || '';
+    rIn.style.textAlign = 'center';
+    tdR.appendChild(rIn); tr.appendChild(tdR);
+
+    // Q E T A — empty rating cells
+    ['rating_q','rating_e','rating_t','rating_a'].forEach(key => {
         const td = document.createElement('td');
-        td.dataset.key = key;
+        td.className = 'spcr-rating-cell';
         tr.appendChild(td);
     });
 
-    // Source / Monitoring
-    const tdSrc = document.createElement('td');
-    const taSrc = makeTA('Source / Monitoring tool...');
-    taSrc.dataset.key = 'source_monitoring';
-    taSrc.value = data.source_monitoring || '';
-    tdSrc.appendChild(taSrc); tr.appendChild(tdSrc);
-
-    // Scale view button
-    const tdV = document.createElement('td');
-    tdV.className = 'col-view';
-    tdV.style.cssText = 'text-align:center;vertical-align:middle;padding:4px 2px;';
-    const vBtn = document.createElement('button');
-    vBtn.type = 'button'; vBtn.className = 'row-view-btn';
-    vBtn.textContent = 'view'; vBtn.onclick = openScaleModal;
-    tdV.appendChild(vBtn); tr.appendChild(tdV);
+    // Remarks
+    const tdRem = document.createElement('td');
+    const remTA = document.createElement('textarea');
+    remTA.placeholder = '—'; remTA.dataset.key = 'remarks';
+    remTA.value = data.remarks || '';
+    remTA.addEventListener('input', () => autoExpand(remTA));
+    tdRem.appendChild(remTA); tr.appendChild(tdRem);
 
     // Delete button
-    const tdD = document.createElement('td');
-    tdD.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
+    const tdDel = document.createElement('td');
+    tdDel.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
     const dBtn = document.createElement('button');
     dBtn.type = 'button'; dBtn.className = 'remove-btn'; dBtn.innerHTML = '&times;';
     dBtn.onclick = () => tr.remove();
-    tdD.appendChild(dBtn); tr.appendChild(tdD);
+    tdDel.appendChild(dBtn); tr.appendChild(tdDel);
 
     return tr;
+}
+
+/* Keep old createMatrixRow as alias for hydration back-compat */
+function createMatrixRow(data = {}) {
+    return createSpcrRow({
+        strategic_goal:        data.operational_definition || '',
+        performance_indicator: data.performance_measure    || '',
+        remarks:               data.source_monitoring      || '',
+        pushed_from_dpcr:      data.pushed_from_dpcr       || false,
+    });
 }
 
 function createSectionRow(label = '') {
     const tr = document.createElement('tr');
-    tr.className = 'section-row'; tr.dataset.type = 'section';
-    const td = document.createElement('td'); td.colSpan = 7;
+    tr.className = 'spcr-section-row';
+    const td = document.createElement('td'); td.colSpan = 11;
     const inp = document.createElement('input');
-    inp.type = 'text'; inp.placeholder = 'Section name (e.g. CORE FUNCTION)';
-    inp.style.cssText = 'width:100%;border:none;background:transparent;font-weight:700;font-size:10px;outline:none;text-align:center;';
+    inp.type = 'text'; inp.placeholder = 'Section name (e.g. CORE FUNCTIONS)';
+    inp.style.cssText = 'width:100%;border:none;background:transparent;font-weight:700;font-size:9.5px;outline:none;text-align:left;';
     inp.dataset.key = 'section_label';
     inp.value = label;
-    td.appendChild(inp);
+    td.appendChild(inp); tr.appendChild(td);
     const tdD = document.createElement('td');
-    tdD.style.cssText = 'border:none;background:var(--sec-bg);text-align:center;vertical-align:middle;width:26px;';
+    tdD.style.cssText = 'border:none;background:#f5f5f5;text-align:center;vertical-align:middle;width:26px;';
     const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'remove-btn';
     btn.innerHTML = '&times;'; btn.onclick = () => tr.remove();
-    tdD.appendChild(btn); tr.appendChild(td); tr.appendChild(tdD);
+    tdD.appendChild(btn); tr.appendChild(tdD);
     return tr;
 }
 
-document.getElementById('addRowBtn').addEventListener('click', () => {
-    const tr = createMatrixRow();
-    document.getElementById('matrixBody').appendChild(tr);
+/* Compute and display average A ratings per section */
+function computeSpcrAverages() {
+    let stratSum = 0, stratCount = 0;
+    let coreSum  = 0, coreCount  = 0;
+    let current  = 'strategic';
+
+    document.querySelectorAll('#spcrBody tr').forEach(tr => {
+        if (tr.classList.contains('spcr-section-row')) {
+            const txt = (tr.querySelector('input')?.value || tr.querySelector('td')?.textContent || '').toUpperCase();
+            current = txt.includes('CORE') ? 'core' : 'strategic';
+            return;
+        }
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 10) return;
+        // Rating A is the 4th rating cell = col index 9 (0-based: goal=0, ind=1, budget=2, person=3, actual=4, rate=5, Q=6, E=7, T=8, A=9)
+        const aCell = cells[9];
+        const val   = parseFloat(aCell?.textContent?.trim());
+        if (!isNaN(val) && val > 0) {
+            if (current === 'core') { coreSum += val; coreCount++; }
+            else                    { stratSum += val; stratCount++; }
+        }
+    });
+
+    const avgStrat = stratCount ? (stratSum / stratCount).toFixed(2) : '0.00';
+    const avgCore  = coreCount  ? (coreSum  / coreCount ).toFixed(2) : '0.00';
+    const elS = document.getElementById('s_avg_strategic');
+    const elC = document.getElementById('s_avg_core');
+    if (elS) elS.textContent = avgStrat;
+    if (elC) elC.textContent = avgCore;
+}
+
+document.getElementById('sAddRowBtn').addEventListener('click', () => {
+    const tr = createSpcrRow();
+    document.getElementById('spcrBody').appendChild(tr);
     tr.querySelectorAll('textarea').forEach(autoExpand);
     tr.querySelector('textarea').focus();
 });
 
-document.getElementById('addSectionBtn').addEventListener('click', () => {
+document.getElementById('sAddSectionBtn').addEventListener('click', () => {
     const tr = createSectionRow();
-    document.getElementById('matrixBody').appendChild(tr);
+    document.getElementById('spcrBody').appendChild(tr);
     tr.querySelector('input').focus();
 });
 
 /* ── Read current SPCR form into a plain object ── */
-function readMatrixForm() {
+function readSpcrForm() {
     const items = [];
-    document.querySelectorAll('#matrixBody tr').forEach(tr => {
-        if (tr.classList.contains('section-row')) {
+    document.querySelectorAll('#spcrBody tr').forEach(tr => {
+        if (tr.classList.contains('spcr-section-row')) {
             const inp = tr.querySelector('input[data-key="section_label"]');
-            items.push({ is_section: true, section_label: inp ? inp.value.trim() : '' });
-        } else if (tr.dataset.type === 'data') {
-            const obj = { is_section: false, quality: '', efficiency: '', timeliness: '' };
-            tr.querySelectorAll('[data-key]').forEach(el => {
-                if (el.tagName !== 'TD') obj[el.dataset.key] = el.value.trim();
-            });
-            items.push(obj);
+            const txt = tr.querySelector('td');
+            items.push({ is_section: true, section_label: inp ? inp.value.trim() : (txt?.textContent.trim() || '') });
+            return;
         }
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 10) return;
+        const goalTA = cells[0]?.querySelector('textarea');
+        const indTA  = cells[1]?.querySelector('textarea.pi-custom');
+        const bIn    = cells[2]?.querySelector('input');
+        const pIn    = cells[3]?.querySelector('input');
+        const aTA    = cells[4]?.querySelector('textarea');
+        const rIn    = cells[5]?.querySelector('input');
+        const remTA  = cells[10]?.querySelector('textarea');
+        items.push({
+            is_section:            false,
+            strategic_goal:        goalTA?.value.trim()  || '',
+            performance_indicator: indTA?.value.trim()   || '',
+            allotted_budget:       bIn?.value.trim()     || '',
+            person_accountable:    pIn?.value.trim()     || '',
+            actual_accomplishment: aTA?.value.trim()     || '',
+            accomplishment_rate:   rIn?.value.trim()     || '',
+            remarks:               remTA?.value.trim()   || '',
+        });
     });
     return {
-        prepared_by:       document.getElementById('s_prepared_by').value.trim(),
-        prepared_by_title: document.getElementById('s_prepared_by_title').value.trim(),
-        reviewed_by:       document.getElementById('s_reviewed_by').value.trim(),
-        reviewed_by_title: document.getElementById('s_reviewed_by_title').value.trim(),
+        employee_name:     document.getElementById('s_emp_name').value.trim(),
+        employee_position: document.getElementById('s_emp_position').value.trim(),
+        employee_unit:     document.getElementById('s_emp_unit').value.trim(),
+        period:            document.getElementById('s_period').value.trim(),
+        supervisor:        document.getElementById('s_supervisor').value.trim(),
         approved_by:       document.getElementById('s_approved_by').value.trim(),
-        approved_by_title: document.getElementById('s_approved_by_title').value.trim(),
+        year:              new Date().getFullYear(),
+        semester:          '1st',
         items,
     };
 }
 
-/* ── Save Matrix → POST /api/spcr-matrix ── */
-document.getElementById('saveBtn').addEventListener('click', async () => {
-    const data = readMatrixForm();
-    if (!data.prepared_by) {
-        showAlert('s-alertErr', 'err', 'Please fill in the "Prepared By" field.');
+/* ── Save SPCR → POST /api/spcr ── */
+document.getElementById('sSaveBtn').addEventListener('click', async () => {
+    const data = readSpcrForm();
+    if (!data.employee_name) {
+        showAlert('s-alertErr', 'err', 'Please fill in the employee name.');
         return;
     }
     try {
-        const res = await apiFetch('/api/spcr-matrix', 'POST', data);
-        DB_matrices.unshift({
-            id:                res.matrix.id,
-            prepared_by:       res.matrix.prepared_by,
-            prepared_by_title: res.matrix.prepared_by_title,
-            reviewed_by:       res.matrix.reviewed_by,
-            approved_by:       res.matrix.approved_by,
-            saved_at:          new Date(res.matrix.created_at).toLocaleString('en-PH', { hour12: true }),
-        });
-        renderMatrixList();
-        showAlert('s-alertOk', 'ok', `✔ Matrix saved (Record #${res.matrix.id}). You can now push it to DPCR.`);
+        await apiFetch('/api/spcr', 'POST', data);
+        showAlert('s-alertOk', 'ok', `✔ SPCR for "${data.employee_name}" saved.`);
     } catch (err) {
         showAlert('s-alertErr', 'err', 'Save failed: ' + err.message);
     }
 });
 
 /* ── Clear SPCR form ── */
-document.getElementById('clearBtn').addEventListener('click', () => {
+document.getElementById('sClearBtn').addEventListener('click', () => {
     if (!confirm('Clear all SPCR fields and rows?')) return;
-    ['s_prepared_by','s_prepared_by_title','s_reviewed_by','s_reviewed_by_title','s_approved_by','s_approved_by_title']
-        .forEach(id => document.getElementById(id).value = '');
-    document.getElementById('matrixBody').innerHTML = `
-        <tr class="section-row">
-            <td colspan="7">STRATEGIC FUNCTION</td>
-            <td style="border:none;background:var(--sec-bg);"></td>
-        </tr>`;
-    syncShared();
+    ['s_emp_name','s_emp_position','s_emp_unit','s_period','s_supervisor','s_approved_by']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const disp = document.getElementById('s_disp_name');
+    if (disp) disp.textContent = '\u00a0';
+    document.getElementById('spcrBody').innerHTML =
+        '<tr class="spcr-section-row"><td colspan="11">STRATEGIC FUNCTIONS :</td><td style="border:none;background:#f5f5f5;"></td></tr>';
+    computeSpcrAverages();
 });
 
-/* ── Render the Saved Matrices table ── */
-function renderMatrixList() {
-    const c = document.getElementById('prevList');
-    if (!DB_matrices.length) {
-        c.innerHTML = '<p class="no-prev">No saved matrices yet.</p>';
-        return;
-    }
-    let html = `<table class="prev-table"><thead><tr>
-        <th>#</th><th>Prepared By</th><th>Title</th>
-        <th>Reviewed By</th><th>Approved By</th><th>Saved At</th><th>Actions</th>
-    </tr></thead><tbody>`;
-    DB_matrices.forEach(m => {
-        html += `<tr>
-            <td>${m.id}</td>
-            <td>${esc(m.prepared_by)}</td>
-            <td>${esc(m.prepared_by_title || '—')}</td>
-            <td>${esc(m.reviewed_by || '—')}</td>
-            <td>${esc(m.approved_by || '—')}</td>
-            <td>${esc(m.saved_at)}</td>
-            <td style="display:flex;gap:4px;align-items:center;">
-                <button class="badge-btn badge-view" onclick="viewMatrix(${m.id})">View</button>
-                <button class="badge-btn badge-push" onclick="pushToDPCR(${m.id})">→ Push to DPCR</button>
-                <button class="badge-btn badge-del"  onclick="deleteMatrix(${m.id})">Delete</button>
-            </td>
-        </tr>`;
+/* ── Sync display name as user types ── */
+const sEmpNameEl = document.getElementById('s_emp_name');
+if (sEmpNameEl) {
+    sEmpNameEl.addEventListener('input', function () {
+        const disp = document.getElementById('s_disp_name');
+        if (disp) disp.textContent = this.value || '\u00a0';
     });
-    html += '</tbody></table>';
-    c.innerHTML = html;
 }
 
-/* ── View a saved matrix → GET /api/spcr-matrix/:id ── */
-async function viewMatrix(id) {
-    try {
-        const m = await apiFetch(`/api/spcr-matrix/${id}`);
-        document.getElementById('viewModalTitle').textContent = `Matrix #${m.id}`;
-        let html = `<div class="view-meta">
-            <div><span>Prepared By: </span><strong>${esc(m.prepared_by)}</strong>
-                ${m.prepared_by_title ? `<em style="color:#555;font-size:10px;">(${esc(m.prepared_by_title)})</em>` : ''}</div>
-            <div><span>Reviewed By: </span><strong>${esc(m.reviewed_by || '—')}</strong></div>
-            <div><span>Approved By: </span><strong>${esc(m.approved_by || '—')}</strong></div>
-        </div>
-        <table class="view-tbl"><thead><tr>
-            <th style="width:15%">PERFORMANCE MEASURE</th>
-            <th style="width:20%">OPERATIONAL DEFINITION</th>
-            <th style="width:15%">QUALITY (Q)</th>
-            <th style="width:15%">EFFICIENCY (E)</th>
-            <th style="width:15%">TIMELINESS (T)</th>
-            <th style="width:10%">SOURCE OF DATA</th>
-        </tr></thead><tbody>`;
-        (m.items || []).forEach(item => {
-            if (item.is_section) {
-                html += `<tr class="sec-row"><td colspan="6">${esc(item.section_label || 'SECTION')}</td></tr>`;
-            } else {
-                html += `<tr>
-                    <td>${esc(item.performance_measure || '')}</td>
-                    <td>${esc(item.operational_definition || '')}</td>
-                    <td>${esc(item.quality || '')}</td>
-                    <td>${esc(item.efficiency || '')}</td>
-                    <td>${esc(item.timeliness || '')}</td>
-                    <td>${esc(item.source_monitoring || '')}</td>
-                </tr>`;
-            }
-        });
-        html += '</tbody></table>';
-        document.getElementById('viewModalContent').innerHTML = html;
-        document.getElementById('viewModal').classList.add('open');
-    } catch (err) {
-        showAlert('s-alertErr', 'err', 'Could not load matrix: ' + err.message);
-    }
+/* ── Hydrate SPCR form from DB ── */
+function hydrateSpcrForm(form) {
+    if (!form) return;
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('s_emp_name',      form.employee_name     || form.prepared_by       || '');
+    setVal('s_emp_position',  form.employee_position || form.prepared_by_title || '');
+    setVal('s_emp_unit',      form.employee_unit     || '');
+    setVal('s_period',        form.period            || '');
+    setVal('s_supervisor',    form.supervisor        || form.reviewed_by       || '');
+    setVal('s_approved_by',   form.approved_by       || '');
+    const disp = document.getElementById('s_disp_name');
+    if (disp) disp.textContent = (form.employee_name || form.prepared_by || '\u00a0');
+
+    document.getElementById('spcrBody').innerHTML = '';
+    (form.items || []).forEach(item => {
+        if (item.is_section || item.type === 'section') {
+            document.getElementById('spcrBody').appendChild(
+                createSectionRow(item.section_label || '')
+            );
+        } else {
+            const tr = createSpcrRow({
+                strategic_goal:        item.strategic_goal        || item.operational_definition || '',
+                performance_indicator: item.performance_indicator || item.performance_measure    || '',
+                allotted_budget:       item.allotted_budget       || '',
+                person_accountable:    item.person_accountable    || '',
+                actual_accomplishment: item.actual_accomplishment || '',
+                accomplishment_rate:   item.accomplishment_rate   || '',
+                remarks:               item.remarks               || item.source_monitoring || '',
+            });
+            document.getElementById('spcrBody').appendChild(tr);
+            tr.querySelectorAll('textarea').forEach(autoExpand);
+        }
+    });
 }
 
-/* ── Delete → DELETE /api/spcr-matrix/:id ── */
-async function deleteMatrix(id) {
-    if (!confirm(`Delete Matrix #${id}?`)) return;
-    try {
-        await apiFetch(`/api/spcr-matrix/${id}`, 'DELETE');
-        DB_matrices = DB_matrices.filter(m => m.id !== id);
-        renderMatrixList();
-        showAlert('s-alertOk', 'ok', `Matrix #${id} deleted.`);
-    } catch (err) {
-        showAlert('s-alertErr', 'err', 'Delete failed: ' + err.message);
-    }
-}
+/* renderMatrixList removed — SPCR no longer uses the old matrix list UI. */
 
-/* ══════════════════════════════════════════
-   PUSH SPCR → DPCR
-══════════════════════════════════════════ */
-async function pushToDPCR(id) {
-    try {
-        const m = await apiFetch(`/api/spcr-matrix/${id}`);
-        const body = document.getElementById('dpcrBody');
+/* viewMatrix / deleteMatrix removed — old SPCR matrix API no longer used. */
 
-        (m.items || []).forEach(item => {
-            if (item.is_section) {
-                const tr = document.createElement('tr');
-                tr.className = 'section-header';
-                const td = document.createElement('td'); td.colSpan = 12;
-                td.textContent = item.section_label || 'SECTION';
-                tr.appendChild(td); body.appendChild(tr);
-            } else {
-                const tr = createDpcrRow({
-                    strategic_goal:        item.operational_definition,
-                    performance_indicator: item.performance_measure,
-                    remarks:               item.source_monitoring,
-                    rating_q:              !!item.quality,
-                    rating_e:              !!item.efficiency,
-                    rating_t:              !!item.timeliness,
-                });
-                body.appendChild(tr);
-                tr.querySelectorAll('textarea').forEach(autoExpand);
-            }
-        });
-
-        document.getElementById('d_emp_name').value    = m.prepared_by;
-        document.getElementById('d_emp_title').value   = m.prepared_by_title || '';
-        document.getElementById('d_approved_by').value = m.approved_by || '';
-        document.getElementById('d_disp_name').textContent = m.prepared_by || '\u00a0';
-
-        const banner = document.getElementById('transferBanner');
-        const count  = (m.items || []).filter(i => !i.is_section).length;
-        banner.textContent = `✔ Matrix #${id} (${m.prepared_by}) pushed — ${count} row(s) added.`;
-        banner.style.display = 'block';
-        setTimeout(() => { banner.style.display = 'none'; }, 5000);
-
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('page-dpcr').classList.add('active');
-    } catch (err) {
-        showAlert('s-alertErr', 'err', 'Push failed: ' + err.message);
-    }
-}
+/* pushToDPCR (old SPCR-matrix→DPCR) removed.
+   Flow is now: DPCR → push → SPCR → push → IPCR. */
 
 /* ══════════════════════════════════════════
    DPCR — ROW FACTORY
@@ -397,12 +469,88 @@ function createDpcrRow(data = {}) {
     goalTA.addEventListener('input', () => autoExpand(goalTA));
     tdGoal.appendChild(goalTA); tr.appendChild(tdGoal);
 
-    // Performance Indicator
+    // ── Performance / Success Indicator — dropdown + custom text + view-link to SPCR ──
     const tdInd = document.createElement('td');
-    const indTA = document.createElement('textarea');
-    indTA.placeholder = 'Performance/Success indicator…'; indTA.value = data.performance_indicator || '';
-    indTA.addEventListener('input', () => autoExpand(indTA));
-    tdInd.appendChild(indTA); tr.appendChild(tdInd);
+    tdInd.style.cssText = 'vertical-align:top;padding:4px 5px;';
+
+    // Dropdown: 100%, 90%, 73%, 50%, At least 1
+    const piSel = document.createElement('select');
+    piSel.className = 'pi-select';
+    piSel.style.cssText = 'width:100%;border:none;border-bottom:1px solid #ccc;background:transparent;font-size:10px;font-family:Arial,sans-serif;outline:none;margin-bottom:3px;';
+    const blankOpt = document.createElement('option'); blankOpt.value = ''; blankOpt.textContent = '— select indicator —';
+    piSel.appendChild(blankOpt);
+    PERF_INDICATORS.forEach(pi => {
+        const opt = document.createElement('option');
+        opt.value = pi.id; opt.textContent = pi.label;
+        opt.dataset.piLabel = pi.label;
+        if (data.pi_id === pi.id) opt.selected = true;
+        piSel.appendChild(opt);
+    });
+
+    // Freetext for extra detail beneath the dropdown
+    const piTA = document.createElement('textarea');
+    piTA.className = 'pi-custom';
+    piTA.placeholder = 'Additional detail / measure…';
+    piTA.value = data.performance_indicator || '';
+    piTA.style.cssText = 'width:100%;border:none;background:transparent;font-size:10px;font-family:Arial,sans-serif;outline:none;resize:none;overflow:hidden;min-height:36px;';
+    piTA.addEventListener('input', () => autoExpand(piTA));
+
+    // ── Push-to-SPCR button — creates a new SPCR row from this DPCR row ──
+    const piViewBtn = document.createElement('button');
+    piViewBtn.type = 'button'; piViewBtn.className = 'row-view-btn row-link-btn';
+    piViewBtn.title = 'Push this row to SPCR Rating Matrix';
+    piViewBtn.textContent = '→ SPCR';
+    piViewBtn.style.color = '#1a3b6e';
+
+    piSel.addEventListener('change', () => {
+        piViewBtn.style.color = piSel.value ? '#1a3b6e' : '#aaa';
+    });
+
+    piViewBtn.onclick = () => {
+        const piId    = piSel.value;
+        const pi      = PERF_INDICATORS.find(p => p.id === piId);
+        const piLabel = pi ? pi.label : '';
+        const detail  = piTA.value.trim();
+        const goal    = goalTA.value.trim();
+
+        if (!piLabel && !detail && !goal) {
+            alert('Please fill in the Strategic Goal and select a Performance Indicator before pushing to SPCR.');
+            return;
+        }
+
+        // Build the performance measure text: "PI label — detail" or just one of them
+        const pmText = [piLabel, detail].filter(Boolean).join(' — ');
+
+        // Create a new SPCR row pre-filled from this DPCR row
+        const newSpcrRow = createSpcrRow({
+            strategic_goal:        goal,
+            performance_indicator: pmText,
+            pushed_from_dpcr:      true,
+        });
+        document.getElementById('spcrBody').appendChild(newSpcrRow);
+        newSpcrRow.querySelectorAll('textarea').forEach(autoExpand);
+
+        // Mark the DPCR PI id on the new SPCR row for back-reference
+        newSpcrRow.dataset.linkedPiId = piId;
+
+        // Visual feedback
+        piViewBtn.textContent = '✔ sent';
+        piViewBtn.style.color = '#1e6e3a';
+        setTimeout(() => { piViewBtn.textContent = '→ SPCR'; piViewBtn.style.color = '#1a3b6e'; }, 2000);
+
+        // Switch to SPCR tab and highlight new row
+        switchTab('spcr');
+        setTimeout(() => {
+            newSpcrRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            newSpcrRow.classList.add('row-highlight');
+            setTimeout(() => newSpcrRow.classList.remove('row-highlight'), 2000);
+        }, 100);
+    };
+
+    tdInd.appendChild(piSel);
+    tdInd.appendChild(piTA);
+    tdInd.appendChild(piViewBtn);
+    tr.appendChild(tdInd);
 
     // Budget
     const tdB = document.createElement('td');
@@ -410,9 +558,10 @@ function createDpcrRow(data = {}) {
     bIn.value = data.allotted_budget || '';
     tdB.appendChild(bIn); tr.appendChild(tdB);
 
-    // Section Accountable
+    // Section Accountable (updated dropdown)
     const tdS = document.createElement('td');
     const sel = document.createElement('select');
+    sel.style.cssText = 'width:100%;border:none;background:transparent;font-size:10px;font-family:Arial,sans-serif;outline:none;';
     SECTS.forEach(s => {
         const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
         if (data.section_accountable === s) opt.selected = true;
@@ -456,6 +605,25 @@ function createDpcrRow(data = {}) {
 
     return tr;
 }
+
+/* _updateDpcrViewBtn removed — replaced by push-to-SPCR button. */
+
+/* Collect all SPCR data rows as linkable objects */
+function _getAllSpcrRows() {
+    const rows = [];
+    document.querySelectorAll('#spcrBody tr[data-type="data"]').forEach(tr => {
+        const goalTA = tr.querySelector('textarea[data-key="strategic_goal"]');
+        const indTA  = tr.querySelector('textarea[data-key="performance_indicator"]');
+        rows.push({
+            rowEl: tr,
+            text:  indTA?.value.trim() || '(empty)',
+            label: (indTA?.value.trim() || '(empty)') + (goalTA?.value.trim() ? ' — ' + goalTA.value.trim().substring(0,40) : ''),
+        });
+    });
+    return rows;
+}
+
+/* _getSpcrRowsLinkedTo removed — no longer needed. */
 
 /* ── Read current DPCR form into plain object ── */
 function readDpcrForm() {
@@ -533,37 +701,7 @@ document.getElementById('dAddSectionBtn').addEventListener('click', () => {
 
 /* ══════════════════════════════════════════
    HYDRATE FROM DATABASE ON PAGE LOAD
-   window.DB_LATEST_MATRIX and
-   window.DB_LATEST_DPCR are injected by Blade
 ══════════════════════════════════════════ */
-function hydrateSpcrForm(matrix) {
-    if (!matrix) return;
-
-    document.getElementById('s_prepared_by').value       = matrix.prepared_by       || '';
-    document.getElementById('s_prepared_by_title').value = matrix.prepared_by_title || '';
-    document.getElementById('s_reviewed_by').value       = matrix.reviewed_by       || '';
-    document.getElementById('s_reviewed_by_title').value = matrix.reviewed_by_title || '';
-    document.getElementById('s_approved_by').value       = matrix.approved_by       || '';
-    document.getElementById('s_approved_by_title').value = matrix.approved_by_title || '';
-
-    // Rebuild table rows from DB items
-    document.getElementById('matrixBody').innerHTML = '';
-    (matrix.items || []).forEach(item => {
-        if (item.type === 'section') {
-            document.getElementById('matrixBody').appendChild(
-                createSectionRow(item.section_label || '')
-            );
-        } else {
-            const tr = createMatrixRow({
-                performance_measure:    item.performance_measure,
-                operational_definition: item.operational_definition,
-                source_monitoring:      item.source_monitoring,
-            });
-            document.getElementById('matrixBody').appendChild(tr);
-            tr.querySelectorAll('textarea').forEach(autoExpand);
-        }
-    });
-}
 
 function hydrateDpcrForm(form) {
     if (!form) return;
@@ -598,11 +736,11 @@ function hydrateDpcrForm(form) {
    INIT — runs once on page load
 ══════════════════════════════════════════ */
 (function init() {
-    // Render saved matrices list (seeded from DB via Blade)
-    renderMatrixList();
-
     // Pre-fill SPCR form from latest DB record
-    if (window.DB_LATEST_MATRIX) {
+    if (window.DB_LATEST_SPCR) {
+        hydrateSpcrForm(window.DB_LATEST_SPCR);
+    } else if (window.DB_LATEST_MATRIX) {
+        // backward-compat: hydrate from old SPCR matrix format
         hydrateSpcrForm(window.DB_LATEST_MATRIX);
     }
 
@@ -615,10 +753,18 @@ function hydrateDpcrForm(form) {
     if (window.DB_LATEST_IPCR) {
         hydrateIpcrForm(window.DB_LATEST_IPCR);
     }
-})();/* ══════════════════════════════════════════
+
+    // DPCR is first on the navbar — ensure it is the active tab on load
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-dpcr').classList.add('active');
+    const firstTabBtn = document.querySelector('.tab-btn');
+    if (firstTabBtn) firstTabBtn.classList.add('active');
+})();
+
+/* ══════════════════════════════════════════
    IPCR — ROW FACTORY
-   Mirrors createDpcrRow() pattern exactly.
-   Columns: Goal | Indicator | Actual | Rate | Q | E | T | A | Remarks | Del
+   Columns: Goal | Indicator+link | Actual | Rate | Q | E | T | A | Remarks | Del
 ══════════════════════════════════════════ */
 function createIpcrRow(data = {}) {
     const tr = document.createElement('tr');
@@ -630,13 +776,41 @@ function createIpcrRow(data = {}) {
     goalTA.addEventListener('input', () => autoExpand(goalTA));
     tdGoal.appendChild(goalTA); tr.appendChild(tdGoal);
 
-    // Performance / Success Indicator
+    // ── Performance / Success Indicator + link-from-SPCR view button ──
     const tdInd = document.createElement('td');
+    tdInd.style.cssText = 'vertical-align:top;padding:4px 5px;';
+
     const indTA = document.createElement('textarea');
     indTA.placeholder = 'Performance/Success Indicator (Targets + Measure)…';
     indTA.value = data.performance_indicator || '';
     indTA.addEventListener('input', () => autoExpand(indTA));
-    tdInd.appendChild(indTA); tr.appendChild(tdInd);
+
+    // Link button → picks from SPCR performance measures
+    const lnkBtn = document.createElement('button');
+    lnkBtn.type = 'button'; lnkBtn.className = 'row-view-btn row-link-btn';
+    lnkBtn.title = 'Link Performance Indicator from SPCR';
+    tr.dataset.linkedSpcrId = data.linked_spcr_id || '';
+    _updateIpcrLinkBtn(lnkBtn, tr.dataset.linkedSpcrId);
+
+    lnkBtn.onclick = () => {
+        const spcrRows = _getAllSpcrRows();
+        openLinkModal('Link from SPCR — Performance Measure', spcrRows, (row) => {
+            tr.dataset.linkedSpcrId = row.rowEl ? (row.rowEl.rowIndex?.toString() || 'linked') : 'linked';
+            indTA.value = row.text || '';
+            autoExpand(indTA);
+            // Also copy strategic goal from SPCR operational definition
+            const odTA = row.rowEl?.querySelector('textarea[data-key="operational_definition"]');
+            if (odTA?.value.trim()) {
+                goalTA.value = odTA.value.trim();
+                autoExpand(goalTA);
+            }
+            _updateIpcrLinkBtn(lnkBtn, 'linked');
+        });
+    };
+
+    tdInd.appendChild(indTA);
+    tdInd.appendChild(lnkBtn);
+    tr.appendChild(tdInd);
 
     // Actual Accomplishment
     const tdA = document.createElement('td');
@@ -678,6 +852,15 @@ function createIpcrRow(data = {}) {
     tdDel.appendChild(dBtn); tr.appendChild(tdDel);
 
     return tr;
+}
+
+function _updateIpcrLinkBtn(btn, val) {
+    if (val) {
+        btn.style.color = '#1e6e3a';
+    } else {
+        btn.textContent = '⬡ link SPCR';
+        btn.style.color = '';
+    }
 }
 
 /* ── Read current IPCR form into plain object ── */

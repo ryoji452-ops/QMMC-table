@@ -1,25 +1,22 @@
-{{-- ══════════════════════════════════════════════════════
-     resources/views/qmmc/index.blade.php  — UPDATED
-     Added IPCR tab alongside SPCR and DPCR
-══════════════════════════════════════════════════════ --}}
+{{-- resources/views/qmmc/index.blade.php --}}
 @extends('layouts.app')
 
-@section('title', 'QMMC – SPCR Matrix & DPCR & IPCR')
+@section('title', 'QMMC – DPCR | SPCR | IPCR')
 
 @section('content')
 
-    {{-- Tab Navigation --}}
+    {{-- Tab Navigation — DPCR first --}}
     <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('spcr')">📋 SPCR Rating Matrix</button>
-        <button class="tab-btn"        onclick="switchTab('dpcr')">📄 DPCR</button>
-        <button class="tab-btn"        onclick="switchTab('ipcr')">👤 IPCR</button>
+        <button class="tab-btn active" onclick="switchTab('dpcr', this)">📄 DPCR</button>
+        <button class="tab-btn"        onclick="switchTab('spcr', this)">📋 SPCR</button>
+        <button class="tab-btn"        onclick="switchTab('ipcr', this)">👤 IPCR</button>
     </div>
+
+    {{-- DPCR Page (active first) --}}
+    @include('partials.dpcr', ['sections' => $sections])
 
     {{-- SPCR Page --}}
     @include('partials.spcr')
-
-    {{-- DPCR Page --}}
-    @include('partials.dpcr', ['sections' => $sections])
 
     {{-- IPCR Page --}}
     @include('partials.ipcr')
@@ -36,6 +33,6 @@
     window.DB_MATRICES      = @json($matricesJson);
     window.DB_LATEST_MATRIX = @json($latestMatrixJson);
     window.DB_LATEST_DPCR   = @json($latestDpcrJson);
-    window.DB_LATEST_IPCR   = @json($latestIpcrJson);   {{-- NEW --}}
+    window.DB_LATEST_IPCR   = @json($latestIpcrJson);
 </script>
 @endpush

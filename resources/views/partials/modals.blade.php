@@ -24,3 +24,14 @@
         <div id="viewModalContent"></div>
     </div>
 </div>
+
+{{-- Link Modal — for cross-table row linking (DPCR↔SPCR, SPCR↔IPCR) --}}
+<div class="modal-overlay link-modal-overlay" id="linkModal"
+     onclick="if(event.target===this) closeLinkModal()">
+    <div class="modal-box link-modal-box">
+        <button class="modal-close" onclick="closeLinkModal()">&times;</button>
+        <h4 id="linkModalTitle">Select a row to link</h4>
+        <p class="link-modal-hint">Click a row below to link it, or close to cancel.</p>
+        <div id="linkModalList" class="link-modal-list"></div>
+    </div>
+</div>
