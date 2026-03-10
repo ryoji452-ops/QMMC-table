@@ -67,6 +67,7 @@ function createDpcrRow(data = {}) {
         const newSpcrRow = createSpcrRow({
             strategic_goal:        goal,
             performance_indicator: pmText,
+            person_accountable:    tdS.querySelector('select')?.value || '',
             pushed_from_dpcr:      true,
         });
         document.getElementById('spcrBody').appendChild(newSpcrRow);

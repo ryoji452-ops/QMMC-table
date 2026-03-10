@@ -25,7 +25,6 @@ function createSpcrRow(data = {}) {
     if (data.pushed_from_dpcr) {
         const badge = document.createElement('div');
         badge.className = 'spcr-lock-badge';
-        badge.textContent = '📥 from DPCR';
         tdInd.appendChild(badge);
     }
 
@@ -73,11 +72,17 @@ function createSpcrRow(data = {}) {
     bIn.style.textAlign = 'center';
     tdB.appendChild(bIn); tr.appendChild(tdB);
 
-    // Person Accountable
+    // Person Accountable — dropdown matching DPCR Section Accountable
     const tdP = document.createElement('td');
-    const pIn = document.createElement('input'); pIn.type = 'text'; pIn.placeholder = '—';
-    pIn.dataset.key = 'person_accountable'; pIn.value = data.person_accountable || '';
-    tdP.appendChild(pIn); tr.appendChild(tdP);
+    const pSel = document.createElement('select');
+    pSel.dataset.key = 'person_accountable';
+    pSel.style.cssText = 'width:100%;border:none;background:transparent;font-size:9.5px;font-family:Arial,sans-serif;outline:none;';
+    SECTS.forEach(s => {
+        const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
+        if (data.person_accountable === s) opt.selected = true;
+        pSel.appendChild(opt);
+    });
+    tdP.appendChild(pSel); tr.appendChild(tdP);
 
     // Actual Accomplishment
     const tdA = document.createElement('td');
@@ -194,7 +199,7 @@ function readSpcrForm() {
         const goalTA = cells[0]?.querySelector('textarea');
         const indTA  = cells[1]?.querySelector('textarea.pi-custom');
         const bIn    = cells[2]?.querySelector('input');
-        const pIn    = cells[3]?.querySelector('input');
+        const pSel   = cells[3]?.querySelector('select[data-key="person_accountable"]');
         const aTA    = cells[4]?.querySelector('textarea');
         const rIn    = cells[5]?.querySelector('input');
         const remTA  = cells[10]?.querySelector('textarea');
@@ -203,7 +208,7 @@ function readSpcrForm() {
             strategic_goal:        goalTA?.value.trim()  || '',
             performance_indicator: indTA?.value.trim()   || '',
             allotted_budget:       bIn?.value.trim()     || '',
-            person_accountable:    pIn?.value.trim()     || '',
+            person_accountable:    pSel?.value          || '',
             actual_accomplishment: aTA?.value.trim()     || '',
             accomplishment_rate:   rIn?.value.trim()     || '',
             remarks:               remTA?.value.trim()   || '',
