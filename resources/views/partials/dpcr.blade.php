@@ -9,7 +9,7 @@
 
     {{-- Header --}}
     <div class="doc-header">
-        <div class="logo-circle">QMMC<br>SEAL</div>
+        <div><img class = "logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
         <div class="header-text">
             <div class="org-name">Quirino Memorial Medical Center</div>
             <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
