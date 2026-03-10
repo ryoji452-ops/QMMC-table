@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════
+   ipcr.css
+   Styles specific to the IPCR page/table.
+   Loaded by: ipcr.blade.php (or index.blade.php)
+═══════════════════════════════════════════ */
+
+/* ── IPCR TABLE (builds on .dpcr-table base) ── */
+.ipcr-table .col-goal      { width: 15%; }
+.ipcr-table .col-indicator { width: 20%; }
+.ipcr-table .col-actual    { width: 20%; }
+.ipcr-table .col-rate      { width: 8%;  text-align: center; }
+.ipcr-table .col-q,
+.ipcr-table .col-e,
+.ipcr-table .col-t,
+.ipcr-table .col-a         { width: 4%;  text-align: center; }
+.ipcr-table .col-remarks   { width: 18%; }
+
+/* Rating cells — numeric input */
+.ipcr-table .rating-cell input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    width: 100%;
+    text-align: center;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+}
+.ipcr-table .rating-cell input[type="number"]::-webkit-outer-spin-button,
+.ipcr-table .rating-cell input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* ── IPCR RATING SUMMARY TABLE ── */
+.ipcr-summary { margin-top: 14px; }
+
+.ipcr-rating-summary {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+}
+.ipcr-rating-summary th,
+.ipcr-rating-summary td {
+    border: 1px solid #333;
+    padding: 4px 6px;
+    text-align: center;
+    vertical-align: middle;
+}
+.ipcr-rating-summary th {
+    background: var(--navy);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+}
+.ipcr-rating-summary td:first-child {
+    font-weight: 700;
+    text-align: left;
+    padding-left: 10px;
+}
+
+.ipcr-pct-input,
+.ipcr-avg-input {
+    border: none;
+    border-bottom: 1px solid #888;
+    background: transparent;
+    font-size: 10px;
+    text-align: center;
+    outline: none;
+    font-family: Arial, sans-serif;
+}
+
+/* ── PRINT OVERRIDES — IPCR ── */
+@media print {
+    #page-ipcr { font-size: 9px !important; }
+    #page-ipcr .ipcr-table {
+        font-size: 8.5px !important;
+        table-layout: fixed;
+        width: 100% !important;
+    }
+    #page-ipcr .ipcr-table th,
+    #page-ipcr .ipcr-table td {
+        padding: 3px 4px !important;
+        font-size: 8.5px !important;
+        word-break: break-word;
+    }
+    #page-ipcr .intro-block  { font-size: 9px !important; }
+    #page-ipcr .intro-field  { font-size: 9px !important; }
+    #page-ipcr .d-sig-row    { font-size: 9px !important; }
+    #page-ipcr textarea,
+    #page-ipcr input          { font-size: 8.5px !important; }
+    #page-ipcr .ipcr-summary  { margin-top: 8px !important; }
+    #page-ipcr .ipcr-rating-summary { font-size: 8.5px !important; }
+    #page-ipcr .ipcr-table td:focus-within { background: transparent !important; }
+}

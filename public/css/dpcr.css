@@ -1,0 +1,106 @@
+/* ═══════════════════════════════════════════
+   dpcr.css
+   Styles specific to the DPCR page/table.
+   Loaded by: dpcr.blade.php (or index.blade.php)
+═══════════════════════════════════════════ */
+
+/* ── DPCR TABLE ── */
+.dpcr-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    table-layout: fixed;
+    margin-top: 0;
+}
+.dpcr-table th,
+.dpcr-table td {
+    border: 1px solid #000;
+    padding: 4px 5px;
+    vertical-align: middle;
+    font-size: 10px;
+    word-wrap: break-word;
+}
+.dpcr-table thead tr th {
+    background-color: #dce4f0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 10px;
+}
+.dpcr-table .section-header td {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    font-size: 10px;
+    padding: 3px 5px;
+}
+.dpcr-table input[type="text"],
+.dpcr-table input[type="date"],
+.dpcr-table select,
+.dpcr-table textarea {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    padding: 1px 2px;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    min-height: 20px;
+}
+.dpcr-table textarea {
+    min-height: 52px;
+    line-height: 1.4;
+}
+.dpcr-table select { cursor: pointer; }
+.dpcr-table td:focus-within { background-color: #fffde7; }
+
+/* Column widths */
+.col-goal      { width: 14%; }
+.col-indicator { width: 22%; }
+.col-budget    { width: 7%;  }
+.col-section   { width: 9%;  }
+.col-actual    { width: 14%; }
+.col-rate      { width: 9%;  }
+.col-q         { width: 4%;  }
+.col-e         { width: 4%;  }
+.col-t         { width: 4%;  }
+.col-a         { width: 4%;  }
+.col-remarks   { width: 13%; }
+
+.goal-cell {
+    font-size: 10px;
+    font-style: italic;
+    vertical-align: top;
+}
+.rating-cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* PI select dropdown inside DPCR cells */
+.pi-select {
+    cursor: pointer;
+    margin-bottom: 3px;
+}
+
+/* ── PRINT OVERRIDES — DPCR ── */
+@media print {
+    #page-dpcr { font-size: 9px !important; }
+    #page-dpcr .dpcr-table {
+        font-size: 8.5px !important;
+        table-layout: fixed;
+        width: 100% !important;
+    }
+    #page-dpcr .dpcr-table th,
+    #page-dpcr .dpcr-table td {
+        padding: 3px 4px !important;
+        font-size: 8.5px !important;
+        word-break: break-word;
+    }
+    #page-dpcr .intro-block  { font-size: 9px !important; }
+    #page-dpcr .intro-field  { font-size: 9px !important; }
+    #page-dpcr .d-sig-row    { font-size: 9px !important; }
+    #page-dpcr .doc-header   { padding-bottom: 6px !important; }
+    #page-dpcr textarea,
+    #page-dpcr input         { font-size: 8.5px !important; }
+}

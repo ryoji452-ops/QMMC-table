@@ -1,6 +1,5 @@
 {{-- resources/views/qmmc/index.blade.php --}}
 @extends('layouts.app')
-
 @section('title', 'QMMC – DPCR | SPCR | IPCR')
 
 @section('content')
