@@ -1,5 +1,6 @@
 {{-- resources/views/qmmc/index.blade.php --}}
 @extends('layouts.app')
+
 @section('title', 'QMMC – DPCR | SPCR | IPCR')
 
 @section('content')
@@ -9,6 +10,7 @@
         <button class="tab-btn active" onclick="switchTab('dpcr', this)">📄 DPCR</button>
         <button class="tab-btn"        onclick="switchTab('spcr', this)">📋 SPCR</button>
         <button class="tab-btn"        onclick="switchTab('ipcr', this)">👤 IPCR</button>
+        <button class="tab-btn"        onclick="switchTab('records', this)">🗂 Records</button>
     </div>
 
     {{-- DPCR Page (active first) --}}
@@ -19,6 +21,9 @@
 
     {{-- IPCR Page --}}
     @include('partials.ipcr')
+
+    {{-- Records Page --}}
+    @include('partials.records')
 
     {{-- Shared Modals --}}
     @include('partials.modals')

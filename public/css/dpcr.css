@@ -56,11 +56,12 @@
 
 /* Column widths */
 .col-goal      { width: 14%; }
-.col-indicator { width: 22%; }
-.col-budget    { width: 7%;  }
-.col-section   { width: 9%;  }
-.col-actual    { width: 14%; }
-.col-rate      { width: 9%;  }
+.col-indicator { width: 18%; }
+.col-target    { width: 5%; text-align: center; }
+.col-budget    { width: 6%;  }
+.col-section   { width: 8%;  }
+.col-actual    { width: 13%; }
+.col-rate      { width: 7%;  }
 .col-q         { width: 4%;  }
 .col-e         { width: 4%;  }
 .col-t         { width: 4%;  }
@@ -81,6 +82,54 @@
 .pi-select {
     cursor: pointer;
     margin-bottom: 3px;
+}
+
+
+/* ── FUNCTION TYPE SECTION HEADERS ── */
+.dpcr-table .section-header td {
+    font-weight: 700;
+    font-size: 10px;
+    padding: 4px 8px;
+    letter-spacing: .3px;
+}
+
+/* Quick-pick preset buttons inside section header */
+.dpcr-table .section-header button.remove-btn {
+    float: right;
+    margin-left: 8px;
+}
+
+
+/* ── TARGET / ACTUAL / RATE CELLS ── */
+.dpcr-target-input,
+.dpcr-actual-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    outline: none;
+    text-align: center;
+    padding: 2px 0;
+}
+.dpcr-target-input::-webkit-inner-spin-button,
+.dpcr-target-input::-webkit-outer-spin-button,
+.dpcr-actual-input::-webkit-inner-spin-button,
+.dpcr-actual-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.dpcr-target-input:focus,
+.dpcr-actual-input:focus {
+    background: #fffde7;
+    border-radius: 2px;
+}
+
+.dpcr-rate-display {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    line-height: 1.4;
 }
 
 /* ── PRINT OVERRIDES — DPCR ── */

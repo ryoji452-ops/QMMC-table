@@ -223,8 +223,9 @@ document.getElementById('iSaveBtn').addEventListener('click', async () => {
         return;
     }
     try {
-        await apiFetch('/api/ipcr', 'POST', data);
+        const saved = await apiFetch('/api/ipcr', 'POST', data);
         showAlert('i-alertOk', 'ok', `✔ IPCR for "${data.employee_name}" saved to database.`);
+        if (typeof notifyRecordSaved === 'function') notifyRecordSaved('ipcr', saved.form ?? saved.ipcr ?? saved);
     } catch (err) {
         showAlert('i-alertErr', 'err', 'Save failed: ' + err.message);
     }

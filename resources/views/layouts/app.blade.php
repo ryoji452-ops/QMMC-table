@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ asset('css/dpcr.css') }}">
     <link rel="stylesheet" href="{{ asset('css/spcr.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ipcr.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/records.css') }}">
     @stack('styles')
 </head>
 <body>
@@ -21,6 +22,7 @@
     <script src="{{ asset('js/dpcr.js') }}"></script>
     <script src="{{ asset('js/spcr.js') }}"></script>
     <script src="{{ asset('js/ipcr.js') }}"></script>
+    <script src="{{ asset('js/records.js') }}"></script>
 
 </body>
 </html>

@@ -84,13 +84,14 @@
             <tr>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
-                    Performance / Success Indicator<br>(Targets + Measure)
+                    Performance / Success Indicator
                 </th>
+                <th class="col-target" rowspan="2">TARGET<br>(%)</th>
                 <th class="col-budget"  rowspan="2">ALLOTTED BUDGET</th>
                 <th class="col-section" rowspan="2">SECTION ACCOUNTABLE</th>
-                <th class="col-actual"  rowspan="2">ACTUAL ACCOMPLISHMENT</th>
+                <th class="col-actual"  rowspan="2">ACTUAL ACCOMPLISHMENT<br><span style="font-weight:normal;font-size:8px;">(text + actual %)</span></th>
                 <th class="col-rate"    rowspan="2">
-                    Accomplishment Rate<br>(Actual÷Target × 100%)
+                    Accomplishment Rate<br><span style="font-weight:normal;font-size:8px;">(Actual% ÷ Target% × 100)</span>
                 </th>
                 <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
                 <th class="col-remarks" rowspan="2">Remarks / Justification</th>
@@ -105,7 +106,7 @@
         </thead>
         <tbody id="dpcrBody">
             <tr class="section-header">
-                <td colspan="12">STRATEGIC FUNCTIONS :</td>
+                <td colspan="13">STRATEGIC FUNCTIONS :</td>
             </tr>
         </tbody>
     </table>

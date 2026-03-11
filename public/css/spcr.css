@@ -44,13 +44,22 @@
 /* Sub-label "(1)" etc inside rating header */
 .rating-sub { font-weight: normal; font-size: 8.5px; }
 
-/* Section rows */
+/* Section rows — base style; JS overrides bg/color/borderLeft per type */
 .spcr-table .spcr-section-row td {
     background: #f5f5f5;
     font-weight: 700;
     font-size: 9.5px;
     text-align: left;
-    padding: 3px 6px;
+    padding: 4px 8px;
+    letter-spacing: .3px;
+}
+
+/* Quick-pick preset buttons inside SPCR section header */
+.spcr-table .spcr-section-row td > div {
+    display: inline-flex;
+    gap: 4px;
+    margin-right: 10px;
+    vertical-align: middle;
 }
 
 /* Body cells */
