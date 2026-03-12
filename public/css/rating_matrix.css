@@ -1,0 +1,260 @@
+/* ═══════════════════════════════════════════
+   rating_matrix.css
+   Styles for the Rating Matrix page.
+   Rating Matrix is the ROOT document —
+   rows are pushed FROM here to DPCR/SPCR/IPCR.
+═══════════════════════════════════════════ */
+
+/* ── SIGNATURE BLOCK ── */
+.rm-sig-block {
+    display: flex;
+    gap: 0;
+    border: 1px solid #000;
+    margin: 10px 0 0;
+    font-size: 10px;
+}
+.rm-sig-col {
+    flex: 1;
+    padding: 6px 10px 8px;
+    border-right: 1px solid #000;
+}
+.rm-sig-col:last-child { border-right: none; }
+.rm-sig-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+.rm-sig-name-wrap {
+    border-bottom: 1px solid #000;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+    min-height: 24px;
+}
+.rm-sig-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    width: 100%;
+    color: #111;
+}
+.rm-sig-title-wrap { min-height: 14px; margin-bottom: 4px; }
+.rm-sig-sub {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 9px;
+    font-style: italic;
+    font-family: Arial, sans-serif;
+    width: 100%;
+    color: #444;
+}
+.rm-sig-date-row {
+    font-size: 9px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.rm-date-inp {
+    border: none;
+    border-bottom: 1px solid #000;
+    background: transparent;
+    font-size: 9px;
+    font-family: Arial, sans-serif;
+    outline: none;
+    flex: 1;
+}
+
+/* ── RATING MATRIX TABLE ── */
+.rm-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    table-layout: fixed;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    margin-top: 0;
+}
+.rm-table th,
+.rm-table td {
+    border: 1px solid #000;
+    padding: 4px 5px;
+    vertical-align: top;
+    word-wrap: break-word;
+}
+.rm-table thead th {
+    background: #fff;
+    font-weight: 700;
+    font-size: 9.5px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.35;
+}
+.rm-th-sub { font-weight: normal; font-size: 8.5px; }
+
+/* Column widths */
+.rm-th-pm   { width: 19%; }
+.rm-th-od   { width: 21%; }
+.rm-th-q    { width: 12%; }
+.rm-th-e    { width: 12%; }
+.rm-th-t    { width: 12%; }
+.rm-th-src  { width: 13%; }
+.rm-th-push { width: 11%; text-align: center; }
+.rm-th-del  { width: 26px; border: none !important; background: transparent !important; }
+
+/* Section rows */
+.rm-table tr.rm-section-row td {
+    background: #f0f0f0;
+    font-weight: 700;
+    font-size: 10px;
+    text-align: left;
+    padding: 5px 8px;
+    letter-spacing: .3px;
+    border-left: 4px solid #1a3b6e;
+}
+
+/* Body cells */
+.rm-table tbody td { vertical-align: top; text-align: left; }
+.rm-table td:focus-within { background: #fffde7; }
+
+/* Q / E / T column left accent */
+.rm-td-q { border-left: 3px solid #1a3b6e !important; }
+.rm-td-e { border-left: 3px solid #1e6e3a !important; }
+.rm-td-t { border-left: 3px solid #7a4f00 !important; }
+
+/* Textareas */
+.rm-table textarea {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    min-height: 52px;
+    line-height: 1.4;
+    padding: 0;
+}
+
+/* ── PUSH CELL ── */
+.rm-push-cell {
+    text-align: center;
+    vertical-align: middle !important;
+    padding: 4px 3px !important;
+}
+
+/* Individual push buttons */
+.rm-push-btn {
+    display: block;
+    width: 100%;
+    margin: 2px 0;
+    padding: 3px 6px;
+    font-size: 8.5px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1.5px solid;
+    transition: opacity .12s;
+    text-align: center;
+    white-space: nowrap;
+}
+.rm-push-btn:hover { opacity: .82; }
+
+.rm-push-btn.dpcr {
+    background: #dce4f0;
+    color: #1a3b6e;
+    border-color: #1a3b6e;
+}
+.rm-push-btn.spcr {
+    background: #e4eaf8;
+    color: #4a6fa5;
+    border-color: #4a6fa5;
+}
+.rm-push-btn.ipcr {
+    background: #ede4f8;
+    color: #6a3e9e;
+    border-color: #6a3e9e;
+}
+
+/* Sent state */
+.rm-push-btn.sent {
+    background: #d4edda !important;
+    color: #1e6e3a !important;
+    border-color: #1e6e3a !important;
+}
+
+/* ── RATING SCALE FOOTER ── */
+.rm-scales-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.rm-scale-table {
+    border-collapse: collapse;
+    font-size: 9.5px;
+    font-family: Arial, sans-serif;
+    min-width: 200px;
+}
+.rm-scale-table td { border: 1px solid #aaa; padding: 2px 8px; }
+.rm-scale-head {
+    background: #1a3b6e !important;
+    color: #fff !important;
+    text-align: center;
+    font-weight: 700;
+    font-size: 9.5px;
+    padding: 3px 8px !important;
+}
+.rm-scale-num {
+    font-weight: 700;
+    text-align: center;
+    width: 28px;
+    background: #f0f0f0;
+}
+
+/* ── ✔ / N/A badges injected into DPCR / SPCR / IPCR Q E T cells ── */
+.rm-rating-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #1e6e3a;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    pointer-events: none;
+    line-height: 1;
+}
+.rm-rating-na {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 22px;
+    background: #d5d5d5;
+    color: #555;
+    border-radius: 3px;
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 0 4px;
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* ── PRINT ── */
+@media print {
+    .no-print { display: none !important; }
+    #page-rating-matrix .rm-table textarea { min-height: 0 !important; }
+    #page-rating-matrix .rm-table td:focus-within { background: transparent !important; }
+    #page-rating-matrix .rm-sig-input,
+    #page-rating-matrix .rm-sig-sub,
+    #page-rating-matrix .rm-date-inp { border: none !important; }
+}

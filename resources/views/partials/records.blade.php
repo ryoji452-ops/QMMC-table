@@ -5,7 +5,7 @@
     {{-- Page Header --}}
     <div class="rec-page-header">
         <div class="rec-page-title">
-            <span class="rec-icon">🗂</span>
+            <span class="rec-icon"></span>
             Records
         </div>
         <div class="rec-page-subtitle">All saved DPCR, SPCR, and IPCR records — click any column header to sort</div>

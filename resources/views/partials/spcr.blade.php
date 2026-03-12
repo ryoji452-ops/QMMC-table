@@ -5,128 +5,128 @@
     <div id="s-alertErr"  class="alert-err"></div>
     <div id="s-alertInfo" class="alert-info"></div>
 
-    <div class="form-ref">PMT - SPCR | Rev.0 01 March 2024</div>
+    <div class="form-ref">DOH – SPMS Form 3</div>
 
     {{-- Header --}}
     <div class="doc-header">
         <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
         <div class="header-text">
-            <div class="org-name">Pang-ALAALANG Sentrong Medikal Quirino</div>
-            <div class="org-sub">(Quirino Memorial Medical Center)</div>
-            <div class="form-title">Hospital Operation and Patient Support Service</div>
-            <div style="font-size:11px;color:#333;margin-top:3px;">
-                Strategic Performance Commitment Review (SPCR)
+            <div class="org-name">QUIRINO MEMORIAL MEDICAL CENTER</div>
+            <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
+            <div class="form-title" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">
+                Section Performance Commitment and Review (SPCR)
             </div>
         </div>
     </div>
 
-    {{-- Employee Info Block --}}
-    <div class="emp-info-block" style="display:flex;flex-wrap:wrap;gap:8px 16px;padding:8px 4px;border-bottom:1px solid #ddd;margin-bottom:6px;">
+    {{-- Intro Paragraph --}}
+    <div class="spcr-intro-block">
+        <div class="spcr-intro-line">
+            I,&nbsp;
+            <span class="spcr-intro-group">
+                <input type="text" id="s_emp_name" class="spcr-intro-field spcr-name-field"
+                       placeholder="Full Name of Employee">
+                <span class="spcr-intro-label">Name of Employee</span>
+            </span>
+            ,&nbsp;
+            <span class="spcr-intro-group">
+                <input type="text" id="s_emp_position" class="spcr-intro-field"
+                       placeholder="Position / Unit / Section / Department">
+                <span class="spcr-intro-label">Unit / Section / Department</span>
+            </span>
+            of the <em>Quirino Memorial Medical Center, commit to deliver
+            and agree to be rated on the attainment of the following targets in accordance</em>
+            with the indicated measures for the period&nbsp;
+            <span class="spcr-intro-group">
+                <input type="text" id="s_period" class="spcr-intro-field"
+                       placeholder="e.g. July 1, 2025 to December 31, 2025">
+            </span>.
+        </div>
+    </div>
 
-        <div class="emp-info-field" style="flex:2;min-width:160px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">EMPLOYEE NAME</label>
-            <input type="text" id="s_emp_name" class="sig-name-input"
-                   placeholder="Full name of employee"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
-            <div id="s_disp_name" style="font-size:8px;color:#888;min-height:10px;">&nbsp;</div>
+    {{-- Signature Row --}}
+    <div class="spcr-sig-row">
+
+        {{-- Employee name display --}}
+        <div class="spcr-sig-cell" style="flex:2;">
+            <div class="spcr-sig-spacer"></div>
+            <div class="spcr-sig-name" id="s_disp_name">&nbsp;</div>
+            <div class="spcr-sig-title-line">Name of Employee</div>
+            <div class="spcr-sig-date-row">
+                <strong>Date:</strong>
+                <input type="date" class="spcr-date-inp">
+            </div>
         </div>
 
-        <div class="emp-info-field" style="flex:2;min-width:160px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">POSITION / TITLE</label>
-            <input type="text" id="s_emp_position" class="sub-inp"
-                   placeholder="Position / Title"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
+                {{-- Section / Department Head --}}
+        <div class="spcr-sig-cell" style="flex:2;">
+            <div class="spcr-sig-spacer"></div>
+            <input type="text" id="s_supervisor" class="spcr-sig-name"
+                placeholder="Section / Department Head name">
+            <div class="spcr-sig-title-line">Name of Section/Department Head</div>
+            <div class="spcr-sig-date-row">
+                <strong>Date:</strong>
+                <input type="date" class="spcr-date-inp">
+            </div>
         </div>
 
-        <div class="emp-info-field" style="flex:2;min-width:140px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">DIVISION / UNIT</label>
-            <input type="text" id="s_emp_unit" class="sub-inp"
-                   placeholder="Division or Unit"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
-        </div>
-
-        <div class="emp-info-field" style="flex:1;min-width:100px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">YEAR</label>
-            <select id="s_year"
-                    style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;background:transparent;padding:2px 0;">
-                @for ($y = date('Y') + 1; $y >= 2020; $y--)
-                    <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
-                @endfor
-            </select>
-        </div>
-
-        <div class="emp-info-field" style="flex:1;min-width:120px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">SEMESTER</label>
-            <select id="s_semester"
-                    style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;background:transparent;padding:2px 0;">
-                <option value="1st">1st Semester (Jan–Jun)</option>
-                <option value="2nd">2nd Semester (Jul–Dec)</option>
-            </select>
-        </div>
-
-        <div class="emp-info-field" style="flex:2;min-width:140px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">PERIOD</label>
-            <input type="text" id="s_period" class="sub-inp"
-                   placeholder="e.g. January – June 2025"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
-        </div>
-
-        <div class="emp-info-field" style="flex:2;min-width:140px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">SUPERVISOR / REVIEWED BY</label>
-            <input type="text" id="s_supervisor" class="sub-inp"
-                   placeholder="Supervisor name"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
-        </div>
-
-        <div class="emp-info-field" style="flex:2;min-width:140px;">
-            <label style="font-size:9px;font-weight:700;color:#555;display:block;">APPROVED BY</label>
-            <input type="text" id="s_approved_by" class="sub-inp"
-                   placeholder="Approver name"
-                   style="width:100%;border:none;border-bottom:1px solid #bbb;font-size:11px;outline:none;padding:2px 0;">
+        {{-- Rating Scale --}}
+        <div class="spcr-sig-cell spcr-rating-key-cell" style="flex:1.2;">
+            <div class="spcr-rating-key">
+                <div class="srk-row"><span class="srk-num">5</span><span>– Outstanding</span></div>
+                <div class="srk-row"><span class="srk-num">4–4.99</span><span>– Very Satisfactory</span></div>
+                <div class="srk-row"><span class="srk-num">3–3.99</span><span>– Satisfactory</span></div>
+                <div class="srk-row"><span class="srk-num">2–2.99</span><span>– Unsatisfactory</span></div>
+                <div class="srk-row"><span class="srk-num">1</span><span>– Poor</span></div>
+            </div>
         </div>
 
     </div>
 
+    {{-- Approved By row --}}
+    <div class="spcr-approved-row">
+        <span class="spcr-approved-label">Approved By:</span>
+        <span class="spcr-approved-group">
+            <input type="text" id="s_approved_by" class="spcr-approved-inp"
+                   placeholder="Name of Supervisor / Approver">
+            <span class="spcr-approved-sub">Name of Supervisor</span>
+        </span>
+    </div>
+
     {{-- SPCR Table --}}
-    <table class="spcr-table" id="spcrTable" style="margin-top:8px;">
+    <table class="spcr-table" id="spcrTable">
         <thead>
             <tr>
-                <th class="col-goal">STRATEGIC GOALS AND OBJECTIVES</th>
-                <th class="col-indicator">PERFORMANCE / SUCCESS INDICATOR<br><span style="font-weight:normal;font-size:8px;">(Targets + Measures)</span></th>
-                <th class="col-target">TARGET</th>
-                <th class="col-budget">ALLOTTED BUDGET</th>
-                <th class="col-person">PERSON ACCOUNTABLE</th>
-                <th class="col-actual">ACTUAL ACCOMPLISHMENT</th>
-                <th class="col-rate">ACCOMPLISHMENT RATE</th>
-                <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
-                <th class="col-remarks">REMARKS</th>
-                <th style="border:none;background:transparent;width:26px;"></th>
+                <th class="spcr-th-goal"  rowspan="2">STRATEGIC GOALS AND<br>OBJECTIVES</th>
+                <th class="spcr-th-ind"   rowspan="2">Performance /Success Indicator<br><span style="font-weight:normal;font-size:8px;">(Targets + Measure)</span></th>
+                <th class="spcr-th-bud"   rowspan="2">ALLOTTED<br>BUDGET</th>
+                <th class="spcr-th-person" rowspan="2">PERSON<br>ACCOUNTABLE</th>
+                <th class="spcr-th-actual" rowspan="2">ACTUAL ACCOMPLISHMENT</th>
+                <th class="spcr-th-rate"  rowspan="2">Accomplishment<br>Rate(Actual÷Target<br><span style="font-weight:normal;font-size:8px;">x 100%)</span></th>
+                <th colspan="4" class="spcr-th-rating-group">RATING</th>
+                <th class="spcr-th-remarks" rowspan="2">Remarks/Justifica-ti<br>on of Unmet Targets</th>
+                <th class="spcr-th-del no-print" rowspan="2"></th>
             </tr>
             <tr>
-                <th colspan="7"></th>
-                <th class="col-q" style="font-size:9px;">Q<br><span style="font-weight:normal;">(1)</span></th>
-                <th class="col-e" style="font-size:9px;">E<br><span style="font-weight:normal;">(2)</span></th>
-                <th class="col-t" style="font-size:9px;">T<br><span style="font-weight:normal;">(3)</span></th>
-                <th class="col-a" style="font-size:9px;">A<br><span style="font-weight:normal;">(4)</span></th>
-                <th colspan="2"></th>
+                <th class="spcr-th-q">Q<br><span style="font-weight:normal;font-size:8px;">(1)</span></th>
+                <th class="spcr-th-e">E<br><span style="font-weight:normal;font-size:8px;">(2)</span></th>
+                <th class="spcr-th-t">T<br><span style="font-weight:normal;font-size:8px;">(3)</span></th>
+                <th class="spcr-th-a">A<br><span style="font-weight:normal;font-size:8px;">(4)</span></th>
             </tr>
         </thead>
         <tbody id="spcrBody">
-            <tr class="spcr-section-row">
-                <td colspan="11">STRATEGIC FUNCTIONS</td>
-                <td style="border:none;background:transparent;"></td>
-            </tr>
+            {{-- Rows injected by JS --}}
         </tbody>
     </table>
 
     {{-- Action Bar --}}
     <div class="action-bar">
-        <button type="button" class="btn-action btn-navy"  id="sAddRowBtn">+ Add Row</button>
-        <button type="button" class="btn-action btn-slate" id="sAddSectionBtn">+ Add Section</button>
+        <button type="button" class="btn-action btn-navy"   id="sAddRowBtn">+ Add Row</button>
+        <button type="button" class="btn-action btn-slate"  id="sAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="sClearBtn">Clear Form</button>
-        <button type="button" class="btn-action btn-green" id="sSaveBtn"
+        <button type="button" class="btn-action btn-green"  id="sSaveBtn"
                 style="margin-left:auto;">💾 Save SPCR</button>
-        <button type="button" class="btn-action btn-navy" onclick="window.print()">🖨 Print</button>
+        <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
     </div>
 
 </div>{{-- /page-spcr --}}

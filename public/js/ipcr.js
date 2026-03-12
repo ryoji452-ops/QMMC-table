@@ -296,10 +296,19 @@ document.getElementById('i_approved_by').addEventListener('input', function () {
     if (window.DB_LATEST_DPCR) hydrateDpcrForm(window.DB_LATEST_DPCR);
     if (window.DB_LATEST_IPCR) hydrateIpcrForm(window.DB_LATEST_IPCR);
 
-    // Force DPCR as the active tab on load
+    // Rating Matrix is the root / first tab — activate it on load
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-dpcr').classList.add('active');
-    const firstTabBtn = document.querySelector('.tab-btn');
-    if (firstTabBtn) firstTabBtn.classList.add('active');
+    const rmPage = document.getElementById('page-rating-matrix');
+    if (rmPage) {
+        rmPage.classList.add('active');
+        const firstTabBtn = document.querySelector('.tab-btn');
+        if (firstTabBtn) firstTabBtn.classList.add('active');
+    } else {
+        // Fallback: activate first page found
+        const firstPage = document.querySelector('.page');
+        if (firstPage) firstPage.classList.add('active');
+        const firstTabBtn = document.querySelector('.tab-btn');
+        if (firstTabBtn) firstTabBtn.classList.add('active');
+    }
 })();

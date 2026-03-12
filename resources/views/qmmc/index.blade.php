@@ -1,28 +1,28 @@
 {{-- resources/views/qmmc/index.blade.php --}}
 @extends('layouts.app')
 
-@section('title', 'QMMC – DPCR | SPCR | IPCR')
+@section('title', 'QMMC – Rating Matrix | DPCR | SPCR | IPCR')
 
 @section('content')
 
-    {{-- Tab Navigation — DPCR first --}}
+    {{-- Tab Navigation — Rating Matrix is first / root --}}
     <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('dpcr', this)">📄 DPCR</button>
-        <button class="tab-btn"        onclick="switchTab('spcr', this)">📋 SPCR</button>
-        <button class="tab-btn"        onclick="switchTab('ipcr', this)">👤 IPCR</button>
-        <button class="tab-btn"        onclick="switchTab('records', this)">🗂 Records</button>
+        <button class="tab-btn active" onclick="switchTab('rating-matrix', this)"> Rating Matrix</button>
+        <button class="tab-btn"        onclick="switchTab('dpcr', this)"> DPCR</button>
+        <button class="tab-btn"        onclick="switchTab('spcr', this)"> SPCR</button>
+        <button class="tab-btn"        onclick="switchTab('ipcr', this)"> IPCR</button>
+        <button class="tab-btn"        onclick="switchTab('records', this)"> Records</button>
     </div>
 
-    {{-- DPCR Page (active first) --}}
+    {{-- Rating Matrix (active first — it is the root source) --}}
+    @include('partials.rating_matrix')
+
+    {{-- DPCR, SPCR, IPCR receive pushed rows from Rating Matrix --}}
     @include('partials.dpcr', ['sections' => $sections])
-
-    {{-- SPCR Page --}}
     @include('partials.spcr')
-
-    {{-- IPCR Page --}}
     @include('partials.ipcr')
 
-    {{-- Records Page --}}
+    {{-- Records --}}
     @include('partials.records')
 
     {{-- Shared Modals --}}
@@ -38,5 +38,6 @@
     window.DB_LATEST_MATRIX = @json($latestMatrixJson);
     window.DB_LATEST_DPCR   = @json($latestDpcrJson);
     window.DB_LATEST_IPCR   = @json($latestIpcrJson);
+    window.DB_LATEST_SPCR   = @json($latestSpcrJson ?? null);
 </script>
 @endpush
