@@ -99,6 +99,7 @@
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
         <thead>
             <tr>
+                <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
                     Performance / Success Indicator<br>(Targets + Measure)
@@ -120,7 +121,7 @@
         </thead>
         <tbody id="ipcrBody">
             <tr class="section-header">
-                <td colspan="10">CORE FUNCTIONS :</td>
+                <td colspan="11">CORE FUNCTIONS :</td>
             </tr>
         </tbody>
     </table>

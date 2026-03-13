@@ -10,6 +10,9 @@
 function createIpcrRow(data = {}) {
     const tr = document.createElement('tr');
 
+    // drag handle
+    tr.appendChild(makeDragHandle());
+
     // Strategic Goal / Objective
     const tdGoal = document.createElement('td'); tdGoal.className = 'goal-cell';
     const goalTA = document.createElement('textarea');
@@ -108,15 +111,15 @@ function readIpcrForm() {
         }
         const cells = tr.querySelectorAll('td');
         if (!cells.length) return;
-        const goalTA = cells[0]?.querySelector('textarea');
-        const indTA  = cells[1]?.querySelector('textarea');
-        const aTA    = cells[2]?.querySelector('textarea');
-        const rIn    = cells[3]?.querySelector('input');
-        const qIn    = cells[4]?.querySelector('input');
-        const eIn    = cells[5]?.querySelector('input');
-        const tIn    = cells[6]?.querySelector('input');
-        const aRIn   = cells[7]?.querySelector('input');
-        const remTA  = cells[8]?.querySelector('textarea');
+        const goalTA = cells[1]?.querySelector('textarea');
+        const indTA  = cells[2]?.querySelector('textarea');
+        const aTA    = cells[3]?.querySelector('textarea');
+        const rIn    = cells[4]?.querySelector('input');
+        const qIn    = cells[5]?.querySelector('input');
+        const eIn    = cells[6]?.querySelector('input');
+        const tIn    = cells[7]?.querySelector('input');
+        const aRIn   = cells[8]?.querySelector('input');
+        const remTA  = cells[9]?.querySelector('textarea');
         if (!goalTA && !indTA) return;
         items.push({
             function_type:         currentFunctionType,
@@ -240,6 +243,7 @@ document.getElementById('iAddRowBtn').addEventListener('click', () => {
 
 document.getElementById('iAddSectionBtn').addEventListener('click', () => {
     const tr = document.createElement('tr'); tr.className = 'section-header';
+    tr.appendChild(makeDragHandle());
     const td = document.createElement('td'); td.colSpan = 10;
     const inp = document.createElement('input'); inp.type = 'text';
     inp.placeholder = 'Section name (e.g. SUPPORT FUNCTIONS)';
@@ -262,7 +266,7 @@ document.getElementById('iClearBtn').addEventListener('click', () => {
     document.getElementById('i_disp_supervisor').textContent = '\u00a0';
     document.getElementById('i_disp_approved').textContent   = '\u00a0';
     document.getElementById('ipcrBody').innerHTML =
-        '<tr class="section-header"><td colspan="10">CORE FUNCTIONS :</td></tr>';
+        '<tr class="section-header"><td colspan="11">CORE FUNCTIONS :</td></tr>';
     document.getElementById('i_avg_core').value    = '';
     document.getElementById('i_avg_support').value = '';
     computeIpcrSummary();
@@ -295,6 +299,11 @@ document.getElementById('i_approved_by').addEventListener('input', function () {
 
     if (window.DB_LATEST_DPCR) hydrateDpcrForm(window.DB_LATEST_DPCR);
     if (window.DB_LATEST_IPCR) hydrateIpcrForm(window.DB_LATEST_IPCR);
+
+    // Enable drag-to-reorder rows for all three tables
+    initDragSort(document.getElementById('spcrBody'));
+    initDragSort(document.getElementById('dpcrBody'));
+    initDragSort(document.getElementById('ipcrBody'));
 
     // Rating Matrix is the root / first tab — activate it on load
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));

@@ -575,6 +575,45 @@ body {
 .row-link-btn.ipcr-push       { color: #6a3e9e; }
 .row-link-btn.ipcr-push:hover { color: #512d7a; }
 
+/* ── DRAG HANDLE ── */
+.drag-handle {
+    width: 18px;
+    min-width: 18px;
+    padding: 0 3px;
+    text-align: center;
+    vertical-align: middle;
+    border: none !important;
+    background: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.drag-handle-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 2px;
+    cursor: grab;
+    opacity: 0.3;
+    transition: opacity .15s;
+    border-radius: 3px;
+}
+.drag-handle-icon:hover {
+    opacity: 1;
+    background: #e8ecf4;
+}
+.drag-handle-icon:active { cursor: grabbing; }
+.drag-handle-icon span {
+    display: block;
+    width: 12px;
+    height: 2px;
+    background: #333;
+    border-radius: 1px;
+}
+tr.drag-over td { background: #dce4f0 !important; outline: 2px dashed #1a3b6e; }
+tr.dragging { opacity: 0.4; }
+
 /* Row highlight flash */
 @keyframes rowFlash {
     0%   { background: #fff9c4; }
@@ -593,6 +632,7 @@ body {
     .page { display: none !important; box-shadow: none; border: none; }
     .page.active { display: block !important; width: 100% !important; padding: 10px 14px !important; }
     .col-del, th:last-child, td:last-child { display: none !important; }
+    .drag-handle, th.drag-handle-th { display: none !important; }
     .row-link-btn, .link-modal-overlay, #linkModal { display: none !important; }
     .matrix-table td:focus-within,
     .dpcr-table td:focus-within { background: transparent !important; }

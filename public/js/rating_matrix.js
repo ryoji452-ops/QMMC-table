@@ -35,12 +35,12 @@
    IPCR:  goal=0 | indicator=1 | actual=2 | rate=3   | Q=4  E=5  T=6  A=7  | remarks=8
 ───────────────────────────────────────────────────────────────────  */
 const RM_COL = {
-    // DPCR: goal=0|ind=1|target=2|budget=3|section=4|actual=5|rate=6|Q=7|E=8|T=9
-    dpcr: { Q: 7, E: 8, T: 9 },
-    // SPCR: goal=0|ind=1|budget=2|person=3|actual=4|rate=5|Q=6|E=7|T=8  (no TARGET col)
-    spcr: { Q: 6, E: 7, T: 8 },
-    // IPCR: goal=0|ind=1|actual=2|rate=3|Q=4|E=5|T=6
-    ipcr: { Q: 4, E: 5, T: 6 },
+    // DPCR: handle=0|goal=1|ind=2|target=3|budget=4|section=5|actual=6|rate=7|Q=8|E=9|T=10
+    dpcr: { Q: 8, E: 9, T: 10 },
+    // SPCR: handle=0|goal=1|ind=2|budget=3|person=4|actual=5|rate=6|Q=7|E=8|T=9
+    spcr: { Q: 7, E: 8, T: 9 },
+    // IPCR: handle=0|goal=1|ind=2|actual=3|rate=4|Q=5|E=6|T=7
+    ipcr: { Q: 5, E: 6, T: 7 },
 };
 
 /* Track pushed rows:

@@ -236,3 +236,104 @@
     .rec-page-header { display: none !important; }
     .rec-flat-table thead tr { background: #eee !important; }
 }
+/* ── EDIT MODE BANNER ── */
+.rec-edit-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff8e1;
+    border: 2px solid #f59f00;
+    border-radius: 5px;
+    padding: 8px 14px;
+    margin-bottom: 10px;
+    font-size: 10.5px;
+    font-family: Arial, sans-serif;
+    color: #7a4f00;
+    flex-wrap: wrap;
+}
+.rec-edit-banner strong {
+    color: #5a3800;
+    font-size: 11px;
+}
+.rec-edit-cancel-btn {
+    margin-left: auto;
+    background: #fff;
+    border: 1.5px solid #f59f00;
+    color: #7a4f00;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.rec-edit-cancel-btn:hover {
+    background: #ffeab3;
+}
+@media print {
+    .rec-edit-banner { display: none !important; }
+}
+
+/* ── PAGINATION ── */
+.rec-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 8px 4px 2px;
+    border-top: 1.5px solid #dde3ed;
+}
+.rec-page-info {
+    font-size: 10.5px;
+    color: var(--muted);
+}
+.rec-page-info strong {
+    color: #111;
+}
+.rec-page-controls {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+.rec-page-btn {
+    min-width: 30px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1.5px solid #c8d0de;
+    background: #fff;
+    color: var(--navy);
+    font-size: 11px;
+    font-family: Arial, sans-serif;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+    line-height: 1;
+}
+.rec-page-btn:hover:not(.disabled):not(.active) {
+    background: #dce4f0;
+    border-color: var(--navy);
+}
+.rec-page-btn.active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+    cursor: default;
+}
+.rec-page-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.rec-page-ellipsis {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 0 2px;
+    line-height: 28px;
+}
+@media print {
+    .rec-pagination { display: none !important; }
+}

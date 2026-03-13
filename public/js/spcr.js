@@ -47,6 +47,9 @@ function _styleSpcrSection(tr, label) {
 function createSpcrRow(data = {}) {
     const tr = document.createElement('tr');
 
+    /* drag handle */
+    tr.appendChild(makeDragHandle());
+
     /* 0 — Strategic Goals and Objectives */
     const tdGoal = document.createElement('td');
     const goalTA = document.createElement('textarea');
@@ -197,6 +200,9 @@ function createSectionRow(label = '') {
     const tr = document.createElement('tr');
     tr.className = 'spcr-section-row';
 
+    /* drag handle */
+    tr.appendChild(makeDragHandle());
+
     const td = document.createElement('td');
     td.colSpan = 11;
 
@@ -245,6 +251,12 @@ function createAvgRow(label, idSuffix) {
     tr.className = 'spcr-avg-row';
     tr.id = 'spcr-avg-' + idSuffix;
 
+    /* blank cell for drag-handle column */
+    const tdHandle = document.createElement('td');
+    tdHandle.className = 'no-print';
+    tdHandle.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
+    tr.appendChild(tdHandle);
+
     /* Spans cols 0–9 for label, col 10 for value */
     const tdLabel = document.createElement('td');
     tdLabel.colSpan = 10;
@@ -282,8 +294,8 @@ function computeSpcrAverages() {
         if (tr.classList.contains('spcr-avg-row')) return;
 
         const cells = tr.querySelectorAll('td');
-        /* A rating is in col 9 */
-        const aCell = cells[9];
+        /* A rating is in col 10 (shifted +1 by drag handle) */
+        const aCell = cells[10];
         const val   = parseFloat(aCell?.textContent?.trim());
         if (!isNaN(val) && val > 0) {
             if (current === 'core') { coreSum += val; coreCount++; }
@@ -317,13 +329,13 @@ function readSpcrForm() {
 
         items.push({
             is_section:            false,
-            strategic_goal:        cells[0]?.querySelector('textarea')?.value.trim()                    || '',
-            performance_indicator: cells[1]?.querySelector('textarea.pi-custom')?.value.trim()          || '',
-            allotted_budget:       cells[2]?.querySelector('input')?.value.trim()                       || '',
-            person_accountable:    cells[3]?.querySelector('input')?.value.trim()                       || '',
-            actual_accomplishment: cells[4]?.querySelector('textarea')?.value.trim()                    || '',
-            accomplishment_rate:   cells[5]?.querySelector('input')?.value.trim()                       || '',
-            remarks:               cells[10]?.querySelector('textarea')?.value.trim()                   || '',
+            strategic_goal:        cells[1]?.querySelector('textarea')?.value.trim()                    || '',
+            performance_indicator: cells[2]?.querySelector('textarea.pi-custom')?.value.trim()          || '',
+            allotted_budget:       cells[3]?.querySelector('input')?.value.trim()                       || '',
+            person_accountable:    cells[4]?.querySelector('input')?.value.trim()                       || '',
+            actual_accomplishment: cells[5]?.querySelector('textarea')?.value.trim()                    || '',
+            accomplishment_rate:   cells[6]?.querySelector('input')?.value.trim()                       || '',
+            remarks:               cells[11]?.querySelector('textarea')?.value.trim()                   || '',
         });
     });
 

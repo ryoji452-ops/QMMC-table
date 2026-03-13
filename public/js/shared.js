@@ -111,6 +111,93 @@ function openLinkModal(title, rows, onSelect) {
 }
 function closeLinkModal() { document.getElementById('linkModal').classList.remove('open'); }
 
+/* ── DRAG-SORT ROWS ──
+   Uses mousedown on the handle to arm draggable=true on the <tr>,
+   then standard HTML5 dragstart/dragover/drop to reorder.
+   ALL rows (data rows AND section headers) are movable. */
+function makeDragHandle() {
+    const td = document.createElement('td');
+    td.className = 'drag-handle no-print';
+    td.innerHTML = '<div class="drag-handle-icon"><span></span><span></span><span></span></div>';
+    return td;
+}
+
+function initDragSort(tbody) {
+    if (!tbody || tbody._dragSortInit) return;
+    tbody._dragSortInit = true;
+
+    let dragSrc = null;
+
+    /* Step 1: mousedown on handle arms the row for dragging */
+    tbody.addEventListener('mousedown', function(e) {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        const tr = handle.closest('tr');
+        if (!tr) return;
+        tr.setAttribute('draggable', 'true');
+        var disarm = function() { tr.setAttribute('draggable', 'false'); };
+        tr.addEventListener('mouseup', disarm, { once: true });
+        document.addEventListener('mouseup', disarm, { once: true });
+    });
+
+    /* Step 2: dragstart fires because draggable=true was set above */
+    tbody.addEventListener('dragstart', function(e) {
+        var tr = e.target;
+        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
+        if (!tr) return;
+        dragSrc = tr;
+        dragSrc.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+    });
+
+    /* Step 3: dragover highlights the target row — ALL rows are valid targets */
+    tbody.addEventListener('dragover', function(e) {
+        if (!dragSrc) return;
+        var tr = e.target;
+        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
+        if (!tr || tr === dragSrc) return;
+        /* skip avg-summary rows only */
+        if (tr.classList.contains('spcr-avg-row')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
+        tr.classList.add('drag-over');
+    });
+
+    tbody.addEventListener('dragleave', function(e) {
+        var tr = e.target;
+        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
+        if (tr) tr.classList.remove('drag-over');
+    });
+
+    /* Step 4: drop reorders the rows */
+    tbody.addEventListener('drop', function(e) {
+        if (!dragSrc) return;
+        var tr = e.target;
+        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
+        if (!tr || tr === dragSrc) return;
+        if (tr.classList.contains('spcr-avg-row')) return;
+        e.preventDefault();
+        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        var srcIdx = rows.indexOf(dragSrc);
+        var tgtIdx = rows.indexOf(tr);
+        if (srcIdx < tgtIdx) tr.parentNode.insertBefore(dragSrc, tr.nextSibling);
+        else                  tr.parentNode.insertBefore(dragSrc, tr);
+    });
+
+    /* Step 5: dragend cleans up */
+    tbody.addEventListener('dragend', function() {
+        if (dragSrc) {
+            dragSrc.classList.remove('dragging');
+            dragSrc.setAttribute('draggable', 'false');
+        }
+        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
+        dragSrc = null;
+    });
+}
+
 /* ── SYNC: SPCR employee info → DPCR header ── */
 function syncShared() {
     const name      = document.getElementById('s_emp_name')?.value     || '';

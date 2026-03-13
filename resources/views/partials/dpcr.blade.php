@@ -82,6 +82,7 @@
     <table class="dpcr-table" id="dpcrTable" style="margin-top:8px;">
         <thead>
             <tr>
+                <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
                     Performance / Success Indicator
@@ -106,7 +107,7 @@
         </thead>
         <tbody id="dpcrBody">
             <tr class="section-header">
-                <td colspan="13">STRATEGIC FUNCTIONS :</td>
+                <td colspan="14">STRATEGIC FUNCTIONS :</td>
             </tr>
         </tbody>
     </table>

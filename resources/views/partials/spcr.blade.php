@@ -97,6 +97,7 @@
     <table class="spcr-table" id="spcrTable">
         <thead>
             <tr>
+                <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="spcr-th-goal"  rowspan="2">STRATEGIC GOALS AND<br>OBJECTIVES</th>
                 <th class="spcr-th-ind"   rowspan="2">Performance /Success Indicator<br><span style="font-weight:normal;font-size:8px;">(Targets + Measure)</span></th>
                 <th class="spcr-th-bud"   rowspan="2">ALLOTTED<br>BUDGET</th>

@@ -15,6 +15,10 @@ let REC_IPCR = [];
 /* Sort state */
 let REC_SORT = { col: 'saved_at', dir: 'desc' };
 
+/* Pagination state */
+const REC_PAGE_SIZE = 20;
+let REC_PAGE = 1;
+
 /* ══════════════════════════════════════════
    LOAD
 ══════════════════════════════════════════ */
@@ -81,7 +85,7 @@ function matchesSearch(r, search) {
     const fields = [
         r.employee_name, r.employee_title, r.employee_position, r.employee_unit,
         r.prepared_by, r.prepared_by_title, r.reviewed_by, r.approved_by,
-        r.division, r.area, r.supervisor, r.period,
+        r.division, r.supervisor, r.period,
         String(r.year || ''), r.semester,
     ];
     return fields.some(f => f && String(f).toLowerCase().includes(search));
@@ -98,7 +102,6 @@ function normaliseRecord(r) {
         name:       r.employee_name || r.prepared_by || '—',
         title:      r.employee_title || r.employee_position || r.prepared_by_title || '—',
         division:   r.division || r.employee_unit || '—',
-        area:       r.area || r.period || '—',
         year:       r.year || '—',
         semester:   r.semester || '—',
         approved:   r.approved_by || '—',
@@ -137,6 +140,7 @@ function setSort(col) {
         REC_SORT.col = col;
         REC_SORT.dir = col === 'saved_at' ? 'desc' : 'asc';
     }
+    REC_PAGE = 1;
     renderRecords();
 }
 
@@ -151,8 +155,15 @@ function sortIcon(col) {
    RENDER — dropdowns hard-filter rows,
    column headers sort within the result
 ══════════════════════════════════════════ */
+let _lastFilterKey = '';
+
 function renderRecords() {
     const { year, sem, type, search } = getFilters();
+    const filterKey = year + '|' + sem + '|' + type + '|' + search;
+    if (filterKey !== _lastFilterKey) {
+        REC_PAGE = 1;
+        _lastFilterKey = filterKey;
+    }
     const container = document.getElementById('rec-container');
 
     const allRaw = [...REC_DPCR, ...REC_SPCR, ...REC_IPCR];
@@ -199,6 +210,14 @@ function renderRecords() {
         return;
     }
 
+    /* Pagination */
+    const totalPages = Math.ceil(sorted.length / REC_PAGE_SIZE);
+    if (REC_PAGE > totalPages) REC_PAGE = totalPages;
+    if (REC_PAGE < 1) REC_PAGE = 1;
+    const pageStart = (REC_PAGE - 1) * REC_PAGE_SIZE;
+    const pageEnd   = Math.min(pageStart + REC_PAGE_SIZE, sorted.length);
+    const paginated = sorted.slice(pageStart, pageEnd);
+
     const th = (col, label, extra = '') =>
         `<th class="rec-th-sortable${REC_SORT.col === col ? ' rec-th-active' : ''}"
              onclick="setSort('${col}')" ${extra}>
@@ -214,7 +233,6 @@ function renderRecords() {
                     ${th('name',      'Name / Prepared By')}
                     ${th('title',     'Position / Title')}
                     ${th('division',  'Division / Unit')}
-                    ${th('area',      'Area / Period')}
                     ${th('year',      'Year',      'style="width:55px;"')}
                     ${th('semester',  'Semester',  'style="width:90px;"')}
                     ${th('approved',  'Approved By')}
@@ -224,11 +242,63 @@ function renderRecords() {
                 </tr>
             </thead>
             <tbody>
-                ${sorted.map(r => buildFlatRow(r)).join('')}
+                ${paginated.map(r => buildFlatRow(r)).join('')}
             </tbody>
         </table>`;
 
-    container.innerHTML = statsHtml + tableHtml;
+    /* Pagination controls */
+    const paginationHtml = buildPagination(REC_PAGE, totalPages, sorted.length, pageStart, pageEnd);
+
+    container.innerHTML = statsHtml + tableHtml + paginationHtml;
+}
+
+function buildPagination(currentPage, totalPages, totalItems, pageStart, pageEnd) {
+    if (totalPages <= 1) return '';
+
+    const btn = (page, label, disabled, active = false) =>
+        `<button class="rec-page-btn${active ? ' active' : ''}${disabled ? ' disabled' : ''}"
+            ${disabled ? 'disabled' : `onclick="recGoToPage(${page})"`}>
+            ${label}
+        </button>`;
+
+    /* Build page number buttons — show up to 7, with ellipsis */
+    let pageButtons = '';
+    const delta = 2;
+    const range = [];
+    for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+        range.push(i);
+    }
+
+    if (range[0] > 1) {
+        pageButtons += btn(1, '1', false, currentPage === 1);
+        if (range[0] > 2) pageButtons += '<span class="rec-page-ellipsis">…</span>';
+    }
+    range.forEach(p => { pageButtons += btn(p, p, false, p === currentPage); });
+    if (range[range.length - 1] < totalPages) {
+        if (range[range.length - 1] < totalPages - 1) pageButtons += '<span class="rec-page-ellipsis">…</span>';
+        pageButtons += btn(totalPages, totalPages, false, currentPage === totalPages);
+    }
+
+    return `
+        <div class="rec-pagination">
+            <div class="rec-page-info">
+                Showing <strong>${pageStart + 1}–${pageEnd}</strong> of <strong>${totalItems}</strong> records
+            </div>
+            <div class="rec-page-controls">
+                ${btn(1,           '«', currentPage === 1)}
+                ${btn(currentPage - 1, '‹', currentPage === 1)}
+                ${pageButtons}
+                ${btn(currentPage + 1, '›', currentPage === totalPages)}
+                ${btn(totalPages,  '»', currentPage === totalPages)}
+            </div>
+        </div>`;
+}
+
+function recGoToPage(page) {
+    REC_PAGE = page;
+    renderRecords();
+    /* Scroll the records container into view */
+    document.getElementById('rec-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ══════════════════════════════════════════
@@ -262,7 +332,6 @@ function buildFlatRow(r) {
         <td><strong>${esc(r.name)}</strong></td>
         <td style="color:var(--muted);font-size:9.5px;">${esc(r.title)}</td>
         <td>${esc(r.division)}</td>
-        <td style="font-size:9.5px;">${esc(r.area)}</td>
         <td style="text-align:center;font-weight:700;">${esc(String(r.year))}</td>
         <td style="text-align:center;font-size:9.5px;">${semLabel}</td>
         <td style="font-size:9.5px;">${esc(r.approved)}</td>
@@ -298,7 +367,6 @@ function recViewSpcr(id) {
         <div><span>Employee: </span><strong>${esc(record.employee_name || '—')}</strong></div>
         <div><span>Position: </span><strong>${esc(record.employee_title || '—')}</strong></div>
         <div><span>Division / Unit: </span><strong>${esc(record.division || '—')}</strong></div>
-        <div><span>Period / Area: </span><strong>${esc(record.area || '—')}</strong></div>
         <div><span>Year: </span><strong>${esc(String(record.year || '—'))}</strong></div>
         <div><span>Semester: </span><strong>${esc(semLabel)}</strong></div>
         <div><span>Approved By: </span><strong>${esc(record.approved_by || '—')}</strong></div>
@@ -332,7 +400,6 @@ function recViewDpcr(id) {
         <div><span>Employee: </span><strong>${esc(record.employee_name || '—')}</strong></div>
         <div><span>Title: </span><strong>${esc(record.employee_title || '—')}</strong></div>
         <div><span>Division: </span><strong>${esc(record.division || '—')}</strong></div>
-        <div><span>Area: </span><strong>${esc(record.area || '—')}</strong></div>
         <div><span>Year: </span><strong>${esc(record.year || '—')}</strong></div>
         <div><span>Semester: </span><strong>${esc(semLabel)}</strong></div>
         <div><span>Approved By: </span><strong>${esc(record.approved_by || '—')}</strong></div>
@@ -398,6 +465,42 @@ function recViewIpcr(id) {
 }
 
 /* ══════════════════════════════════════════
+   EDIT STATE
+   Tracks which record is currently being
+   edited so the save button does PUT instead
+   of POST and the old record is removed.
+══════════════════════════════════════════ */
+const REC_EDITING = { dpcr: null, spcr: null, ipcr: null };
+
+/* Show / hide the "Editing Record #X" banner on a form page */
+function _recSetEditBanner(pageId, type, id) {
+    const page = document.getElementById(pageId);
+    if (!page) return;
+
+    // Remove any existing banner
+    page.querySelectorAll('.rec-edit-banner').forEach(el => el.remove());
+
+    if (!id) return; // clearing — no banner needed
+
+    const banner = document.createElement('div');
+    banner.className = 'rec-edit-banner';
+    banner.innerHTML = `
+        ✏️ <strong>Editing ${type.toUpperCase()} Record #${id}</strong>
+        — make your changes and click 💾 Save to update.
+        <button type="button" class="rec-edit-cancel-btn"
+                onclick="_recCancelEdit('${type}')">✕ Cancel Edit</button>`;
+    // Insert as the very first child of the page div
+    page.insertBefore(banner, page.firstChild);
+}
+
+/* Cancel edit — clear the banner and the editing ID */
+function _recCancelEdit(type) {
+    REC_EDITING[type] = null;
+    const pageMap = { dpcr: 'page-dpcr', spcr: 'page-spcr', ipcr: 'page-ipcr' };
+    _recSetEditBanner(pageMap[type], type, null);
+}
+
+/* ══════════════════════════════════════════
    EDIT — load into the form tab for editing
 ══════════════════════════════════════════ */
 async function recEditSpcr(id) {
@@ -405,6 +508,8 @@ async function recEditSpcr(id) {
     try {
         const m = await apiFetch(`/api/spcr/${id}`);
         if (typeof hydrateSpcrForm === 'function') hydrateSpcrForm(m);
+        REC_EDITING.spcr = id;
+        _recSetEditBanner('page-spcr', 'SPCR', id);
         switchTab('spcr');
     } catch (err) { alert('Edit failed: ' + err.message); }
 }
@@ -413,6 +518,8 @@ function recEditDpcr(id) {
     if (!confirm(`Load DPCR #${id} into the form for editing? This will replace the current form.`)) return;
     const record = REC_DPCR.find(r => r.id === id); if (!record) return;
     if (typeof hydrateDpcrForm === 'function') hydrateDpcrForm(record);
+    REC_EDITING.dpcr = id;
+    _recSetEditBanner('page-dpcr', 'DPCR', id);
     switchTab('dpcr');
 }
 
@@ -420,8 +527,101 @@ function recEditIpcr(id) {
     if (!confirm(`Load IPCR #${id} into the form for editing? This will replace the current form.`)) return;
     const record = REC_IPCR.find(r => r.id === id); if (!record) return;
     if (typeof hydrateIpcrForm === 'function') hydrateIpcrForm(record);
+    REC_EDITING.ipcr = id;
+    _recSetEditBanner('page-ipcr', 'IPCR', id);
     switchTab('ipcr');
 }
+
+/* ══════════════════════════════════════════
+   SAVE INTERCEPT
+   Patches each form's save button so that
+   when an editingId is set it does PUT and
+   removes the old record from the list.
+══════════════════════════════════════════ */
+(function patchSaveButtons() {
+    /* DPCR */
+    const dBtn = document.getElementById('dSaveBtn');
+    if (dBtn) {
+        const _origClick = dBtn.onclick;
+        dBtn.addEventListener('click', async () => {
+            const editId = REC_EDITING.dpcr;
+            if (!editId) return; // normal save handled by dpcr.js
+
+            // Read and PUT
+            const data = (typeof readDpcrForm === 'function') ? readDpcrForm() : null;
+            if (!data) return;
+            if (!data.employee_name) return; // let dpcr.js show its own error
+
+            try {
+                const saved = await apiFetch(`/api/dpcr/${editId}`, 'PUT', data);
+                // Remove old record, insert updated one
+                REC_DPCR = REC_DPCR.filter(r => r.id !== editId);
+                const updated = { ...(saved.form ?? saved), _type: 'dpcr' };
+                REC_DPCR.unshift(updated);
+                populateYearFilter();
+                renderRecords();
+                // Clear edit state
+                REC_EDITING.dpcr = null;
+                _recSetEditBanner('page-dpcr', 'dpcr', null);
+                showAlert('d-alertOk', 'ok', `✔ DPCR #${editId} updated successfully.`);
+            } catch (err) {
+                showAlert('d-alertErr', 'err', 'Update failed: ' + err.message);
+            }
+        }, true); // capture phase — runs before dpcr.js listener
+    }
+
+    /* SPCR */
+    const sBtn = document.getElementById('sSaveBtn');
+    if (sBtn) {
+        sBtn.addEventListener('click', async () => {
+            const editId = REC_EDITING.spcr;
+            if (!editId) return;
+
+            const data = (typeof readSpcrForm === 'function') ? readSpcrForm() : null;
+            if (!data || !data.employee_name) return;
+
+            try {
+                const saved = await apiFetch(`/api/spcr/${editId}`, 'PUT', data);
+                REC_SPCR = REC_SPCR.filter(r => r.id !== editId);
+                const updated = { ...(saved.form ?? saved), _type: 'spcr' };
+                REC_SPCR.unshift(updated);
+                populateYearFilter();
+                renderRecords();
+                REC_EDITING.spcr = null;
+                _recSetEditBanner('page-spcr', 'spcr', null);
+                showAlert('s-alertOk', 'ok', `✔ SPCR #${editId} updated successfully.`);
+            } catch (err) {
+                showAlert('s-alertErr', 'err', 'Update failed: ' + err.message);
+            }
+        }, true);
+    }
+
+    /* IPCR */
+    const iBtn = document.getElementById('iSaveBtn');
+    if (iBtn) {
+        iBtn.addEventListener('click', async () => {
+            const editId = REC_EDITING.ipcr;
+            if (!editId) return;
+
+            const data = (typeof readIpcrForm === 'function') ? readIpcrForm() : null;
+            if (!data || !data.employee_name) return;
+
+            try {
+                const saved = await apiFetch(`/api/ipcr/${editId}`, 'PUT', data);
+                REC_IPCR = REC_IPCR.filter(r => r.id !== editId);
+                const updated = { ...(saved.form ?? saved.ipcr ?? saved), _type: 'ipcr' };
+                REC_IPCR.unshift(updated);
+                populateYearFilter();
+                renderRecords();
+                REC_EDITING.ipcr = null;
+                _recSetEditBanner('page-ipcr', 'ipcr', null);
+                showAlert('i-alertOk', 'ok', `✔ IPCR #${editId} updated successfully.`);
+            } catch (err) {
+                showAlert('i-alertErr', 'err', 'Update failed: ' + err.message);
+            }
+        }, true);
+    }
+})();
 
 /* ══════════════════════════════════════════
    DELETE

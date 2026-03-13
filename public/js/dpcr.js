@@ -36,6 +36,9 @@ function createDpcrSectionRow(label = '') {
     const tr = document.createElement('tr');
     tr.className = 'section-header';
 
+    /* drag handle */
+    tr.insertBefore(makeDragHandle(), tr.firstChild);
+
     const td = document.createElement('td');
     td.colSpan = 12;
 
@@ -86,6 +89,9 @@ function createDpcrSectionRow(label = '') {
 /* ── ROW FACTORY ── */
 function createDpcrRow(data = {}) {
     const tr = document.createElement('tr');
+
+    // drag handle
+    tr.appendChild(makeDragHandle());
 
     // ── Strategic Goal ──
     const tdGoal = document.createElement('td'); tdGoal.className = 'goal-cell';
@@ -303,15 +309,15 @@ function readDpcrForm() {
         }
         const cells = tr.querySelectorAll('td');
         if (!cells.length) return;
-        const goalTA   = cells[0]?.querySelector('textarea');
-        const indTA    = cells[1]?.querySelector('textarea.pi-custom');
-        const targetIn = cells[2]?.querySelector('input.dpcr-target-input');
-        const bIn      = cells[3]?.querySelector('input');
-        const secSel   = cells[4]?.querySelector('select');
-        const aTA      = cells[5]?.querySelector('textarea');
-        const actualIn = cells[5]?.querySelector('input.dpcr-actual-input');
-        const rateHid  = cells[6]?.querySelector('input.dpcr-rate-hidden');
-        const remTA    = cells[11]?.querySelector('textarea');
+        const goalTA   = cells[1]?.querySelector('textarea');
+        const indTA    = cells[2]?.querySelector('textarea.pi-custom');
+        const targetIn = cells[3]?.querySelector('input.dpcr-target-input');
+        const bIn      = cells[4]?.querySelector('input');
+        const secSel   = cells[5]?.querySelector('select');
+        const aTA      = cells[6]?.querySelector('textarea');
+        const actualIn = cells[6]?.querySelector('input.dpcr-actual-input');
+        const rateHid  = cells[7]?.querySelector('input.dpcr-rate-hidden');
+        const remTA    = cells[12]?.querySelector('textarea');
         if (!goalTA && !indTA) return;
         items.push({
             function_type:         currentFunctionType,

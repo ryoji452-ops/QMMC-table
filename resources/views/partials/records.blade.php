@@ -40,7 +40,7 @@
         </div>
         <div class="rec-toolbar-right">
             <input type="text" id="rec-search" class="rec-search-input"
-                   placeholder="🔍  Search by name, division, area…"
+                   placeholder="🔍  Search by name, division,"
                    oninput="renderRecords()">
             <button class="rec-refresh-btn" onclick="loadAllRecords()" title="Refresh">⟳ Refresh</button>
         </div>
