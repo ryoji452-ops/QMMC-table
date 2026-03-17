@@ -95,11 +95,27 @@
 
     </div>
 
+    {{-- Section Filter Bar (screen only) — populated by JS from SPCR person_accountable values --}}
+    <div class="spcr-filter-bar no-print">
+        <label for="ipcr-section-filter" class="spcr-filter-label">
+            🔍 Filter by Section:
+        </label>
+        <select id="ipcr-section-filter" class="spcr-filter-sel">
+            <option value="">— All Sections —</option>
+            {{-- Options injected by rebuildIpcrSectionFilter() in ipcr.js --}}
+        </select>
+        <button type="button" class="btn-action btn-slate spcr-filter-clear"
+                onclick="var s=document.getElementById('ipcr-section-filter');s.value='';s.dispatchEvent(new Event('change'));"
+                title="Clear filter — show all sections" style="padding:3px 10px;font-size:10px;">✕ Clear</button>
+        <span class="spcr-filter-hint">Sections sourced from SPCR Person Accountable.</span>
+    </div>
+
     {{-- IPCR Table --}}
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
         <thead>
             <tr>
                 <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
+                <th class="spcr-th-actions no-print" style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
                     Performance / Success Indicator<br>(Targets + Measure)
@@ -110,7 +126,7 @@
                 </th>
                 <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
                 <th class="col-remarks" rowspan="2">Remarks / Justification<br>&amp; Unmet Targets</th>
-                <th style="border:none;background:transparent;width:26px;" rowspan="2"></th>
+                <th style="border:none;background:transparent;width:26px;" class="no-print" rowspan="2"></th>
             </tr>
             <tr>
                 <th class="col-q" style="font-size:9px;">Q<br><span style="font-weight:normal;">(1)</span></th>
@@ -121,7 +137,8 @@
         </thead>
         <tbody id="ipcrBody">
             <tr class="section-header">
-                <td colspan="11">CORE FUNCTIONS :</td>
+                <td style="border:none;background:transparent;width:18px;padding:0;"></td>
+                <td colspan="10">CORE FUNCTIONS :</td>
             </tr>
         </tbody>
     </table>
@@ -201,12 +218,18 @@
 
     {{-- Action Bar --}}
     <div class="action-bar">
-        <button type="button" class="btn-action btn-navy"  id="iAddRowBtn">+ Add Row</button>
-        <button type="button" class="btn-action btn-slate" id="iAddSectionBtn">+ Add Section</button>
+        <button type="button" class="btn-action btn-navy"   id="iAddRowBtn">+ Add Row</button>
+        <button type="button" class="btn-action btn-slate"  id="iAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="iClearBtn">Clear Form</button>
-        <button type="button" class="btn-action btn-green" id="iSaveBtn"
+        {{-- Load entire saved SPCR into IPCR in one click --}}
+        <button type="button" class="btn-action btn-teal"   id="iLoadSpcrBtn"
+                title="Pick a saved SPCR and load its full table into IPCR">
+            📋 Load from SPCR
+        </button>
+        <button type="button" class="btn-action btn-green"  id="iSaveBtn"
                 style="margin-left:auto;">💾 Save IPCR</button>
-        <button type="button" class="btn-action btn-navy" onclick="window.print()">🖨 Print</button>
+        {{-- printIpcr() isolates the IPCR page before printing --}}
+        <button type="button" class="btn-action btn-navy"   onclick="printIpcr()">🖨 Print IPCR</button>
     </div>
 
 </div>{{-- /page-ipcr --}}

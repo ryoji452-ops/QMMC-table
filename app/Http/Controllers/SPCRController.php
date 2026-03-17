@@ -26,7 +26,93 @@ class SPCRController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validated = $this->validatePayload($request);
+
+        $form = SPCRForm::create([
+            'employee_name'     => $validated['employee_name'],
+            'employee_title'    => $validated['employee_title'] ?? null,
+            'division'          => $validated['division'],
+            'area'              => $validated['area'],
+            'year'              => $validated['year'],
+            'semester'          => $validated['semester'],
+            'approved_by'       => $validated['approved_by'] ?? null,
+            'approved_by_title' => $validated['approved_by_title'] ?? null,
+            'signed_date'       => $validated['signed_date'] ?? null,
+        ]);
+
+        foreach ($validated['items'] as $itemData) {
+            SPCRItem::create($this->buildItemRow($form->id, $itemData));
+        }
+
+        $form->load('items');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'DPCR saved successfully.',
+            'form'    => $form,
+        ], 201);
+    }
+
+    /**
+     * Return a single DPCR form with its items.
+     * Called via JS fetch GET /api/dpcr/{id}
+     */
+    public function show(SPCRForm $form): JsonResponse
+    {
+        $form->load('items');
+        return response()->json($form);
+    }
+
+    /**
+     * Update an existing DPCR form + replace its items.
+     * Called via JS fetch PUT /api/dpcr/{id}
+     */
+    public function update(Request $request, SPCRForm $form): JsonResponse
+    {
+        $validated = $this->validatePayload($request);
+
+        $form->update([
+            'employee_name'  => $validated['employee_name'],
+            'employee_title' => $validated['employee_title'] ?? null,
+            'division'       => $validated['division'],
+            'area'           => $validated['area'],
+            'year'           => $validated['year'],
+            'semester'       => $validated['semester'],
+            'approved_by'    => $validated['approved_by'] ?? null,
+        ]);
+
+        // Replace all items
+        $form->items()->delete();
+        foreach ($validated['items'] as $itemData) {
+            SPCRItem::create($this->buildItemRow($form->id, $itemData));
+        }
+
+        $form->load('items');
+        return response()->json([
+            'success' => true,
+            'message' => 'DPCR updated successfully.',
+            'form'    => $form,
+        ]);
+    }
+
+    /**
+     * Delete a DPCR form and its items.
+     */
+    public function destroy(SPCRForm $form): JsonResponse
+    {
+        $form->items()->delete();
+        $form->delete();
+        return response()->json(['success' => true, 'message' => 'DPCR deleted.']);
+    }
+
+    /* ── Private helpers ── */
+
+    /**
+     * Validate the incoming request payload.
+     */
+    private function validatePayload(Request $request): array
+    {
+        return $request->validate([
             'employee_name'                  => 'required|string|max:255',
             'employee_title'                 => 'nullable|string|max:255',
             'division'                       => 'required|string|max:255',
@@ -52,45 +138,31 @@ class SPCRController extends Controller
             'items.*.rating_a'               => 'nullable|boolean',
             'items.*.remarks'                => 'nullable|string',
         ]);
+    }
 
-        $form = SPCRForm::create([
-            'employee_name'     => $validated['employee_name'],
-            'employee_title'    => $validated['employee_title'] ?? null,
-            'division'          => $validated['division'],
-            'area'              => $validated['area'],
-            'year'              => $validated['year'],
-            'semester'          => $validated['semester'],
-            'approved_by'       => $validated['approved_by'] ?? null,
-            'approved_by_title' => $validated['approved_by_title'] ?? null,
-            'signed_date'       => $validated['signed_date'] ?? null,
-        ]);
+    /**
+     * Build a single item row array for insertion.
+     */
+    private function buildItemRow(int $formId, array $itemData): array
+    {
+        $row = [
+            'sprc_form_id'          => $formId,
+            'function_type'         => $itemData['function_type'],
+            'strategic_goal'        => $itemData['strategic_goal'],
+            'performance_indicator' => $itemData['performance_indicator'],
+            'target_pct'            => $itemData['target_pct']            ?? null,
+            'allotted_budget'       => $itemData['allotted_budget']       ?? null,
+            'section_accountable'   => $itemData['section_accountable'],
+            'actual_accomplishment' => $itemData['actual_accomplishment'] ?? null,
+            'actual_pct'            => $itemData['actual_pct']            ?? null,
+            'accomplishment_rate'   => $itemData['accomplishment_rate']   ?? null,
+            'rating_q'              => $itemData['rating_q']              ?? false,
+            'rating_e'              => $itemData['rating_e']              ?? false,
+            'rating_t'              => $itemData['rating_t']              ?? false,
+            'rating_a'              => $itemData['rating_a']              ?? false,
+            'remarks'               => $itemData['remarks']               ?? null,
+        ];
 
-        foreach ($validated['items'] as $itemData) {
-            SPCRItem::create([
-                'sprc_form_id'          => $form->id,
-                'function_type'         => $itemData['function_type'],
-                'strategic_goal'        => $itemData['strategic_goal'],
-                'performance_indicator' => $itemData['performance_indicator'],
-                'target_pct'            => $itemData['target_pct'] ?? null,
-                'allotted_budget'       => $itemData['allotted_budget'] ?? null,
-                'section_accountable'   => $itemData['section_accountable'],
-                'actual_accomplishment' => $itemData['actual_accomplishment'] ?? null,
-                'actual_pct'            => $itemData['actual_pct'] ?? null,
-                'accomplishment_rate'   => $itemData['accomplishment_rate'] ?? null,
-                'rating_q'              => $itemData['rating_q'] ?? false,
-                'rating_e'              => $itemData['rating_e'] ?? false,
-                'rating_t'              => $itemData['rating_t'] ?? false,
-                'rating_a'              => $itemData['rating_a'] ?? false,
-                'remarks'               => $itemData['remarks'] ?? null,
-            ]);
-        }
-
-        $form->load('items');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'DPCR saved successfully.',
-            'form'    => $form,
-        ], 201);
+        return $row;
     }
 }

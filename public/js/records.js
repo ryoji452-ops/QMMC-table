@@ -493,11 +493,74 @@ function _recSetEditBanner(pageId, type, id) {
     page.insertBefore(banner, page.firstChild);
 }
 
-/* Cancel edit — clear the banner and the editing ID */
+/* Cancel edit — clear the banner, the editing ID, and reset the form to blank */
 function _recCancelEdit(type) {
     REC_EDITING[type] = null;
     const pageMap = { dpcr: 'page-dpcr', spcr: 'page-spcr', ipcr: 'page-ipcr' };
     _recSetEditBanner(pageMap[type], type, null);
+
+    /* Reset the form to a clean state so stale edit data is gone */
+    if (type === 'dpcr') {
+        /* Clear header inputs */
+        ['d_emp_name','d_emp_title','d_approved_by'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const dDisp = document.getElementById('d_disp_name');
+        if (dDisp) dDisp.textContent = '\u00a0';
+        /* Clear body rows */
+        const dBody = document.getElementById('dpcrBody');
+        if (dBody) {
+            dBody.innerHTML = '';
+            /* Re-add default Strategic Functions header */
+            if (typeof createDpcrSectionRow === 'function') {
+                dBody.appendChild(createDpcrSectionRow('STRATEGIC FUNCTIONS'));
+            }
+        }
+    } else if (type === 'spcr') {
+        ['s_emp_name','s_emp_position','s_period','s_supervisor','s_approved_by'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const sDisp = document.getElementById('s_disp_name');
+        if (sDisp) sDisp.textContent = '\u00a0';
+        /* Full SPCR clear via the existing sClearBtn logic */
+        const sBody = document.getElementById('spcrBody');
+        if (sBody) {
+            sBody.innerHTML = '';
+            if (typeof createSectionRow === 'function' && typeof createAvgRow === 'function') {
+                sBody.appendChild(createSectionRow('STRATEGIC FUNCTIONS :'));
+                sBody.appendChild(createAvgRow('Strategic', 'strategic'));
+                sBody.appendChild(createSectionRow('CORE FUNCTIONS :'));
+                sBody.appendChild(createAvgRow('Core', 'core'));
+            }
+        }
+        if (typeof computeSpcrAverages === 'function') computeSpcrAverages();
+        /* Reset section filter */
+        const sFilter = document.getElementById('spcr-section-filter');
+        if (sFilter) { sFilter.value = ''; if (typeof filterSpcrBySection === 'function') filterSpcrBySection(''); }
+    } else if (type === 'ipcr') {
+        ['i_emp_name','i_emp_position','i_emp_unit','i_period',
+         'i_supervisor','i_approved_by','i_recommending'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        ['i_disp_name','i_disp_name2','i_disp_supervisor','i_disp_approved'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.textContent = '\u00a0';
+        });
+        const iBody = document.getElementById('ipcrBody');
+        if (iBody) iBody.innerHTML = '<tr class="section-header"><td colspan="11">CORE FUNCTIONS :</td></tr>';
+        ['i_avg_core','i_avg_support'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        if (typeof computeIpcrSummary === 'function') computeIpcrSummary();
+        /* Reset IPCR section filter */
+        const iFilter = document.getElementById('ipcr-section-filter');
+        if (iFilter) { iFilter.value = ''; if (typeof filterIpcrBySection === 'function') filterIpcrBySection(''); }
+    }
+
+    showAlert(
+        type === 'dpcr' ? 'd-alertInfo' : type === 'spcr' ? 's-alertInfo' : 'i-alertInfo',
+        'info',
+        '\u2716 Edit cancelled. Form has been reset.'
+    );
 }
 
 /* ══════════════════════════════════════════

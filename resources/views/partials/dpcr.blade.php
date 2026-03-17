@@ -83,6 +83,7 @@
         <thead>
             <tr>
                 <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
+                <th class="spcr-th-actions no-print" style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
                     Performance / Success Indicator
@@ -96,7 +97,7 @@
                 </th>
                 <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
                 <th class="col-remarks" rowspan="2">Remarks / Justification</th>
-                <th style="border:none;background:transparent;width:26px;" rowspan="2"></th>
+                <th style="border:none;background:transparent;width:26px;" class="no-print" rowspan="2"></th>
             </tr>
             <tr>
                 <th class="col-q" style="font-size:9px;">Q<br><span style="font-weight:normal;">(1)</span></th>
@@ -107,7 +108,8 @@
         </thead>
         <tbody id="dpcrBody">
             <tr class="section-header">
-                <td colspan="14">STRATEGIC FUNCTIONS :</td>
+                <td style="border:none;background:transparent;width:18px;padding:0;"></td>
+                <td colspan="13">STRATEGIC FUNCTIONS :</td>
             </tr>
         </tbody>
     </table>
@@ -116,9 +118,15 @@
     <div class="action-bar">
         <button type="button" class="btn-action btn-navy"  id="dAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate" id="dAddSectionBtn">+ Add Section</button>
+        {{-- View / load any previously saved DPCR record into the form --}}
+        <button type="button" class="btn-action btn-teal"  id="dViewSavedBtn"
+                title="Browse and load any saved DPCR record into the form">
+            📋 View Saved DPCR
+        </button>
         <button type="button" class="btn-action btn-green" id="dSaveBtn"
                 style="margin-left:auto;">💾 Save DPCR</button>
-        <button type="button" class="btn-action btn-navy" onclick="window.print()">🖨 Print</button>
+        {{-- printDpcr() isolates the DPCR page before printing --}}
+        <button type="button" class="btn-action btn-navy"  onclick="printDpcr()">🖨 Print DPCR</button>
     </div>
 
 </div>{{-- /page-dpcr --}}

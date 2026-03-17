@@ -112,90 +112,136 @@ function openLinkModal(title, rows, onSelect) {
 function closeLinkModal() { document.getElementById('linkModal').classList.remove('open'); }
 
 /* ── DRAG-SORT ROWS ──
-   Uses mousedown on the handle to arm draggable=true on the <tr>,
-   then standard HTML5 dragstart/dragover/drop to reorder.
-   ALL rows (data rows AND section headers) are movable. */
+   Pointer-events implementation.
+   On mousedown of the drag handle:
+     1. A floating clone div is created and follows the cursor exactly,
+        accounting for page scroll — so the ghost never drifts.
+     2. As the cursor moves over sibling rows a drop-target highlight
+        tracks the insertion point in real time.
+     3. On mouseup the source row is moved to the insertion point.
+   ALL rows (data rows AND section headers) are movable.
+   Average / summary rows are skip targets only.
+   Works correctly whether the page is scrolled or not. */
+
 function makeDragHandle() {
-    const td = document.createElement('td');
+    var td = document.createElement('td');
     td.className = 'drag-handle no-print';
     td.innerHTML = '<div class="drag-handle-icon"><span></span><span></span><span></span></div>';
     return td;
+}
+
+/* ── Shared drag-sort state — one active drag at a time across all tables ── */
+var _ds = {
+    src:    null,   /* <tr> being dragged       */
+    ghost:  null,   /* floating label <div>     */
+    over:   null,   /* current drop-target <tr> */
+    tbody:  null,   /* tbody that owns the drag */
+    offsetY: 0,     /* cursor offset inside src */
+};
+
+/* Shared document-level handlers — attached once */
+(function _attachSharedDragHandlers() {
+    document.addEventListener('mousemove', function(e) {
+        if (!_ds.src || !_ds.ghost) return;
+
+        /* Move ghost with cursor (fixed-position follows clientY/clientX) */
+        _ds.ghost.style.top  = (e.clientY - _ds.offsetY) + 'px';
+        /* left stays anchored to where the drag started — no need to update */
+
+        /* Find the <tr> under the pointer — ghost has pointer-events:none so no hiding needed */
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        while (el && el.tagName !== 'TR') el = el.parentElement;
+        var target = (el && el.closest('tbody') === _ds.tbody) ? el : null;
+
+        if (!target || target === _ds.src || target.classList.contains('spcr-avg-row')) {
+            _dsClearOver(); return;
+        }
+        if (target !== _ds.over) {
+            _dsClearOver();
+            _ds.over = target;
+            _ds.over.classList.add('drag-over');
+        }
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        if (!_ds.src) return;
+
+        _ds.src.classList.remove('dragging');
+        _dsRemoveGhost();
+
+        if (_ds.over && _ds.over !== _ds.src && !_ds.over.classList.contains('spcr-avg-row')) {
+            var rect = _ds.over.getBoundingClientRect();
+            if (e.clientY > rect.top + rect.height / 2) {
+                _ds.over.parentNode.insertBefore(_ds.src, _ds.over.nextSibling);
+            } else {
+                _ds.over.parentNode.insertBefore(_ds.src, _ds.over);
+            }
+        }
+
+        _dsClearOver();
+        _ds.src   = null;
+        _ds.tbody = null;
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && _ds.src) {
+            _ds.src.classList.remove('dragging');
+            _dsRemoveGhost();
+            _dsClearOver();
+            _ds.src   = null;
+            _ds.tbody = null;
+        }
+    });
+})();
+
+function _dsClearOver() {
+    if (_ds.over) { _ds.over.classList.remove('drag-over'); _ds.over = null; }
+}
+function _dsRemoveGhost() {
+    if (_ds.ghost && _ds.ghost.parentNode) _ds.ghost.parentNode.removeChild(_ds.ghost);
+    _ds.ghost = null;
+}
+function _dsRowLabel(tr) {
+    var text = '';
+    tr.querySelectorAll('textarea, input[type="text"]').forEach(function(el) {
+        var v = (el.value || '').trim();
+        if (v && text.length < 80) text += (text ? ' · ' : '') + v;
+    });
+    return text || '(row)';
 }
 
 function initDragSort(tbody) {
     if (!tbody || tbody._dragSortInit) return;
     tbody._dragSortInit = true;
 
-    let dragSrc = null;
-
-    /* Step 1: mousedown on handle arms the row for dragging */
     tbody.addEventListener('mousedown', function(e) {
-        const handle = e.target.closest('.drag-handle');
+        /* Only respond to mousedown on the drag handle icon */
+        var handle = e.target.closest('.drag-handle');
         if (!handle) return;
-        const tr = handle.closest('tr');
-        if (!tr) return;
-        tr.setAttribute('draggable', 'true');
-        var disarm = function() { tr.setAttribute('draggable', 'false'); };
-        tr.addEventListener('mouseup', disarm, { once: true });
-        document.addEventListener('mouseup', disarm, { once: true });
-    });
+        var tr = handle.closest('tr');
+        if (!tr || tr.closest('tbody') !== tbody) return;
 
-    /* Step 2: dragstart fires because draggable=true was set above */
-    tbody.addEventListener('dragstart', function(e) {
-        var tr = e.target;
-        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
-        if (!tr) return;
-        dragSrc = tr;
-        dragSrc.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', '');
-    });
+        e.preventDefault(); /* prevent text selection */
 
-    /* Step 3: dragover highlights the target row — ALL rows are valid targets */
-    tbody.addEventListener('dragover', function(e) {
-        if (!dragSrc) return;
-        var tr = e.target;
-        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
-        if (!tr || tr === dragSrc) return;
-        /* skip avg-summary rows only */
-        if (tr.classList.contains('spcr-avg-row')) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
-        tr.classList.add('drag-over');
-    });
+        _ds.src   = tr;
+        _ds.tbody = tbody;
+        _ds.src.classList.add('dragging');
 
-    tbody.addEventListener('dragleave', function(e) {
-        var tr = e.target;
-        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
-        if (tr) tr.classList.remove('drag-over');
-    });
+        var rect    = tr.getBoundingClientRect();
+        _ds.offsetY = e.clientY - rect.top;
 
-    /* Step 4: drop reorders the rows */
-    tbody.addEventListener('drop', function(e) {
-        if (!dragSrc) return;
-        var tr = e.target;
-        while (tr && tr.tagName !== 'TR') tr = tr.parentElement;
-        if (!tr || tr === dragSrc) return;
-        if (tr.classList.contains('spcr-avg-row')) return;
-        e.preventDefault();
-        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
-        var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
-        var srcIdx = rows.indexOf(dragSrc);
-        var tgtIdx = rows.indexOf(tr);
-        if (srcIdx < tgtIdx) tr.parentNode.insertBefore(dragSrc, tr.nextSibling);
-        else                  tr.parentNode.insertBefore(dragSrc, tr);
-    });
-
-    /* Step 5: dragend cleans up */
-    tbody.addEventListener('dragend', function() {
-        if (dragSrc) {
-            dragSrc.classList.remove('dragging');
-            dragSrc.setAttribute('draggable', 'false');
-        }
-        tbody.querySelectorAll('tr.drag-over').forEach(function(r) { r.classList.remove('drag-over'); });
-        dragSrc = null;
-    });
+        /* Build ghost label div */
+        _ds.ghost = document.createElement('div');
+        _ds.ghost.className   = 'drag-ghost';
+        _ds.ghost.textContent = _dsRowLabel(tr);
+        _ds.ghost.style.cssText =
+            'position:fixed;z-index:99999;pointer-events:none;'
+            + 'width:' + rect.width  + 'px;'
+            + 'left:'  + rect.left   + 'px;'
+            + 'top:'   + (e.clientY - _ds.offsetY) + 'px;'
+            + 'box-sizing:border-box;';
+        document.body.appendChild(_ds.ghost);
+    }, true); /* capture phase so it fires before any child handlers */
 }
 
 /* ── SYNC: SPCR employee info → DPCR header ── */

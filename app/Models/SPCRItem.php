@@ -16,7 +16,6 @@ class SPCRItem extends Model
         'function_type',
         'strategic_goal',
         'performance_indicator',
-        'target_text',
         'allotted_budget',
         'section_accountable',
         'actual_accomplishment',

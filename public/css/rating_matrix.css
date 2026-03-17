@@ -223,30 +223,35 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     background: #1e6e3a;
     color: #fff;
     border-radius: 50%;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     pointer-events: none;
     line-height: 1;
+    margin: 1px auto;
+    flex-shrink: 0;
 }
 .rm-rating-na {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 30px;
-    height: 22px;
-    background: #d5d5d5;
-    color: #555;
+    min-width: 26px;
+    height: 18px;
+    background: #e0e0e0;
+    color: #666;
     border-radius: 3px;
-    font-size: 8.5px;
+    font-size: 8px;
     font-weight: 700;
-    padding: 0 4px;
+    padding: 0 3px;
     pointer-events: none;
     line-height: 1;
+    margin: 1px auto;
+    letter-spacing: .3px;
+    flex-shrink: 0;
 }
 
 /* ── PRINT ── */

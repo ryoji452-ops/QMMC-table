@@ -30,6 +30,8 @@ Route::prefix('api/spcr-matrix')->name('spcr.matrix.')->group(function () {
 Route::prefix('api/dpcr')->name('dpcr.')->group(function () {
     Route::get('/',          [SPCRController::class, 'index'])  ->name('index');
     Route::post('/',         [SPCRController::class, 'store'])  ->name('store');
+    Route::get('/{form}',    [SPCRController::class, 'show'])   ->name('show');
+    Route::put('/{form}',    [SPCRController::class, 'update']) ->name('update');
     Route::delete('/{form}', [SPCRController::class, 'destroy'])->name('destroy');
 });
 

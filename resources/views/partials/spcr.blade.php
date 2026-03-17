@@ -58,7 +58,7 @@
             </div>
         </div>
 
-                {{-- Section / Department Head --}}
+        {{-- Section / Department Head --}}
         <div class="spcr-sig-cell" style="flex:2;">
             <div class="spcr-sig-spacer"></div>
             <input type="text" id="s_supervisor" class="spcr-sig-name"
@@ -93,11 +93,27 @@
         </span>
     </div>
 
+    {{-- Section Filter Bar (screen only) — populated by JS from DPCR section accountable values --}}
+    <div class="spcr-filter-bar no-print">
+        <label for="spcr-section-filter" class="spcr-filter-label">
+            🔍 Filter by Section:
+        </label>
+        <select id="spcr-section-filter" class="spcr-filter-sel">
+            <option value="">— All Sections —</option>
+            {{-- Options injected by rebuildSpcrSectionFilter() in spcr.js --}}
+        </select>
+        <button type="button" class="btn-action btn-slate spcr-filter-clear"
+                onclick="document.getElementById('spcr-section-filter').value='';filterSpcrBySection('');"
+                title="Clear filter" style="padding:3px 10px;font-size:10px;">✕ Clear</button>
+        <span class="spcr-filter-hint">Sections sourced from DPCR Section Accountable.</span>
+    </div>
+
     {{-- SPCR Table --}}
     <table class="spcr-table" id="spcrTable">
         <thead>
             <tr>
                 <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
+                <th class="spcr-th-actions no-print" style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="spcr-th-goal"  rowspan="2">STRATEGIC GOALS AND<br>OBJECTIVES</th>
                 <th class="spcr-th-ind"   rowspan="2">Performance /Success Indicator<br><span style="font-weight:normal;font-size:8px;">(Targets + Measure)</span></th>
                 <th class="spcr-th-bud"   rowspan="2">ALLOTTED<br>BUDGET</th>
@@ -125,6 +141,11 @@
         <button type="button" class="btn-action btn-navy"   id="sAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="sAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="sClearBtn">Clear Form</button>
+        {{-- Load entire saved DPCR into SPCR in one click --}}
+        <button type="button" class="btn-action btn-teal"   id="sLoadDpcrBtn"
+                title="Pick a saved DPCR and load its full table into SPCR">
+            📋 Load from DPCR
+        </button>
         <button type="button" class="btn-action btn-green"  id="sSaveBtn"
                 style="margin-left:auto;">💾 Save SPCR</button>
         <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
