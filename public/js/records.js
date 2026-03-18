@@ -501,17 +501,14 @@ function _recCancelEdit(type) {
 
     /* Reset the form to a clean state so stale edit data is gone */
     if (type === 'dpcr') {
-        /* Clear header inputs */
-        ['d_emp_name','d_emp_title','d_approved_by'].forEach(id => {
+        ['d_emp_name','d_emp_title','d_approved_by','d_period'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
         });
         const dDisp = document.getElementById('d_disp_name');
         if (dDisp) dDisp.textContent = '\u00a0';
-        /* Clear body rows */
         const dBody = document.getElementById('dpcrBody');
         if (dBody) {
             dBody.innerHTML = '';
-            /* Re-add default Strategic Functions header */
             if (typeof createDpcrSectionRow === 'function') {
                 dBody.appendChild(createDpcrSectionRow('STRATEGIC FUNCTIONS'));
             }
@@ -556,11 +553,8 @@ function _recCancelEdit(type) {
         if (iFilter) { iFilter.value = ''; if (typeof filterIpcrBySection === 'function') filterIpcrBySection(''); }
     }
 
-    showAlert(
-        type === 'dpcr' ? 'd-alertInfo' : type === 'spcr' ? 's-alertInfo' : 'i-alertInfo',
-        'info',
-        '\u2716 Edit cancelled. Form has been reset.'
-    );
+    const _cancelAlertId = type === 'dpcr' ? 'd-alertInfo' : type === 'spcr' ? 's-alertInfo' : 'i-alertInfo';
+    showAlert(_cancelAlertId, 'info', '\u2716 Edit cancelled. Form has been reset.');
 }
 
 /* ══════════════════════════════════════════
@@ -605,51 +599,53 @@ function recEditIpcr(id) {
     /* DPCR */
     const dBtn = document.getElementById('dSaveBtn');
     if (dBtn) {
-        const _origClick = dBtn.onclick;
-        dBtn.addEventListener('click', async () => {
+        dBtn.addEventListener('click', async (e) => {
             const editId = REC_EDITING.dpcr;
-            if (!editId) return; // normal save handled by dpcr.js
+            if (!editId) return; // no edit in progress — let dpcr.js handle normal POST
 
-            // Read and PUT
+            e.stopImmediatePropagation(); // prevent dpcr.js POST listener from also firing
+
             const data = (typeof readDpcrForm === 'function') ? readDpcrForm() : null;
             if (!data) return;
-            if (!data.employee_name) return; // let dpcr.js show its own error
-
+            if (!data.employee_name) {
+                showAlert('d-alertErr', 'err', 'Please fill in the employee name.');
+                return;
+            }
             try {
                 const saved = await apiFetch(`/api/dpcr/${editId}`, 'PUT', data);
-                // Remove old record, insert updated one
                 REC_DPCR = REC_DPCR.filter(r => r.id !== editId);
                 const updated = { ...(saved.form ?? saved), _type: 'dpcr' };
                 REC_DPCR.unshift(updated);
-                populateYearFilter();
-                renderRecords();
-                // Clear edit state
+                populateYearFilter(); renderRecords();
                 REC_EDITING.dpcr = null;
                 _recSetEditBanner('page-dpcr', 'dpcr', null);
                 showAlert('d-alertOk', 'ok', `✔ DPCR #${editId} updated successfully.`);
             } catch (err) {
                 showAlert('d-alertErr', 'err', 'Update failed: ' + err.message);
             }
-        }, true); // capture phase — runs before dpcr.js listener
+        }, true); // capture phase
     }
 
-    /* SPCR */
     const sBtn = document.getElementById('sSaveBtn');
     if (sBtn) {
-        sBtn.addEventListener('click', async () => {
+        sBtn.addEventListener('click', async (e) => {
             const editId = REC_EDITING.spcr;
             if (!editId) return;
 
-            const data = (typeof readSpcrForm === 'function') ? readSpcrForm() : null;
-            if (!data || !data.employee_name) return;
+            e.stopImmediatePropagation();
 
+            const data = (typeof readSpcrForm === 'function') ? readSpcrForm() : null;
+            if (!data) return;
+            if (!data.employee_name) {
+                showAlert('s-alertErr', 'err', 'Please fill in the employee name.');
+                return;
+            }
             try {
                 const saved = await apiFetch(`/api/spcr/${editId}`, 'PUT', data);
                 REC_SPCR = REC_SPCR.filter(r => r.id !== editId);
                 const updated = { ...(saved.form ?? saved), _type: 'spcr' };
                 REC_SPCR.unshift(updated);
-                populateYearFilter();
-                renderRecords();
+                populateYearFilter(); renderRecords();
                 REC_EDITING.spcr = null;
                 _recSetEditBanner('page-spcr', 'spcr', null);
                 showAlert('s-alertOk', 'ok', `✔ SPCR #${editId} updated successfully.`);
@@ -662,20 +658,24 @@ function recEditIpcr(id) {
     /* IPCR */
     const iBtn = document.getElementById('iSaveBtn');
     if (iBtn) {
-        iBtn.addEventListener('click', async () => {
+        iBtn.addEventListener('click', async (e) => {
             const editId = REC_EDITING.ipcr;
             if (!editId) return;
 
-            const data = (typeof readIpcrForm === 'function') ? readIpcrForm() : null;
-            if (!data || !data.employee_name) return;
+            e.stopImmediatePropagation();
 
+            const data = (typeof readIpcrForm === 'function') ? readIpcrForm() : null;
+            if (!data) return;
+            if (!data.employee_name) {
+                showAlert('i-alertErr', 'err', 'Please fill in the employee name.');
+                return;
+            }
             try {
                 const saved = await apiFetch(`/api/ipcr/${editId}`, 'PUT', data);
                 REC_IPCR = REC_IPCR.filter(r => r.id !== editId);
                 const updated = { ...(saved.form ?? saved.ipcr ?? saved), _type: 'ipcr' };
                 REC_IPCR.unshift(updated);
-                populateYearFilter();
-                renderRecords();
+                populateYearFilter(); renderRecords();
                 REC_EDITING.ipcr = null;
                 _recSetEditBanner('page-ipcr', 'ipcr', null);
                 showAlert('i-alertOk', 'ok', `✔ IPCR #${editId} updated successfully.`);

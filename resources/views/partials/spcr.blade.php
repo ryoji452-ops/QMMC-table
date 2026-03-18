@@ -93,14 +93,13 @@
         </span>
     </div>
 
-    {{-- Section Filter Bar (screen only) — populated by JS from DPCR section accountable values --}}
+    {{-- Section Filter Bar (screen only) --}}
     <div class="spcr-filter-bar no-print">
         <label for="spcr-section-filter" class="spcr-filter-label">
             🔍 Filter by Section:
         </label>
         <select id="spcr-section-filter" class="spcr-filter-sel">
             <option value="">— All Sections —</option>
-            {{-- Options injected by rebuildSpcrSectionFilter() in spcr.js --}}
         </select>
         <button type="button" class="btn-action btn-slate spcr-filter-clear"
                 onclick="document.getElementById('spcr-section-filter').value='';filterSpcrBySection('');"
@@ -141,14 +140,34 @@
         <button type="button" class="btn-action btn-navy"   id="sAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="sAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="sClearBtn">Clear Form</button>
-        {{-- Load entire saved DPCR into SPCR in one click --}}
         <button type="button" class="btn-action btn-teal"   id="sLoadDpcrBtn"
                 title="Pick a saved DPCR and load its full table into SPCR">
-            📋 Load from DPCR
+            Load from DPCR
         </button>
         <button type="button" class="btn-action btn-green"  id="sSaveBtn"
                 style="margin-left:auto;">💾 Save SPCR</button>
         <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         Rating Matrix — embedded below the SPCR table.
+         #rm-panel is moved here by switchTab() on every tab switch.
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="rm-embed-slot" id="rm-slot-spcr">
+        <div class="rm-section-divider no-print">
+            <div class="rm-section-divider-label">
+                <span class="rm-section-divider-icon">▦</span>
+                Rating Matrix
+                <span class="rm-section-divider-sub"> source document for SPCR row</span>
+            </div>
+            <button type="button" class="rm-toggle-btn" id="rm-toggle-spcr"
+                    onclick="rmToggleCollapse('spcr')" title="Collapse / expand Rating Matrix">
+                ▲ Collapse
+            </button>
+        </div>
+        <div class="rm-embed-body" id="rm-body-spcr">
+            {{-- #rm-panel is injected here by switchTab('spcr') --}}
+        </div>
     </div>
 
 </div>{{-- /page-spcr --}}

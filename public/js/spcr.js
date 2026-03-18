@@ -83,57 +83,21 @@ async function _fetchDpcrRecords() {
 }
 
 /**
- * Collect every unique section_accountable value from all saved
- * DPCR records. Called on dropdown rebuild.
+ * Rebuild the section filter dropdown from the canonical SECTS list.
+ * Uses the same choices as the Section Accountable multi-select widget
+ * in DPCR — no duplicates, no async fetch required.
+ * "ALL SECTIONS" is omitted (it is already represented by the "— All Sections —" placeholder).
  */
-async function _getDpcrSavedSections() {
-    var records = await _fetchDpcrRecords();
-    var found = new Set();
-    records.forEach(function(rec) {
-        var items = Array.isArray(rec.items) ? rec.items : [];
-        items.forEach(function(item) {
-            var sa = item.section_accountable || '';
-            sa.split(',').forEach(function(s) {
-                s = s.trim();
-                if (s && s !== 'ALL SECTIONS') found.add(s);
-            });
-        });
-    });
-    /* Also collect from the live DPCR DOM (unsaved rows) */
-    document.querySelectorAll('#dpcrBody tr:not(.section-header)').forEach(function(tr) {
-        if (tr._secMultiSel) {
-            tr._secMultiSel.getValues().forEach(function(s) { if (s) found.add(s); });
-        }
-    });
-    /* Fallback: if nothing found from DB or DOM, offer full SECTS list */
-    if (found.size === 0) SECTS.forEach(function(s) { found.add(s); });
-    return Array.from(found).sort();
-}
-
-/**
- * Rebuild the section filter dropdown from saved DPCR records.
- * Called after DPCR is saved, SPCR tab activates, or SPCR hydrates.
- */
-async function rebuildSpcrSectionFilter() {
-    /* Invalidate cache so fresh data is used */
-    _spcrFilterDpcrCache = null;
+function rebuildSpcrSectionFilter() {
     var sel = document.getElementById('spcr-section-filter');
     if (!sel) return;
-    var prev = sel.value;
     while (sel.options.length > 1) sel.remove(1);
-
-    var sections = await _getDpcrSavedSections();
-    sections.forEach(function(s) {
+    SECTS.forEach(function(s) {
+        if (s === 'ALL SECTIONS') return;
         var opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         sel.appendChild(opt);
     });
-
-    /* Restore previous selection if still present */
-    if (prev) {
-        var still = Array.from(sel.options).some(function(o) { return o.value === prev; });
-        if (still) sel.value = prev;
-    }
 }
 
 /**
@@ -217,6 +181,13 @@ async function filterSpcrBySection(section) {
         });
         body.appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
+        /* Auto-generate Rating Matrix row for this PI */
+        (function(row) {
+            var piTA = row.querySelector('textarea.pi-custom');
+            if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                _rmEnsureLinkedRow(row, piTA);
+            }
+        })(tr);
     });
 
     _ensureAvgRows();
@@ -387,7 +358,10 @@ function createSpcrRow(data) {
     piTA.placeholder = 'Performance/Success Indicator (Targets + Measure)…';
     piTA.dataset.key = 'performance_indicator';
     piTA.value = data.performance_indicator || '';
-    piTA.addEventListener('input', function() { autoExpand(piTA); });
+    piTA.addEventListener('input', function() {
+        autoExpand(piTA);
+        if (typeof _rmEnsureLinkedRow === 'function') _rmEnsureLinkedRow(tr, piTA);
+    });
 
     tdInd.appendChild(piTA);
     tr.appendChild(tdInd);

@@ -28,181 +28,7 @@
                         contains that section value
 ══════════════════════════════════════════════════════════════ */
 
-/* Cache — invalidated whenever a new SPCR is saved */
-var _ipcrFilterSpcrCache = null;
 
-/* Called by notifyRecordSaved('spcr', ...) in records.js so
-   saving a new SPCR immediately refreshes the dropdown */
-function _invalidateIpcrSpcrCache() {
-    _ipcrFilterSpcrCache = null;
-}
-
-/**
- * Fetch all saved SPCR records with their items.
- * Prefers REC_SPCR (already loaded by records.js) over an API call.
- */
-async function _fetchSpcrRecords() {
-    /* REC_SPCR is defined and non-empty — use it directly */
-    if (typeof REC_SPCR !== 'undefined' && Array.isArray(REC_SPCR) && REC_SPCR.length > 0) {
-        return REC_SPCR;
-    }
-    /* Local cache from a previous fetch this session */
-    if (_ipcrFilterSpcrCache !== null) {
-        return _ipcrFilterSpcrCache;
-    }
-    /* Fresh fetch from the API */
-    try {
-        _ipcrFilterSpcrCache = await apiFetch('/api/spcr');
-    } catch (e) {
-        console.warn('IPCR filter: could not load SPCR records', e.message);
-        _ipcrFilterSpcrCache = [];
-    }
-    return _ipcrFilterSpcrCache;
-}
-
-/**
- * Collect every unique person_accountable value from all saved
- * SPCR records (split on comma for multi-section entries).
- */
-async function _getSpcrSavedPersonValues() {
-    var records = await _fetchSpcrRecords();
-    var found = new Set();
-    records.forEach(function(rec) {
-        (Array.isArray(rec.items) ? rec.items : []).forEach(function(item) {
-            if (item.is_section) return;
-            (item.person_accountable || '').split(',').forEach(function(s) {
-                s = s.trim(); if (s) found.add(s);
-            });
-        });
-    });
-    /* Also pick up any values in the live SPCR DOM (unsaved) */
-    document.querySelectorAll('#spcrBody input[data-key="person_accountable"]').forEach(function(inp) {
-        (inp.value || '').split(',').forEach(function(s) {
-            s = s.trim(); if (s) found.add(s);
-        });
-    });
-    if (found.size === 0) SECTS.forEach(function(s) { found.add(s); });
-    return Array.from(found).sort();
-}
-
-/**
- * Rebuild the dropdown options from saved SPCR sections.
- * Does NOT trigger the filter — only repopulates the <select>.
- */
-async function rebuildIpcrSectionFilter() {
-    _ipcrFilterSpcrCache = null;          /* always fetch fresh on rebuild */
-    var sel = document.getElementById('ipcr-section-filter');
-    if (!sel) return;
-    var prev = sel.value;
-    while (sel.options.length > 1) sel.remove(1);
-
-    var sections = await _getSpcrSavedPersonValues();
-    sections.forEach(function(s) {
-        var opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
-        sel.appendChild(opt);
-    });
-
-    /* Restore previous selection if still valid */
-    if (prev && Array.from(sel.options).some(function(o) { return o.value === prev; })) {
-        sel.value = prev;
-    }
-    /* Do NOT call filterIpcrBySection here — only the user's change event does that */
-}
-
-/**
- * Apply the section filter to the IPCR table body.
- *
- * section = '' (All Sections)
- *   → Replace ipcrBody with ALL items from ALL saved SPCR records.
- *
- * section = 'NURSING' (specific section)
- *   → Replace ipcrBody with only items whose person_accountable
- *     contains that section (case-insensitive substring).
- *
- * Only called when the user actively changes the dropdown or
- * clicks ✕ Clear. Never called automatically on page load.
- */
-async function filterIpcrBySection(section) {
-    var records = await _fetchSpcrRecords();
-
-    /* Gather matching items across all SPCR records */
-    var matchingItems = [];
-    records.forEach(function(rec) {
-        (Array.isArray(rec.items) ? rec.items : []).forEach(function(item) {
-            if (item.is_section) return;
-            if (!section) {
-                /* All Sections — include every data item */
-                matchingItems.push(item);
-            } else {
-                var pa = (item.person_accountable || '').toLowerCase();
-                if (pa.includes(section.toLowerCase())) {
-                    matchingItems.push(item);
-                }
-            }
-        });
-    });
-
-    var body = document.getElementById('ipcrBody');
-    if (!body) return;
-    body.innerHTML = '';
-
-    /* ── No results ── */
-    if (matchingItems.length === 0) {
-        var msg = section
-            ? 'No SPCR records found with section: \u201c' + section + '\u201d'
-            : 'No saved SPCR records found. Save a SPCR first.';
-        var infoTr = document.createElement('tr');
-        var infoTd = document.createElement('td');
-        infoTd.colSpan = 12;
-        infoTd.style.cssText = 'text-align:center;padding:18px 10px;color:#888;font-style:italic;font-size:10px;border:none;';
-        infoTd.textContent = msg;
-        infoTr.appendChild(infoTd);
-        body.appendChild(infoTr);
-        computeIpcrSummary();
-        return;
-    }
-
-    /* ── Build rows grouped by function_type ── */
-    var lastFuncType = null;
-
-    matchingItems.forEach(function(item) {
-        var ft = (item.function_type || 'Core');
-
-        /* Insert a section header row when the function type changes */
-        if (ft !== lastFuncType) {
-            var secTr  = document.createElement('tr');
-            secTr.className = 'section-header';
-            secTr.appendChild(makeDragHandle());
-
-            /* blank actions col */
-            var tdBlank = document.createElement('td');
-            tdBlank.className = 'no-print';
-            tdBlank.style.cssText = 'border:none;background:transparent;';
-            secTr.appendChild(tdBlank);
-
-            var tdLabel = document.createElement('td');
-            tdLabel.colSpan = 9;
-            tdLabel.textContent = ft.toUpperCase() + ' FUNCTIONS :';
-            secTr.appendChild(tdLabel);
-
-            body.appendChild(secTr);
-            lastFuncType = ft;
-        }
-
-        var tr = createIpcrRow({
-            strategic_goal:        item.strategic_goal        || '',
-            performance_indicator: item.performance_indicator || '',
-            actual_accomplishment: item.actual_accomplishment || '',
-            accomplishment_rate:   item.accomplishment_rate   || '',
-            remarks:               item.remarks               || '',
-        });
-        body.appendChild(tr);
-        tr.querySelectorAll('textarea').forEach(autoExpand);
-    });
-
-    computeIpcrSummary();
-}
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -334,9 +160,14 @@ function createIpcrRow(data) {
     var tdInd = document.createElement('td');
     tdInd.style.cssText = 'vertical-align:top;padding:4px 5px;';
     var indTA = document.createElement('textarea');
+    indTA.className   = 'pi-custom';
     indTA.placeholder = 'Performance/Success Indicator (Targets + Measure)…';
+    indTA.dataset.key = 'performance_indicator';
     indTA.value = data.performance_indicator || '';
-    indTA.addEventListener('input', function() { autoExpand(indTA); });
+    indTA.addEventListener('input', function() {
+        autoExpand(indTA);
+        if (typeof _rmEnsureLinkedRow === 'function') _rmEnsureLinkedRow(tr, indTA);
+    });
     tdInd.appendChild(indTA); tr.appendChild(tdInd);
 
     /* col 4: Actual Accomplishment */
@@ -524,9 +355,15 @@ function hydrateIpcrForm(form) {
         });
         document.getElementById('ipcrBody').appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
+        /* Auto-generate Rating Matrix row for this PI */
+        (function(row) {
+            var piTA = row.querySelector('textarea.pi-custom');
+            if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                _rmEnsureLinkedRow(row, piTA);
+            }
+        })(tr);
     });
     computeIpcrSummary();
-    rebuildIpcrSectionFilter();
 }
 
 /* ── PRINT IPCR ONLY ── */
@@ -591,25 +428,8 @@ document.getElementById('iClearBtn').addEventListener('click', function() {
     document.getElementById('i_avg_core').value    = '';
     document.getElementById('i_avg_support').value = '';
     computeIpcrSummary();
-    /* Reset the filter select to "All Sections" without triggering the filter —
-       the form is now blank, not loaded from SPCR */
-    var filterSel = document.getElementById('ipcr-section-filter');
-    if (filterSel) filterSel.value = '';
-});
 
-document.addEventListener('change', function(e) {
-    if (e.target && e.target.id === 'ipcr-section-filter') filterIpcrBySection(e.target.value);
 });
-
-/* Invalidate the SPCR cache whenever a new SPCR is saved so the
-   filter dropdown reflects the latest data on next open */
-(function _patchNotifyForIpcrFilter() {
-    var _origNotify = window.notifyRecordSaved;
-    window.notifyRecordSaved = function(type, record) {
-        if (typeof _origNotify === 'function') _origNotify(type, record);
-        if (type === 'spcr') _invalidateIpcrSpcrCache();
-    };
-})();
 
 document.getElementById('i_emp_name').addEventListener('input', function() {
     document.getElementById('i_disp_name').textContent  = this.value || '\u00a0';
@@ -639,7 +459,6 @@ document.getElementById('i_approved_by').addEventListener('input', function() {
     initDragSort(document.getElementById('ipcrBody'));
 
     rebuildSpcrSectionFilter();
-    rebuildIpcrSectionFilter();
 
     document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -771,7 +590,6 @@ function _loadSpcrIntoIpcr(record) {
         body.insertBefore(defSec, body.firstChild);
     }
 
-    rebuildIpcrSectionFilter();
     computeIpcrSummary();
 
     showAlert('i-alertOk', 'ok',

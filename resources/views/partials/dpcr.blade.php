@@ -1,15 +1,16 @@
 {{-- resources/views/partials/dpcr.blade.php --}}
-<div class="page" id="page-dpcr">
+<div class="page active" id="page-dpcr">
 
-    <div id="d-alertOk"  class="alert-ok"></div>
-    <div id="d-alertErr" class="alert-err"></div>
+    <div id="d-alertOk"   class="alert-ok"></div>
+    <div id="d-alertErr"  class="alert-err"></div>
+    <div id="d-alertInfo" class="alert-info"></div>
     <div id="transferBanner" class="transfer-banner"></div>
 
     <div class="form-ref">DPCR – SPMS Form 2</div>
 
     {{-- Header --}}
     <div class="doc-header">
-        <div><img class = "logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
+        <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
         <div class="header-text">
             <div class="org-name">Quirino Memorial Medical Center</div>
             <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
@@ -118,15 +119,34 @@
     <div class="action-bar">
         <button type="button" class="btn-action btn-navy"  id="dAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate" id="dAddSectionBtn">+ Add Section</button>
-        {{-- View / load any previously saved DPCR record into the form --}}
         <button type="button" class="btn-action btn-teal"  id="dViewSavedBtn"
                 title="Browse and load any saved DPCR record into the form">
-            📋 View Saved DPCR
+            View Saved DPCR
         </button>
         <button type="button" class="btn-action btn-green" id="dSaveBtn"
                 style="margin-left:auto;">💾 Save DPCR</button>
-        {{-- printDpcr() isolates the DPCR page before printing --}}
         <button type="button" class="btn-action btn-navy"  onclick="printDpcr()">🖨 Print DPCR</button>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         Rating Matrix — embedded below the DPCR table.
+         #rm-panel is moved here by switchTab() on every tab switch.
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="rm-embed-slot" id="rm-slot-dpcr">
+        <div class="rm-section-divider no-print">
+            <div class="rm-section-divider-label">
+                <span class="rm-section-divider-icon">▦</span>
+                Rating Matrix
+                <span class="rm-section-divider-sub">— source document for DPCR row</span>
+            </div>
+            <button type="button" class="rm-toggle-btn" id="rm-toggle-dpcr"
+                    onclick="rmToggleCollapse('dpcr')" title="Collapse / expand Rating Matrix">
+                ▲ Collapse
+            </button>
+        </div>
+        <div class="rm-embed-body" id="rm-body-dpcr">
+            {{-- #rm-panel is injected here by switchTab('dpcr') --}}
+        </div>
     </div>
 
 </div>{{-- /page-dpcr --}}

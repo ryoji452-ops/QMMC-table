@@ -1,5 +1,12 @@
-{{-- resources/views/partials/rating_matrix.blade.php --}}
-<div class="page" id="page-rating-matrix">
+{{-- resources/views/partials/rating_matrix.blade.php
+     ─────────────────────────────────────────────────
+     The Rating Matrix panel lives once in the DOM as #rm-panel.
+     shared.js::switchTab() physically moves it into the .rm-embed-slot
+     of whichever DPCR / SPCR / IPCR tab becomes active, so all
+     element IDs and JS event listeners remain intact.
+--}}
+
+<div id="rm-panel">
 
     <div id="rm-alertOk"   class="alert-ok"></div>
     <div id="rm-alertErr"  class="alert-err"></div>
@@ -78,11 +85,9 @@
             </tr>
         </thead>
         <tbody id="rmBody">
-            {{-- Rows injected by JS --}}
+            {{-- Rows injected by rating_matrix.js --}}
         </tbody>
     </table>
-
-    
 
     {{-- Action Bar (screen only) --}}
     <div class="action-bar no-print" style="margin-top:14px;">
@@ -94,4 +99,4 @@
         <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
     </div>
 
-</div>{{-- /page-rating-matrix --}}
+</div>

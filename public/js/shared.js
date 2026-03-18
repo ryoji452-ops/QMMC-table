@@ -67,16 +67,97 @@ async function apiFetch(url, method = 'GET', body = null) {
     return res.json();
 }
 
-/* ── TAB SWITCHING ── */
+/* ── TAB SWITCHING ──────────────────────────────────────────────────
+   The Rating Matrix panel (#rm-panel) is a single DOM node.
+   Tabs DPCR / SPCR / IPCR each contain a .rm-embed-slot.
+   On every tab switch we physically move #rm-panel into the new
+   slot so all IDs and event listeners stay intact.
+   Records tab has no slot — the panel is detached (stays in memory).
+─────────────────────────────────────────────────────────────────── */
+
+/* Tabs that embed the Rating Matrix */
+const RM_EMBED_TABS = new Set(['dpcr', 'spcr', 'ipcr']);
+
+/* Per-tab collapse state — true = collapsed.
+   Preserved across tab switches so the user's preference sticks. */
+const _rmCollapseState = { dpcr: false, spcr: false, ipcr: false };
+
+/* Active tab — read by Rating Matrix to show only the matching push button */
+window._rmActiveTab = 'dpcr';
+
 function switchTab(tab, clickedBtn) {
+    window._rmActiveTab = tab;
+    /* 1. Deactivate all pages and tab buttons */
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + tab).classList.add('active');
+
+    /* 2. Activate the target page */
+    const page = document.getElementById('page-' + tab);
+    if (page) page.classList.add('active');
+
+    /* 3. Activate the clicked button (or find it by convention) */
     const btn = clickedBtn
               || (typeof event !== 'undefined' && event?.currentTarget)
-              || [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick')?.includes(`'${tab}'`));
+              || [...document.querySelectorAll('.tab-btn')]
+                   .find(b => b.getAttribute('onclick')?.includes(`'${tab}'`));
     if (btn) btn.classList.add('active');
+
+    /* 4. Relocate #rm-panel ────────────────────────────────────── */
+    const panel = document.getElementById('rm-panel');
+    if (!panel) return;
+
+    if (RM_EMBED_TABS.has(tab)) {
+        /* Target body div inside this tab's slot */
+        const bodyEl = document.getElementById('rm-body-' + tab);
+        if (bodyEl && !bodyEl.contains(panel)) {
+            bodyEl.appendChild(panel);
+        }
+
+        /* Restore collapse state for this tab */
+        _rmApplyCollapseState(tab);
+
+        /* Show only the push button for this tab */
+        if (typeof rmRefreshPushButtons === 'function') rmRefreshPushButtons(tab);
+    } else {
+        /* Records tab (or any future tab without a slot):
+           detach the panel so it's invisible but stays in memory. */
+        if (panel.parentNode) {
+            panel.parentNode.removeChild(panel);
+        }
+    }
 }
+
+/* ── Rating Matrix collapse / expand ── */
+function rmToggleCollapse(tabKey) {
+    _rmCollapseState[tabKey] = !_rmCollapseState[tabKey];
+    _rmApplyCollapseState(tabKey);
+}
+
+function _rmApplyCollapseState(tabKey) {
+    const collapsed = _rmCollapseState[tabKey];
+    const bodyEl   = document.getElementById('rm-body-'   + tabKey);
+    const toggleEl = document.getElementById('rm-toggle-' + tabKey);
+
+    if (bodyEl) {
+        bodyEl.style.display = collapsed ? 'none' : '';
+    }
+    if (toggleEl) {
+        toggleEl.textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+    }
+}
+
+/* ── Initial placement on page load ────────────────────────────────
+   DPCR is the default active tab, so place #rm-panel there.
+   DOMContentLoaded fires before any JS that reads window.DB_*,
+   so the timing is correct. rating_matrix.js (which fires its own
+   init IIFE) runs after this file, so the panel exists when it
+   binds event listeners by ID. */
+document.addEventListener('DOMContentLoaded', function _rmInitialPlace() {
+    const panel  = document.getElementById('rm-panel');
+    const bodyEl = document.getElementById('rm-body-dpcr');
+    if (panel && bodyEl) bodyEl.appendChild(panel);
+    if (typeof rmRefreshPushButtons === 'function') rmRefreshPushButtons('dpcr');
+});
 
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeScaleModal(); closeViewModal(); closeLinkModal(); }
@@ -146,7 +227,6 @@ var _ds = {
 
         /* Move ghost with cursor (fixed-position follows clientY/clientX) */
         _ds.ghost.style.top  = (e.clientY - _ds.offsetY) + 'px';
-        /* left stays anchored to where the drag started — no need to update */
 
         /* Find the <tr> under the pointer — ghost has pointer-events:none so no hiding needed */
         var el = document.elementFromPoint(e.clientX, e.clientY);

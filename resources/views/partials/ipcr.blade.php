@@ -95,20 +95,6 @@
 
     </div>
 
-    {{-- Section Filter Bar (screen only) — populated by JS from SPCR person_accountable values --}}
-    <div class="spcr-filter-bar no-print">
-        <label for="ipcr-section-filter" class="spcr-filter-label">
-            🔍 Filter by Section:
-        </label>
-        <select id="ipcr-section-filter" class="spcr-filter-sel">
-            <option value="">— All Sections —</option>
-            {{-- Options injected by rebuildIpcrSectionFilter() in ipcr.js --}}
-        </select>
-        <button type="button" class="btn-action btn-slate spcr-filter-clear"
-                onclick="var s=document.getElementById('ipcr-section-filter');s.value='';s.dispatchEvent(new Event('change'));"
-                title="Clear filter — show all sections" style="padding:3px 10px;font-size:10px;">✕ Clear</button>
-        <span class="spcr-filter-hint">Sections sourced from SPCR Person Accountable.</span>
-    </div>
 
     {{-- IPCR Table --}}
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
@@ -221,15 +207,34 @@
         <button type="button" class="btn-action btn-navy"   id="iAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="iAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="iClearBtn">Clear Form</button>
-        {{-- Load entire saved SPCR into IPCR in one click --}}
         <button type="button" class="btn-action btn-teal"   id="iLoadSpcrBtn"
                 title="Pick a saved SPCR and load its full table into IPCR">
-            📋 Load from SPCR
+             Load from SPCR
         </button>
         <button type="button" class="btn-action btn-green"  id="iSaveBtn"
-                style="margin-left:auto;">💾 Save IPCR</button>
-        {{-- printIpcr() isolates the IPCR page before printing --}}
+                style="margin-left:auto;"> Save IPCR</button>
         <button type="button" class="btn-action btn-navy"   onclick="printIpcr()">🖨 Print IPCR</button>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         Rating Matrix — embedded below the IPCR table.
+         #rm-panel is moved here by switchTab() on every tab switch.
+    ═══════════════════════════════════════════════════════════════ --}}
+    <div class="rm-embed-slot" id="rm-slot-ipcr">
+        <div class="rm-section-divider no-print">
+            <div class="rm-section-divider-label">
+                <span class="rm-section-divider-icon">▦</span>
+                Rating Matrix
+                <span class="rm-section-divider-sub">— source document for IPCR row</span>
+            </div>
+            <button type="button" class="rm-toggle-btn" id="rm-toggle-ipcr"
+                    onclick="rmToggleCollapse('ipcr')" title="Collapse / expand Rating Matrix">
+                ▲ Collapse
+            </button>
+        </div>
+        <div class="rm-embed-body" id="rm-body-ipcr">
+            {{-- #rm-panel is injected here by switchTab('ipcr') --}}
+        </div>
     </div>
 
 </div>{{-- /page-ipcr --}}

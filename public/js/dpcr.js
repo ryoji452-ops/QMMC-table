@@ -104,7 +104,11 @@ function createDpcrSectionRow(label) {
    .getValues() → string[]   .setValues(string[]) → void
 ══════════════════════════════════════════════════════════════ */
 function _createSectionMultiSelect(initialValues) {
-    var selected = new Set((initialValues || []).filter(Boolean));
+    /* If no initial values provided (new row), pre-select ALL sections */
+    var startVals = (initialValues && initialValues.length > 0)
+        ? initialValues.filter(Boolean)
+        : SECTS.slice();
+    var selected = new Set(startVals);
 
     var wrapper  = document.createElement('div');
     wrapper.className = 'sec-multisel-wrap';
@@ -125,23 +129,14 @@ function _createSectionMultiSelect(initialValues) {
     var panelTop = document.createElement('div');
     panelTop.className = 'sec-multisel-panel-top';
 
-    var allBtn = document.createElement('button');
-    allBtn.type = 'button'; allBtn.className = 'sec-multisel-allbtn'; allBtn.textContent = 'Select All';
-    allBtn.onclick = function(e) {
-        e.stopPropagation();
-        SECTS.forEach(function(s) { selected.add(s); });
-        _refresh();
-    };
-
     var clearBtn = document.createElement('button');
-    clearBtn.type = 'button'; clearBtn.className = 'sec-multisel-allbtn'; clearBtn.textContent = 'Clear';
+    clearBtn.type = 'button'; clearBtn.className = 'sec-multisel-allbtn'; clearBtn.textContent = 'Clear All';
     clearBtn.onclick = function(e) {
         e.stopPropagation();
         selected.clear();
         _refresh();
     };
 
-    panelTop.appendChild(allBtn);
     panelTop.appendChild(clearBtn);
     panel.appendChild(panelTop);
 
@@ -355,9 +350,13 @@ function createDpcrRow(data) {
     var piTA = document.createElement('textarea');
     piTA.className = 'pi-custom';
     piTA.placeholder = 'Performance / Success Indicator…';
+    piTA.dataset.key = 'performance_indicator';
     piTA.value = data.performance_indicator || '';
     piTA.style.cssText = 'width:100%;border:none;background:transparent;font-size:10px;font-family:Arial,sans-serif;outline:none;resize:none;overflow:hidden;min-height:36px;';
-    piTA.addEventListener('input', function() { autoExpand(piTA); });
+    piTA.addEventListener('input', function() {
+        autoExpand(piTA);
+        if (typeof _rmEnsureLinkedRow === 'function') _rmEnsureLinkedRow(tr, piTA);
+    });
     tdInd.appendChild(piTA); tr.appendChild(tdInd);
 
     /* col 4: Target % */
@@ -383,10 +382,17 @@ function createDpcrRow(data) {
     var tdS = document.createElement('td');
     tdS.style.cssText = 'vertical-align:top;padding:3px 4px;position:relative;';
 
-    var initSections = (data.section_accountable || '')
-        .split(',')
-        .map(function(s) { return s.trim(); })
-        .filter(function(s) { return s && s !== 'ALL SECTIONS' && SECTS.indexOf(s) !== -1; });
+    var rawSection = data.section_accountable || '';
+    var initSections;
+    if (!rawSection || rawSection === 'ALL SECTIONS') {
+        /* No saved value or explicit ALL SECTIONS → pre-tag everything */
+        initSections = SECTS.slice();
+    } else {
+        initSections = rawSection
+            .split(',')
+            .map(function(s) { return s.trim(); })
+            .filter(function(s) { return s && s !== 'ALL SECTIONS' && SECTS.indexOf(s) !== -1; });
+    }
 
     var secMultiSel = _createSectionMultiSelect(initSections);
     tdS.appendChild(secMultiSel.wrapper);
@@ -616,6 +622,13 @@ function hydrateDpcrForm(form) {
         });
         document.getElementById('dpcrBody').appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
+        /* Auto-generate Rating Matrix row for this PI if not already linked */
+        (function(row) {
+            var piTA = row.querySelector('textarea.pi-custom');
+            if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                _rmEnsureLinkedRow(row, piTA);
+            }
+        })(tr);
     });
 
     /* After hydrating DPCR, refresh SPCR section filter */
@@ -650,6 +663,13 @@ function pushDpcrToSpcr(dpcrData) {
             });
             body.appendChild(tr);
             tr.querySelectorAll('textarea').forEach(autoExpand);
+            /* Auto-generate Rating Matrix row for this PI */
+            (function(row) {
+                var piTA = row.querySelector('textarea.pi-custom');
+                if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                    _rmEnsureLinkedRow(row, piTA);
+                }
+            })(tr);
         }
     });
     var setVal = function(id, val) { var el = document.getElementById(id); if (el && val) el.value = val; };
