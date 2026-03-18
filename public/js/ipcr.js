@@ -17,6 +17,107 @@
     11  Delete (no-print)
 ═══════════════════════════════════════════ */
 
+/* ── IPCR FUNCTION SECTION CONFIG ── */
+const IPCR_FUNC_SECTIONS = [
+    { label: 'CORE FUNCTIONS :',      type: 'Core',      color: '#1e6e3a', bg: '#d4edda' },
+    { label: 'SUPPORT FUNCTIONS :',   type: 'Support',   color: '#7a4f00', bg: '#fff3cd' },
+    { label: 'STRATEGIC FUNCTIONS :', type: 'Strategic', color: '#1a3b6e', bg: '#dce4f0' },
+];
+
+function _ipcrFuncTypeFromLabel(label) {
+    var up = (label || '').toUpperCase();
+    if (up.includes('SUPPORT'))  return 'Support';
+    if (up.includes('STRATEGIC')) return 'Strategic';
+    return 'Core';
+}
+
+function _styleIpcrSection(tr, label) {
+    var cfg = IPCR_FUNC_SECTIONS.filter(function(f) { return f.type === _ipcrFuncTypeFromLabel(label); })[0]
+           || IPCR_FUNC_SECTIONS[0];
+    /* col 0 = drag handle (transparent), col 1 = blank actions, col 2 = section content */
+    var tds = tr.querySelectorAll('td');
+    var td  = tds[2] || tds[1] || tds[0];
+    if (!td) return;
+    td.style.background = cfg.bg;
+    td.style.color      = cfg.color;
+    td.style.fontWeight = '700';
+    td.style.borderLeft = '4px solid ' + cfg.color;
+}
+
+/* ── IPCR SECTION ROW FACTORY ── */
+function createIpcrSectionRow(label) {
+    label = label || '';
+    var tr = document.createElement('tr');
+    tr.className = 'section-header';
+
+    /* col 0: drag handle */
+    tr.appendChild(makeDragHandle());
+
+    /* col 1: blank actions placeholder — keeps columns aligned with data rows */
+    var tdActBlank = document.createElement('td');
+    tdActBlank.className = 'no-print';
+    tdActBlank.style.cssText = 'border:none !important;background:transparent !important;padding:0;width:54px;min-width:54px;';
+    tr.appendChild(tdActBlank);
+
+    /* cols 2–10: section content spanning 9 data cols (goal→remarks) */
+    var td = document.createElement('td');
+    td.colSpan = 9;
+
+    /* Quick-pick preset buttons */
+    var btnBar = document.createElement('div');
+    btnBar.className = 'no-print';
+    btnBar.style.cssText = 'display:inline-flex;gap:4px;margin-right:10px;vertical-align:middle;';
+    IPCR_FUNC_SECTIONS.forEach(function(f) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = f.label;
+        b.style.cssText = 'font-size:9px;font-family:Arial,sans-serif;font-weight:700;padding:2px 8px;'
+            + 'border:1.5px solid ' + f.color + ';border-radius:3px;cursor:pointer;'
+            + 'background:' + f.bg + ';color:' + f.color + ';transition:opacity .12s;';
+        b.onclick = function() { inp.value = f.label; _styleIpcrSection(tr, f.label); };
+        btnBar.appendChild(b);
+    });
+
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.placeholder = 'Section name…';
+    inp.className = 'section-label-input screen-only';
+    inp.style.cssText = 'border:none;background:transparent;font-weight:700;font-size:10px;outline:none;vertical-align:middle;min-width:180px;';
+    inp.dataset.key = 'section_label';
+    inp.value = label;
+
+    /* Mirror span — visible on print, hidden on screen */
+    var printSpan = document.createElement('span');
+    printSpan.className = 'section-label-print';
+    printSpan.style.cssText = 'font-weight:700;font-size:10px;vertical-align:middle;letter-spacing:.3px;';
+    printSpan.textContent = label;
+
+    inp.addEventListener('input', function() {
+        _styleIpcrSection(tr, inp.value);
+        printSpan.textContent = inp.value;
+    });
+
+    var del = document.createElement('button');
+    del.type      = 'button';
+    del.className = 'remove-btn no-print';
+    del.innerHTML = '&times;';
+    del.style.cssText = 'margin-left:8px;vertical-align:middle;';
+    del.onclick = function() { tr.remove(); };
+
+    td.appendChild(btnBar);
+    td.appendChild(inp);
+    td.appendChild(printSpan);
+    td.appendChild(del);
+    tr.appendChild(td);
+
+    /* Trailing no-print td — keeps td:last-child off the content cell on print */
+    var tdTrail = document.createElement('td');
+    tdTrail.className = 'no-print';
+    tdTrail.style.cssText = 'border:none;background:transparent;padding:0;width:0;';
+    tr.appendChild(tdTrail);
+
+    if (label) _styleIpcrSection(tr, label);
+    return tr;
+}
+
 /* ══════════════════════════════════════════════════════════════
    SECTION FILTER — IPCR (sourced from saved SPCR records)
    ──────────────────────────────────────────────────────────────
@@ -249,9 +350,11 @@ function readIpcrForm() {
     var currentFunctionType = 'Core';
     document.querySelectorAll('#ipcrBody tr').forEach(function(tr) {
         if (tr.classList.contains('section-header')) {
-            var txt = ((tr.querySelector('td') || {}).textContent || '').toUpperCase();
-            if (txt.includes('SUPPORT'))   currentFunctionType = 'Support';
-            else if (txt.includes('CORE')) currentFunctionType = 'Core';
+            var labelInp = tr.querySelector('input[data-key="section_label"]');
+            var txt = (labelInp ? labelInp.value : ((tr.querySelector('td') || {}).textContent || '')).toUpperCase();
+            if (txt.includes('SUPPORT'))    currentFunctionType = 'Support';
+            else if (txt.includes('STRATEGIC')) currentFunctionType = 'Strategic';
+            else if (txt.includes('CORE'))  currentFunctionType = 'Core';
             return;
         }
         var cells = tr.querySelectorAll('td');
@@ -396,21 +499,9 @@ document.getElementById('iAddRowBtn').addEventListener('click', function() {
 });
 
 document.getElementById('iAddSectionBtn').addEventListener('click', function() {
-    var tr = document.createElement('tr'); tr.className = 'section-header';
-    tr.appendChild(makeDragHandle());
-    /* actions blank col */
-    var tdB = document.createElement('td'); tdB.className = 'no-print';
-    tdB.style.cssText = 'border:none;background:transparent;';
-    tr.appendChild(tdB);
-    var td = document.createElement('td'); td.colSpan = 9;
-    var inp = document.createElement('input'); inp.type = 'text';
-    inp.placeholder = 'Section name (e.g. SUPPORT FUNCTIONS)';
-    inp.style.cssText = 'width:100%;border:none;background:transparent;font-weight:bold;font-size:10px;outline:none;';
-    var del = document.createElement('button'); del.type = 'button';
-    del.className = 'remove-btn no-print'; del.innerHTML = '&times;'; del.style.marginLeft = '8px';
-    del.onclick = function() { tr.remove(); };
-    td.appendChild(inp); td.appendChild(del); tr.appendChild(td);
-    document.getElementById('ipcrBody').appendChild(tr); inp.focus();
+    var tr = createIpcrSectionRow('');
+    document.getElementById('ipcrBody').appendChild(tr);
+    tr.querySelector('input[data-key="section_label"]').focus();
 });
 
 document.getElementById('iClearBtn').addEventListener('click', function() {
@@ -423,8 +514,9 @@ document.getElementById('iClearBtn').addEventListener('click', function() {
     document.getElementById('i_disp_name2').textContent      = '\u00a0';
     document.getElementById('i_disp_supervisor').textContent = '\u00a0';
     document.getElementById('i_disp_approved').textContent   = '\u00a0';
-    document.getElementById('ipcrBody').innerHTML =
-        '<tr class="section-header"><td style="border:none;background:transparent;width:18px;padding:0;"></td><td colspan="10">CORE FUNCTIONS :</td></tr>';
+    var body = document.getElementById('ipcrBody');
+    body.innerHTML = '';
+    body.appendChild(createIpcrSectionRow('CORE FUNCTIONS :'));
     document.getElementById('i_avg_core').value    = '';
     document.getElementById('i_avg_support').value = '';
     computeIpcrSummary();
@@ -551,16 +643,7 @@ function _loadSpcrIntoIpcr(record) {
     items.forEach(function(item) {
         /* Section header rows from SPCR pass through as section headers */
         if (item.is_section) {
-            var secTr = document.createElement('tr');
-            secTr.className = 'section-header';
-            secTr.appendChild(makeDragHandle());
-            var tdB = document.createElement('td');
-            tdB.className = 'no-print';
-            tdB.style.cssText = 'border:none;background:transparent;';
-            secTr.appendChild(tdB);
-            var tdC = document.createElement('td'); tdC.colSpan = 9;
-            tdC.textContent = item.section_label || 'FUNCTIONS';
-            secTr.appendChild(tdC);
+            var secTr = createIpcrSectionRow(item.section_label || '');
             body.appendChild(secTr);
             lastSection = item.section_label || '';
             return;
@@ -577,17 +660,7 @@ function _loadSpcrIntoIpcr(record) {
 
     /* If no sections came through, add a default CORE header */
     if (!body.querySelector('.section-header')) {
-        var defSec = document.createElement('tr');
-        defSec.className = 'section-header';
-        defSec.appendChild(makeDragHandle());
-        var tdBd = document.createElement('td');
-        tdBd.className = 'no-print';
-        tdBd.style.cssText = 'border:none;background:transparent;';
-        defSec.appendChild(tdBd);
-        var tdCd = document.createElement('td'); tdCd.colSpan = 9;
-        tdCd.textContent = 'CORE FUNCTIONS :';
-        defSec.appendChild(tdCd);
-        body.insertBefore(defSec, body.firstChild);
+        body.insertBefore(createIpcrSectionRow('CORE FUNCTIONS :'), body.firstChild);
     }
 
     computeIpcrSummary();

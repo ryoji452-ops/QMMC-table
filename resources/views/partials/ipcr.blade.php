@@ -124,7 +124,9 @@
         <tbody id="ipcrBody">
             <tr class="section-header">
                 <td style="border:none;background:transparent;width:18px;padding:0;"></td>
-                <td colspan="10">CORE FUNCTIONS :</td>
+                <td style="border:none;background:transparent;padding:0;width:54px;min-width:54px;" class="no-print"></td>
+                <td colspan="9" style="background:#d4edda;color:#1e6e3a;font-weight:700;border-left:4px solid #1e6e3a;padding:4px 8px;font-size:10px;letter-spacing:.3px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">CORE FUNCTIONS :</td>
+                <td class="no-print" style="border:none;background:transparent;padding:0;width:0;"></td>
             </tr>
         </tbody>
     </table>

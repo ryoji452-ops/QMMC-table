@@ -278,6 +278,8 @@
     text-align: left;
     padding: 4px 8px;
     letter-spacing: .3px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
 /* Keep drag handle and actions-blank transparent inside section rows */
@@ -344,6 +346,12 @@
     #page-spcr .spcr-table td:focus-within { background: transparent !important; }
     #page-spcr .spcr-lock-badge,
     #page-spcr .row-link-btn { display: none !important; }
+
+    /* Preserve function-type section header colours on print */
+    #page-spcr .spcr-table .spcr-section-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
 /* ══════════════════════════════════════════════════════════
    ROW ACTIONS COLUMN

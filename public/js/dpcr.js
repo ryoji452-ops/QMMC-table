@@ -76,10 +76,21 @@ function createDpcrSectionRow(label) {
     var inp = document.createElement('input');
     inp.type = 'text';
     inp.placeholder = 'Section name…';
+    inp.className = 'section-label-input screen-only';
     inp.style.cssText = 'border:none;background:transparent;font-weight:700;font-size:10px;outline:none;vertical-align:middle;min-width:180px;';
     inp.dataset.key   = 'section_label';
     inp.value         = label;
-    inp.addEventListener('input', function() { _styleSection(tr, inp.value); });
+
+    /* Mirror span — visible on print, hidden on screen */
+    var printSpan = document.createElement('span');
+    printSpan.className = 'section-label-print';
+    printSpan.style.cssText = 'font-weight:700;font-size:10px;vertical-align:middle;letter-spacing:.3px;';
+    printSpan.textContent = label;
+
+    inp.addEventListener('input', function() {
+        _styleSection(tr, inp.value);
+        printSpan.textContent = inp.value;
+    });
 
     var del = document.createElement('button');
     del.type      = 'button';
@@ -91,8 +102,15 @@ function createDpcrSectionRow(label) {
 
     td.appendChild(btnBar);
     td.appendChild(inp);
+    td.appendChild(printSpan);
     td.appendChild(del);
     tr.appendChild(td);
+
+    /* Trailing no-print td — keeps td:last-child off the content cell on print */
+    var tdTrail = document.createElement('td');
+    tdTrail.className = 'no-print';
+    tdTrail.style.cssText = 'border:none;background:transparent;padding:0;width:0;';
+    tr.appendChild(tdTrail);
 
     if (label) _styleSection(tr, label);
     return tr;

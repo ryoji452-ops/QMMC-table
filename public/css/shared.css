@@ -485,6 +485,11 @@ tr.dragging { opacity: 0.4; }
     display: none;
 }
 
+/* print-only / screen-only utilities */
+.print-only          { display: none; }
+.section-label-print { display: none; }  /* shown on print via @media print */
+.screen-only         { display: inline; } /* hidden on print via @media print */
+
 /* ▾ toggle button */
 .sec-multisel-toggle {
     background: #f0f3f8;
@@ -924,12 +929,19 @@ tr.dragging { opacity: 0.4; }
 
     /* Show print text */
     .sec-multisel-chip-print,
+    .section-label-print,
     .print-only {
         display: inline !important;
         font-size: 8.5px;
-        color: #111;
+        color: inherit;
         font-weight: 700;
     }
+
+    /* Hide screen-only elements on print */
+    .screen-only { display: none !important; }
+
+    /* Hide section-label inputs; their .section-label-print span shows instead */
+    input.section-label-input { display: none !important; }
 
     /* Rating Matrix embed slot — hide divider chrome, show panel content */
     .rm-section-divider { display: none !important; }
