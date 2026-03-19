@@ -1030,3 +1030,109 @@ tr.dragging { opacity: 0.4; }
 #rm-panel {
     padding: 0 16px 12px;
 }
+/* ══════════════════════════════════════════════════════════════
+   RATING CELL WIDGET — Q / E / T checkbox + number, A display
+══════════════════════════════════════════════════════════════ */
+.rating-chk {
+    cursor: pointer;
+    width: 13px;
+    height: 13px;
+    margin: 0 auto 3px;
+    display: block;
+}
+.rating-num {
+    width: 96%;
+    text-align: center;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+}
+.rating-a-display {
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--navy, #1a3b6e);
+    min-height: 14px;
+}
+
+/* ── Section label: screen shows input, print shows span ── */
+@media screen {
+    .section-label-print { display: none !important; }
+}
+@media print {
+    .section-label-input  { display: none !important; }
+    .section-label-print  { display: inline !important; }
+    .rating-chk           { display: none !important; }
+    .rating-a-print       { display: inline !important; font-weight: 700; font-size: 10px; }
+    .no-print             { display: none !important; }
+    .screen-only          { display: none !important; }
+    .print-only           { display: inline !important; }
+}
+@media screen {
+    .print-only           { display: none; }
+    .rating-a-print       { display: none; }
+}
+
+/* ── Function Summary Table (shared by DPCR / SPCR, mirrors IPCR) ── */
+#dpcrFuncSummary .ipcr-rating-summary,
+#spcrFuncSummary .ipcr-rating-summary {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+}
+#dpcrFuncSummary .ipcr-rating-summary th,
+#dpcrFuncSummary .ipcr-rating-summary td,
+#spcrFuncSummary .ipcr-rating-summary th,
+#spcrFuncSummary .ipcr-rating-summary td {
+    border: 1px solid #b0bac8;
+    padding: 4px 8px;
+    vertical-align: middle;
+}
+#dpcrFuncSummary .ipcr-rating-summary thead tr,
+#spcrFuncSummary .ipcr-rating-summary thead tr {
+    background: #dce4f0;
+    color: #1a3b6e;
+    font-weight: 700;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+#dpcrFuncSummary .ipcr-rating-summary tfoot td,
+#spcrFuncSummary .ipcr-rating-summary tfoot td {
+    background: #f5f7fb;
+    font-weight: 700;
+}
+
+/* ── Row action guide button ── */
+.row-action-btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 2px;
+    font-size: 9px;
+    font-family: Arial, sans-serif;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    cursor: pointer;
+    background: #f8f9fa;
+    text-align: left;
+    white-space: nowrap;
+}
+.row-action-btn:hover { background: #e8eaf0; }
+
+/* ── RM-driven checkbox states ── */
+.rating-chk:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+.rating-chk:disabled:checked {
+    /* Checked + disabled = RM criterion present */
+    opacity: 1;
+    accent-color: #1a3b6e;
+    cursor: default;
+}
+/* Tooltip hint under each Q/E/T header about RM source */
+.rating-cell {
+    position: relative;
+}

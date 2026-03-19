@@ -30,10 +30,10 @@ class SPCRItem extends Model
     ];
 
     protected $casts = [
-        'rating_q' => 'boolean',
-        'rating_e' => 'boolean',
-        'rating_t' => 'boolean',
-        'rating_a' => 'boolean',
+        'rating_q' => 'float',
+        'rating_e' => 'float',
+        'rating_t' => 'float',
+        'rating_a' => 'float',
     ];
 
     public function form(): BelongsTo

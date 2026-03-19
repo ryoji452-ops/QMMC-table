@@ -204,6 +204,175 @@ function closeLinkModal() { document.getElementById('linkModal').classList.remov
    Average / summary rows are skip targets only.
    Works correctly whether the page is scrolled or not. */
 
+/* ══════════════════════════════════════════════════════════════
+   RATING CELL FACTORY — shared by DPCR / SPCR / IPCR
+   Q / E / T → checkbox + conditional number input (1–5)
+   A(4)      → read-only, auto-computed average of checked values
+══════════════════════════════════════════════════════════════ */
+function _buildQETACells(savedData, onAChange) {
+    savedData = savedData || {};
+    var cells      = [];
+    var inputs     = {};
+    /* alwaysOpen = true  → cells start as plain editable inputs (SPCR behaviour).
+       alwaysOpen = false → cells start locked; RM push is required to enable them (DPCR/IPCR). */
+    var alwaysOpen = !!savedData.alwaysOpen;
+
+    ['q','e','t'].forEach(function(key) {
+        var td = document.createElement('td');
+        td.className = 'rating-cell';
+        td.style.cssText = 'text-align:center;vertical-align:middle;padding:3px 2px;';
+
+        /* ── Locked placeholder — only shown in locked mode (DPCR / IPCR) ── */
+        var lockBadge = document.createElement('span');
+        lockBadge.className = 'qet-lock-badge no-print';
+        lockBadge.title     = key.toUpperCase() + ' rating — fill in the Rating Matrix criterion to link this field';
+        lockBadge.textContent = 'N/A';
+        lockBadge.style.cssText =
+            'display:inline-block;font-size:8px;font-weight:700;letter-spacing:.4px;'
+            + 'color:#999;background:#f4f4f4;border:1px solid #ddd;'
+            + 'border-radius:2px;padding:1px 4px;'
+            + 'cursor:not-allowed;pointer-events:none;user-select:none;';
+        /* In always-open mode the badge is never shown */
+        if (alwaysOpen) lockBadge.style.display = 'none';
+
+        /* ── Checkbox (internal state — never visible on screen) ── */
+        var chk = document.createElement('input');
+        chk.type      = 'checkbox';
+        chk.className = 'rating-chk';
+        chk.title     = 'Controlled by Rating Matrix';
+        chk.checked   = alwaysOpen ? true : false;
+        chk.disabled  = true;
+        chk.style.display = 'none';
+
+        /* ── Number input (1–5) ── */
+        var inp = document.createElement('input');
+        inp.type        = 'number';
+        inp.min         = '1'; inp.max = '5'; inp.step = '0.01';
+        inp.placeholder = '—';
+        var _savedVal = (savedData['rating_' + key] != null && savedData['rating_' + key] !== '')
+                        ? String(savedData['rating_' + key]) : '';
+        inp.dataset.savedVal = _savedVal;
+        inp.className   = 'rating-num';
+        inp.style.cssText = 'width:96%;text-align:center;border:none;outline:none;'
+            + 'background:transparent;font-size:10px;font-family:Arial,sans-serif;';
+
+        if (alwaysOpen) {
+            /* Always-open mode: input is immediately visible and editable.
+               Placeholder shows N/A when no DPCR value was provided. */
+            inp.value        = _savedVal;
+            inp.placeholder  = 'N/A';
+            inp.style.display = 'block';
+            inp.disabled     = false;
+        } else {
+            /* Locked mode: hidden until RM criterion is defined */
+            inp.value        = '';
+            inp.style.display = 'none';
+            inp.disabled     = true;
+        }
+
+        inp.addEventListener('input', _computeA);
+
+        inputs[key] = { chk: chk, inp: inp, lockBadge: lockBadge };
+        td.appendChild(lockBadge);
+        td.appendChild(chk);
+        td.appendChild(inp);
+        cells.push(td);
+    });
+
+    /* A(4) — read-only computed average */
+    var tdA = document.createElement('td');
+    tdA.className = 'rating-cell';
+    tdA.style.cssText = 'text-align:center;vertical-align:middle;padding:3px 2px;';
+
+    var aDisplay = document.createElement('div');
+    aDisplay.className = 'rating-a-display';
+    aDisplay.style.cssText = 'font-weight:700;font-size:10px;color:var(--navy,#1a3b6e);';
+    aDisplay.textContent = (savedData['rating_a'] != null && savedData['rating_a'] !== '')
+        ? parseFloat(savedData['rating_a']).toFixed(2) : '—';
+
+    var aHidden = document.createElement('input');
+    aHidden.type      = 'hidden';
+    aHidden.className = 'rating-a-hidden';
+    aHidden.value     = (savedData['rating_a'] != null) ? savedData['rating_a'] : '';
+
+    /* Print-visible span for A value */
+    var aPrintSpan = document.createElement('span');
+    aPrintSpan.className = 'rating-a-print print-only';
+    aPrintSpan.style.cssText = 'font-weight:700;font-size:10px;';
+    aPrintSpan.textContent = aDisplay.textContent;
+
+    tdA.appendChild(aDisplay);
+    tdA.appendChild(aHidden);
+    tdA.appendChild(aPrintSpan);
+    cells.push(tdA);
+
+    function _computeA() {
+        var vals = [];
+        ['q','e','t'].forEach(function(k) {
+            var d = inputs[k];
+            if (d.chk.checked && d.inp.value !== '') {
+                var v = parseFloat(d.inp.value);
+                if (!isNaN(v)) vals.push(v);
+            }
+        });
+        if (vals.length) {
+            var avg = (vals.reduce(function(a, b) { return a + b; }, 0) / vals.length).toFixed(2);
+            aDisplay.textContent  = avg;
+            aPrintSpan.textContent = avg;
+            aHidden.value         = avg;
+        } else {
+            aDisplay.textContent  = '—';
+            aPrintSpan.textContent = '—';
+            aHidden.value         = '';
+        }
+        if (typeof onAChange === 'function') onAChange();
+    }
+
+    return {
+        cells:      cells,
+        alwaysOpen: alwaysOpen,   /* exposed so _rmApplyQET can skip lock/unlock */
+        computeA:   _computeA,
+        getQ:       function() { var d = inputs.q; return (alwaysOpen || d.chk.checked) && d.inp.value !== '' ? parseFloat(d.inp.value) : null; },
+        getE:       function() { var d = inputs.e; return (alwaysOpen || d.chk.checked) && d.inp.value !== '' ? parseFloat(d.inp.value) : null; },
+        getT:       function() { var d = inputs.t; return (alwaysOpen || d.chk.checked) && d.inp.value !== '' ? parseFloat(d.inp.value) : null; },
+        getA:       function() { return aHidden.value !== '' ? parseFloat(aHidden.value) : null; },
+        getCheckQ:  function() { return alwaysOpen ? true : inputs.q.chk.checked; },
+        getCheckE:  function() { return alwaysOpen ? true : inputs.e.chk.checked; },
+        getCheckT:  function() { return alwaysOpen ? true : inputs.t.chk.checked; },
+    };
+}
+
+/* Computation guide HTML — shown in popup modal */
+function _ratingComputeGuideHtml() {
+    return '<div style="padding:12px 16px;font-size:11px;line-height:1.85;font-family:Arial,sans-serif;max-width:480px;">'
+        + '<p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#1a3b6e;">How the Rating (Q / E / T / A) is Computed</p>'
+        + '<ol style="margin:0 0 10px;padding-left:18px;">'
+        + '<li>The <b>Q / E / T checkboxes</b> are controlled by the <b>Rating Matrix</b> below the table.<br>'
+        + '&nbsp;&nbsp;Fill in the <em>Quality</em>, <em>Efficiency</em>, or <em>Timeliness</em> criteria in the Rating Matrix row<br>'
+        + '&nbsp;&nbsp;to automatically <b>enable</b> that checkbox here. Leave it blank to disable it.</li>'
+        + '<li>Once a criterion is enabled, enter a numeric score <b>1–5</b> for it.</li>'
+        + '<li><b>A (Average)</b> is automatically computed as the mean of all <em>enabled</em> values.<br>'
+        + '&nbsp;&nbsp;<em>Example — Q=4, E=5, T=3 → A = (4+5+3) ÷ 3 = <b>4.00</b></em><br>'
+        + '&nbsp;&nbsp;<em>Only Q & T enabled — Q=4, T=3 → A = (4+3) ÷ 2 = <b>3.50</b></em></li>'
+        + '<li>The <b>per-function average</b> = mean of all A(4) values within that function group.</li>'
+        + '<li><b>Final Rating per Function</b> = Average Rating × Percentage Distribution.</li>'
+        + '<li><b>Final Average Rating</b> = sum of all Final Ratings per Function.</li>'
+        + '</ol>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+        + '<tr style="background:#f0f4ff;"><th style="padding:3px 6px;text-align:left;">Score</th><th style="padding:3px 6px;text-align:left;">Adjectival Rating</th></tr>'
+        + '<tr><td style="padding:2px 6px;">5</td><td>Outstanding</td></tr>'
+        + '<tr><td style="padding:2px 6px;">4 – 4.99</td><td>Very Satisfactory</td></tr>'
+        + '<tr><td style="padding:2px 6px;">3 – 3.99</td><td>Satisfactory</td></tr>'
+        + '<tr><td style="padding:2px 6px;">2 – 2.99</td><td>Unsatisfactory</td></tr>'
+        + '<tr><td style="padding:2px 6px;">1</td><td>Poor</td></tr>'
+        + '</table>'
+        + '<div style="margin-top:8px;font-size:9.5px;color:#555;background:#fffbe6;padding:6px 8px;border-radius:3px;border-left:3px solid #f5a623;">'
+        + '<b>Tip:</b> To enable Q, E, or T for a row — scroll to the Rating Matrix below, find the matching row, '
+        + 'and fill in its Quality / Efficiency / Timeliness field. The checkbox here will activate automatically.'
+        + '</div>'
+        + '</div>';
+}
+
 function makeDragHandle() {
     var td = document.createElement('td');
     td.className = 'drag-handle no-print';
@@ -249,6 +418,7 @@ var _ds = {
         _ds.src.classList.remove('dragging');
         _dsRemoveGhost();
 
+        var dropped = false;
         if (_ds.over && _ds.over !== _ds.src && !_ds.over.classList.contains('spcr-avg-row')) {
             var rect = _ds.over.getBoundingClientRect();
             if (e.clientY > rect.top + rect.height / 2) {
@@ -256,11 +426,20 @@ var _ds = {
             } else {
                 _ds.over.parentNode.insertBefore(_ds.src, _ds.over);
             }
+            dropped = true;
         }
 
+        var tbody = _ds.tbody;
         _dsClearOver();
         _ds.src   = null;
         _ds.tbody = null;
+
+        /* Fire registered post-drop callbacks so summaries recompute */
+        if (dropped && tbody) {
+            (_ds.callbacks || []).forEach(function(cb) {
+                try { cb(tbody); } catch(e2) {}
+            });
+        }
     });
 
     document.addEventListener('keydown', function(e) {
@@ -280,6 +459,13 @@ function _dsClearOver() {
 function _dsRemoveGhost() {
     if (_ds.ghost && _ds.ghost.parentNode) _ds.ghost.parentNode.removeChild(_ds.ghost);
     _ds.ghost = null;
+}
+
+/* Register a callback to run after any successful drag-drop.
+   cb(tbody) — tbody is the table body where the drop occurred. */
+function registerDragCallback(cb) {
+    if (!_ds.callbacks) _ds.callbacks = [];
+    _ds.callbacks.push(cb);
 }
 function _dsRowLabel(tr) {
     var text = '';
@@ -338,3 +524,63 @@ function syncShared() {
     if (approvedEl) approvedEl.value = approved;
     if (dispEl)     dispEl.textContent = name || '\u00a0';
 }
+/* ══════════════════════════════════════════════════════════════
+   FORM PERSISTENCE — localStorage auto-save + restore
+   ──────────────────────────────────────────────────────────────
+   Every change to DPCR / SPCR / IPCR form fields is debounced
+   and saved to localStorage under the keys:
+     qmmc_dpcr_draft, qmmc_spcr_draft, qmmc_ipcr_draft
+
+   On page load (in ipcr.js init, AFTER DB hydration), if a
+   localStorage draft exists it is restored — keeping in-session
+   work even after a browser refresh. DB records are the permanent
+   store; localStorage is the session-level autosave.
+
+   "Default = clear" is achieved because a fresh session has no
+   localStorage draft and no DB_LATEST_* → tables stay empty.
+══════════════════════════════════════════════════════════════ */
+var _persistTimers = {};
+
+/**
+ * Debounced save of one form's JSON state to localStorage.
+ * key   = storage key, e.g. 'qmmc_dpcr_draft'
+ * readFn = function that returns the current form data object
+ */
+function _persistSave(key, readFn) {
+    clearTimeout(_persistTimers[key]);
+    _persistTimers[key] = setTimeout(function() {
+        try {
+            var data = readFn();
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch(e) { /* quota exceeded or private mode — silent */ }
+    }, 800);
+}
+
+/**
+ * Load a draft from localStorage.
+ * Returns the parsed object, or null if none/corrupt.
+ */
+function _persistLoad(key) {
+    try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+}
+
+/** Clear one draft (e.g. after a successful DB save or Clear button). */
+function _persistClear(key) {
+    try { localStorage.removeItem(key); } catch(e) {}
+}
+
+/* Wire auto-save listeners on a tbody — saves on any input/change */
+function _persistWireBody(bodyId, storageKey, readFn) {
+    var body = document.getElementById(bodyId);
+    if (!body) return;
+    body.addEventListener('input',  function() { _persistSave(storageKey, readFn); });
+    body.addEventListener('change', function() { _persistSave(storageKey, readFn); });
+}
+
+/* Public constants for storage keys */
+var PERSIST_KEY_DPCR = 'qmmc_dpcr_draft';
+var PERSIST_KEY_SPCR = 'qmmc_spcr_draft';
+var PERSIST_KEY_IPCR = 'qmmc_ipcr_draft';

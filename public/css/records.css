@@ -337,3 +337,208 @@
 @media print {
     .rec-pagination { display: none !important; }
 }
+/* ══════════════════════════════════════════
+   BULK ACTION BAR
+══════════════════════════════════════════ */
+.rec-bulk-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #fff3cd;
+    border: 1.5px solid #e6ac00;
+    border-radius: 4px;
+    padding: 7px 14px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    font-family: Arial, sans-serif;
+    color: #5a3e00;
+    flex-wrap: wrap;
+}
+.rec-bulk-count {
+    font-weight: 700;
+    font-size: 11px;
+    color: #5a3e00;
+    flex: 1;
+}
+.rec-bulk-del-btn {
+    background: #b00020;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: background .12s;
+    white-space: nowrap;
+}
+.rec-bulk-del-btn:hover { background: #880018; }
+.rec-bulk-clear-btn {
+    background: #fff;
+    color: #5a3e00;
+    border: 1.5px solid #e6ac00;
+    border-radius: 3px;
+    padding: 4px 12px;
+    font-size: 10.5px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: background .12s;
+    white-space: nowrap;
+}
+.rec-bulk-clear-btn:hover { background: #ffeab3; }
+
+/* ── Checkbox column ── */
+.rec-row-chk,
+.rec-select-all-chk {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--navy);
+    vertical-align: middle;
+}
+.rec-row-selected td { background: #eef2fb !important; }
+
+/* Print: hide checkbox column and bulk bar */
+@media print {
+    .rec-bulk-bar { display: none !important; }
+    .rec-flat-table th:first-child,
+    .rec-flat-table td:first-child { display: none !important; }
+}
+
+/* ══════════════════════════════════════════
+   BULK DELETE CONFIRMATION MODAL
+══════════════════════════════════════════ */
+.rec-bulk-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 10001;
+    align-items: center;
+    justify-content: center;
+}
+.rec-bulk-modal-overlay.open { display: flex; }
+
+.rec-bulk-modal-box {
+    background: #fff;
+    border: 2px solid #b00020;
+    border-radius: 6px;
+    padding: 22px 26px 20px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    position: relative;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.rec-bulk-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #b00020;
+    flex-shrink: 0;
+}
+.rec-bulk-modal-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #b00020;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+.rec-bulk-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #777;
+    line-height: 1;
+    padding: 0;
+}
+.rec-bulk-modal-close:hover { color: #b00020; }
+.rec-bulk-modal-warn {
+    font-size: 11px;
+    color: #5a3800;
+    background: #fff3cd;
+    border: 1px solid #e6ac00;
+    border-radius: 3px;
+    padding: 7px 12px;
+    margin-bottom: 12px;
+    line-height: 1.55;
+    flex-shrink: 0;
+}
+.rec-bulk-modal-warn strong { color: #3a2500; }
+.rec-bulk-confirm-list {
+    overflow-y: auto;
+    max-height: 38vh;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-right: 2px;
+}
+.rec-bulk-confirm-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: #f8f9fd;
+    border: 1px solid #dde3ef;
+    border-radius: 3px;
+    font-size: 10.5px;
+}
+.rec-bulk-confirm-name {
+    font-weight: 700;
+    color: #111;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rec-bulk-confirm-meta {
+    font-size: 9.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.rec-bulk-modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    border-top: 1px solid #e0e5ee;
+    padding-top: 14px;
+}
+.rec-bulk-confirm-del {
+    background: #b00020;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 6px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: background .12s;
+}
+.rec-bulk-confirm-del:hover { background: #880018; }
+.rec-bulk-confirm-cancel {
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #aab2c4;
+    border-radius: 3px;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: background .12s;
+}
+.rec-bulk-confirm-cancel:hover { background: #f2f5fb; }

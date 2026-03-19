@@ -91,7 +91,7 @@
                 <div>2–2.99 – Unsatisfactory</div>
                 <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
             </div>
-        </div>
+        </div> 
 
     </div>
 
@@ -161,6 +161,7 @@
                 </tr>
             </tbody>
         </table>
+        <div id="ipcr_pct_warning" style="display:none;margin-top:6px;padding:5px 10px;background:#fff0f0;border:1.5px solid #c00;border-radius:3px;color:#c00;font-size:10px;font-weight:700;"></div>
         <div style="font-size:9px;margin-top:4px;color:#555;">
             * Core functions should not be less than 70%.
             &nbsp;|&nbsp; Legend: 1 – Quantity &nbsp; 2 – Efficiency &nbsp; 3 – Timeliness &nbsp; 4 – Average

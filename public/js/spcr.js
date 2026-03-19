@@ -62,21 +62,16 @@ function _styleSpcrSection(tr, label) {
 var _spcrFilterDpcrCache = null;
 
 /**
- * Fetch (and cache) all saved DPCR records with their items.
- * Uses REC_DPCR from records.js if already loaded, else hits /api/dpcr.
+ * Always fetch fresh DPCR records with full items from the API.
+ * Items are required for section_accountable matching.
+ * The cache is refreshed every time the filter is used so newly saved
+ * DPCR records are always picked up.
  */
 async function _fetchDpcrRecords() {
-    /* Prefer the already-loaded records.js cache */
-    if (typeof REC_DPCR !== 'undefined' && Array.isArray(REC_DPCR) && REC_DPCR.length > 0) {
-        _spcrFilterDpcrCache = REC_DPCR;
-        return _spcrFilterDpcrCache;
-    }
-    if (_spcrFilterDpcrCache && _spcrFilterDpcrCache.length > 0) {
-        return _spcrFilterDpcrCache;
-    }
     try {
         _spcrFilterDpcrCache = await apiFetch('/api/dpcr');
     } catch (e) {
+        console.warn('SPCR filter: could not load DPCR records', e.message);
         _spcrFilterDpcrCache = [];
     }
     return _spcrFilterDpcrCache || [];
@@ -103,28 +98,38 @@ function rebuildSpcrSectionFilter() {
 /**
  * Apply the section filter to SPCR:
  *   section = ''  → load ALL rows from ALL saved DPCR records into SPCR
- *   section = 'X' → load only rows whose section_accountable contains 'X'
+ *   section = 'X' → load only rows whose section_accountable exactly contains 'X'
+ *                   as a comma-separated token, OR where section_accountable = 'ALL SECTIONS'
  *
- * This replaces the current SPCR table rows entirely so the user
- * sees an accurate view of what was saved in DPCR.
+ * Exact-token matching: "EFMS" will NOT match "PMG / EFMS / PROCUREMENT".
+ * "ALL SECTIONS" in section_accountable matches every filter choice.
  */
 async function filterSpcrBySection(section) {
     var records = await _fetchDpcrRecords();
+
+    /**
+     * Return true if this item's section_accountable matches the filter needle.
+     *  – needle = ''           → always true (show all)
+     *  – sa = 'ALL SECTIONS'   → always true (this row belongs to every section)
+     *  – otherwise: exact token match in the comma-separated list
+     */
+    function _matchesSection(saRaw, needle) {
+        if (!needle) return true;
+        var sa = (saRaw || '').trim();
+        if (!sa) return false;
+        if (sa === 'ALL SECTIONS') return true;   /* row tagged ALL SECTIONS → visible in any filter */
+        /* Exact-token match: split by comma, trim each, compare case-insensitively */
+        var tokens = sa.split(',').map(function(t) { return t.trim().toLowerCase(); });
+        return tokens.indexOf(needle.trim().toLowerCase()) !== -1;
+    }
 
     /* Collect matching items from every saved DPCR record */
     var matchingItems = [];
     records.forEach(function(rec) {
         var items = Array.isArray(rec.items) ? rec.items : [];
         items.forEach(function(item) {
-            if (!section) {
-                /* All sections — include every item */
+            if (_matchesSection(item.section_accountable, section)) {
                 matchingItems.push({ item: item, rec: rec });
-            } else {
-                /* Specific section — check if section_accountable contains the value */
-                var sa = (item.section_accountable || '').toLowerCase();
-                if (sa.includes(section.toLowerCase())) {
-                    matchingItems.push({ item: item, rec: rec });
-                }
             }
         });
     });
@@ -134,13 +139,15 @@ async function filterSpcrBySection(section) {
     if (!body) return;
     body.innerHTML = '';
 
-    if (matchingItems.length === 0 && section) {
-        /* No matches — show an info row and restore avg rows */
+    if (matchingItems.length === 0) {
+        /* No matches — show a clear info row */
         var infoTr = document.createElement('tr');
         var infoTd = document.createElement('td');
         infoTd.colSpan = 14;
         infoTd.style.cssText = 'text-align:center;padding:14px;color:#888;font-style:italic;font-size:10px;';
-        infoTd.textContent = 'No DPCR records found with section: ' + section;
+        infoTd.textContent = section
+            ? 'No DPCR records found with section accountable: ' + section
+            : 'No saved DPCR records found. Save a DPCR form first.';
         infoTr.appendChild(infoTd);
         body.appendChild(infoTr);
         _ensureAvgRows();
@@ -148,12 +155,16 @@ async function filterSpcrBySection(section) {
         return;
     }
 
-    if (matchingItems.length === 0 && !section) {
-        /* No saved DPCR records at all — keep existing DOM rows visible */
-        _ensureAvgRows();
-        computeSpcrAverages();
-        return;
-    }
+    /* Sort by function_type so all rows of the same type are adjacent.
+       Order: Strategic → Core → Support (mirrors the standard form order).
+       This guarantees the lastType adjacency check below never creates
+       duplicate section headers even when items come from multiple DPCR records. */
+    var FT_ORDER = { Strategic: 0, Core: 1, Support: 2 };
+    matchingItems.sort(function(a, b) {
+        var fa = FT_ORDER[a.item.function_type] !== undefined ? FT_ORDER[a.item.function_type] : 99;
+        var fb = FT_ORDER[b.item.function_type] !== undefined ? FT_ORDER[b.item.function_type] : 99;
+        return fa - fb;
+    });
 
     /* Group by function_type for section headers */
     var lastType = null;
@@ -177,6 +188,11 @@ async function filterSpcrBySection(section) {
             actual_accomplishment: item.actual_accomplishment || '',
             accomplishment_rate:   item.accomplishment_rate   || '',
             remarks:               item.remarks               || '',
+            /* Carry DPCR ratings as pre-fill hints — user can override */
+            rating_q:              item.rating_q              != null ? item.rating_q : null,
+            rating_e:              item.rating_e              != null ? item.rating_e : null,
+            rating_t:              item.rating_t              != null ? item.rating_t : null,
+            rating_a:              item.rating_a              != null ? item.rating_a : null,
             pushed_from_dpcr:      true,
         });
         body.appendChild(tr);
@@ -192,6 +208,7 @@ async function filterSpcrBySection(section) {
 
     _ensureAvgRows();
     computeSpcrAverages();
+    computeSpcrFuncSummary();
 }
 
 
@@ -335,8 +352,17 @@ function createSpcrRow(data) {
     viewLinkedBtn.textContent = '👁 Links';
     viewLinkedBtn.style.color = '#555';
 
+    /* ? Guide button */
+    var guideBtn = document.createElement('button');
+    guideBtn.type      = 'button';
+    guideBtn.className = 'row-action-btn no-print';
+    guideBtn.title     = 'How is this row computed?';
+    guideBtn.textContent = '? Guide';
+    guideBtn.style.cssText = 'color:#6a3e9e;font-size:9px;';
+
     tdAct.appendChild(ipcrBtn);
     tdAct.appendChild(viewLinkedBtn);
+    tdAct.appendChild(guideBtn);
     tr.appendChild(tdAct);
 
     /* ── 2: Strategic Goals and Objectives ── */
@@ -409,12 +435,16 @@ function createSpcrRow(data) {
     tdR.appendChild(rIn);
     tr.appendChild(tdR);
 
-    /* ── 8–11: Q E T A rating cells ── */
-    ['rating_q','rating_e','rating_t','rating_a'].forEach(function() {
-        var td = document.createElement('td');
-        td.className = 'spcr-rating-cell';
-        tr.appendChild(td);
-    });
+    /* ── 8–11: Q E T A rating cells (checkbox + number + auto-average) ── */
+    var ratingWidget = _buildQETACells({
+        alwaysOpen: true,   /* SPCR: Q/E/T always editable — no RM lock required */
+        rating_q: data.rating_q,
+        rating_e: data.rating_e,
+        rating_t: data.rating_t,
+        rating_a: data.rating_a,
+    }, function() { computeSpcrFuncSummary(); computeSpcrAverages(); });
+    ratingWidget.cells.forEach(function(td) { tr.appendChild(td); });
+    tr._ratingWidget = ratingWidget;
 
     /* ── 12: Remarks / Justification ── */
     var tdRem = document.createElement('td');
@@ -432,7 +462,7 @@ function createSpcrRow(data) {
     tdDel.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
     var dBtn = document.createElement('button');
     dBtn.type = 'button'; dBtn.className = 'remove-btn'; dBtn.innerHTML = '&times;';
-    dBtn.onclick = function() { tr.remove(); computeSpcrAverages(); };
+    dBtn.onclick = function() { tr.remove(); computeSpcrAverages(); computeSpcrFuncSummary(); };
     tdDel.appendChild(dBtn);
     tr.appendChild(tdDel);
 
@@ -470,6 +500,10 @@ function createSpcrRow(data) {
             + '<div><span>SPCR Indicator: </span><strong>' + esc(piText || '(empty)') + '</strong></div>'
             + '</div>';
         _openViewModal(titleStr, metaHtml, _buildSpcrLinkedViewHtml(piText));
+    };
+
+    guideBtn.onclick = function() {
+        _openViewModal('\u2139\uFE0F Computation Guide', '', _ratingComputeGuideHtml());
     };
 
     return tr;
@@ -597,7 +631,7 @@ function createAvgRow(label, idSuffix) {
     return tr;
 }
 
-/* ── COMPUTE AVERAGES ── */
+/* ── COMPUTE AVERAGES (footer rows) ── */
 function computeSpcrAverages() {
     var stratSum = 0, stratCount = 0;
     var coreSum  = 0, coreCount  = 0;
@@ -605,7 +639,6 @@ function computeSpcrAverages() {
 
     document.querySelectorAll('#spcrBody tr').forEach(function(tr) {
         if (tr.classList.contains('spcr-section-row')) {
-            /* Section content is now at td[2] (0=drag, 1=actions-blank, 2=content) */
             var tds = tr.querySelectorAll('td');
             var contentTd = tds[2] || tds[1] || tds[0];
             var txt = ((tr.querySelector('input[data-key="section_label"]') || {}).value
@@ -615,12 +648,19 @@ function computeSpcrAverages() {
         }
         if (tr.classList.contains('spcr-avg-row')) return;
 
-        var cells = tr.querySelectorAll('td');
-        /* A rating is in col 11 (0=drag,1=actions,2=goal,3=ind,4=bud,5=person,
-           6=actual,7=rate,8=Q,9=E,10=T,11=A) */
-        var aCell = cells[11];
-        var val   = parseFloat(aCell ? aCell.textContent.trim() : '');
-        if (!isNaN(val) && val > 0) {
+        /* Read A(4) from widget if present, else fall back to td text */
+        var val = null;
+        if (tr._ratingWidget) {
+            val = tr._ratingWidget.getA();
+        } else {
+            var cells = tr.querySelectorAll('td');
+            var aCell = cells[11];
+            var raw   = aCell ? aCell.textContent.trim() : '';
+            var parsed = parseFloat(raw);
+            if (!isNaN(parsed)) val = parsed;
+        }
+
+        if (val !== null && !isNaN(val) && val > 0) {
             if (current === 'core') { coreSum += val; coreCount++; }
             else                    { stratSum += val; stratCount++; }
         }
@@ -659,6 +699,10 @@ function readSpcrForm() {
             person_accountable:    cells[5]  ? ((cells[5].querySelector('input')              || {}).value || '').trim() : '',
             actual_accomplishment: cells[6]  ? ((cells[6].querySelector('textarea')            || {}).value || '').trim() : '',
             accomplishment_rate:   cells[7]  ? ((cells[7].querySelector('input')              || {}).value || '').trim() : '',
+            rating_q: tr._ratingWidget ? tr._ratingWidget.getQ()      : null,
+            rating_e: tr._ratingWidget ? tr._ratingWidget.getE()      : null,
+            rating_t: tr._ratingWidget ? tr._ratingWidget.getT()      : null,
+            rating_a: tr._ratingWidget ? tr._ratingWidget.getA()      : null,
             remarks:               cells[12] ? ((cells[12].querySelector('textarea')           || {}).value || '').trim() : '',
         });
     });
@@ -704,6 +748,13 @@ function hydrateSpcrForm(form) {
                 person_accountable:    item.person_accountable    || '',
                 actual_accomplishment: item.actual_accomplishment || '',
                 accomplishment_rate:   item.accomplishment_rate   || '',
+                check_q:               item.check_q,
+                check_e:               item.check_e,
+                check_t:               item.check_t,
+                rating_q:              item.rating_q,
+                rating_e:              item.rating_e,
+                rating_t:              item.rating_t,
+                rating_a:              item.rating_a,
                 remarks:               item.remarks               || item.source_monitoring      || '',
             });
             body.appendChild(tr);
@@ -713,7 +764,117 @@ function hydrateSpcrForm(form) {
 
     _ensureAvgRows();
     computeSpcrAverages();
+    computeSpcrFuncSummary();
     rebuildSpcrSectionFilter();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SPCR FUNCTION SUMMARY — reads A(4) per row, groups by function
+   type. % distribution is dynamic: each function's row count ÷
+   total rows × 100. The whole table always sums to 100%.
+   Updates #spcrFuncSummaryBody tbody in the blade.
+══════════════════════════════════════════════════════════════ */
+
+/* Stores user-entered % overrides for SPCR function types */
+var _spcrPctOverrides = {};
+
+function computeSpcrFuncSummary() {
+    var sums        = { Strategic: 0, Core: 0, Support: 0 };
+    var counts      = { Strategic: 0, Core: 0, Support: 0 };
+    var currentType = 'Strategic';
+    var activeFunctions = [];
+
+    document.querySelectorAll('#spcrBody tr').forEach(function(tr) {
+        if (tr.classList.contains('spcr-section-row')) {
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('CORE'))    currentType = 'Core';
+            else if (up.includes('SUPPORT')) currentType = 'Support';
+            else                             currentType = 'Strategic';
+            return;
+        }
+        if (tr.classList.contains('spcr-avg-row')) return;
+        if (activeFunctions.indexOf(currentType) === -1) activeFunctions.push(currentType);
+        var rw = tr._ratingWidget;
+        if (!rw) return;
+        var aVal = rw.getA();
+        if (aVal !== null && !isNaN(aVal)) {
+            sums[currentType]   += aVal;
+            counts[currentType] += 1;
+        }
+    });
+
+    var tbody = document.getElementById('spcrFuncSummaryBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    var totalFinal = 0;
+    var totalPct   = 0;
+
+    activeFunctions.forEach(function(ft) {
+        var defaultPct = activeFunctions.length > 0 ? (100 / activeFunctions.length) : 0;
+        var pct = (_spcrPctOverrides[ft] !== undefined)
+            ? _spcrPctOverrides[ft]
+            : defaultPct;
+
+        var avg   = counts[ft] ? (sums[ft] / counts[ft]) : null;
+        var final = (avg !== null) ? avg * (pct / 100) : null;
+        if (final !== null) totalFinal += final;
+        totalPct += pct;
+
+        var row = document.createElement('tr');
+        var pctInp = document.createElement('input');
+        pctInp.type  = 'number'; pctInp.min = '0'; pctInp.max = '100'; pctInp.step = '0.1';
+        pctInp.value = Math.round(pct * 10) / 10;
+        pctInp.style.cssText = 'width:58px;text-align:center;border:1px solid #ccc;border-radius:2px;font-size:10px;font-family:Arial,sans-serif;padding:1px 3px;';
+        pctInp.title = 'Enter percentage for ' + ft + ' functions';
+        pctInp.dataset.ft = ft;
+        pctInp.addEventListener('input', function() {
+            var v = parseFloat(pctInp.value);
+            _spcrPctOverrides[ft] = isNaN(v) ? 0 : v;
+            computeSpcrFuncSummary();
+        });
+
+        var tdFt  = document.createElement('td'); tdFt.textContent = ft;
+        var tdPct = document.createElement('td'); tdPct.style.textAlign = 'center'; tdPct.appendChild(pctInp);
+        var tdPctS = document.createElement('span'); tdPctS.textContent = ' %'; tdPctS.style.fontSize = '10px';
+        tdPct.appendChild(tdPctS);
+        var tdAvg = document.createElement('td'); tdAvg.style.textAlign = 'center'; tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
+        var tdFin = document.createElement('td'); tdFin.style.cssText = 'text-align:center;font-weight:700;'; tdFin.textContent = final !== null ? final.toFixed(4) : '—';
+        row.appendChild(tdFt); row.appendChild(tdPct); row.appendChild(tdAvg); row.appendChild(tdFin);
+        tbody.appendChild(row);
+    });
+
+    /* 100% validation warning */
+    var warn = document.getElementById('spcr_pct_warning');
+    if (warn) {
+        if (activeFunctions.length > 0 && Math.abs(totalPct - 100) > 0.05) {
+            warn.textContent = '⚠ Percentages total ' + Math.round(totalPct * 10) / 10 + '% — must equal 100%';
+            warn.style.display = 'block';
+            totalFinal = 0;
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    var elFinal = document.getElementById('spcr_final_avg');
+    var elAdj   = document.getElementById('spcr_adjectival');
+    if (elFinal) elFinal.textContent = (totalFinal && Math.abs(totalPct - 100) <= 0.05) ? totalFinal.toFixed(2) : '—';
+    if (elAdj) {
+        var adj = '—';
+        if (Math.abs(totalPct - 100) <= 0.05) {
+            if      (totalFinal >= 5) adj = 'Outstanding';
+            else if (totalFinal >= 4) adj = 'Very Satisfactory';
+            else if (totalFinal >= 3) adj = 'Satisfactory';
+            else if (totalFinal >= 2) adj = 'Unsatisfactory';
+            else if (totalFinal >= 1) adj = 'Poor';
+        }
+        elAdj.textContent = adj;
+    }
 }
 
 /* ── ENSURE AVERAGE FOOTER ROWS EXIST ── */
@@ -737,6 +898,7 @@ document.getElementById('sSaveBtn').addEventListener('click', async function() {
         var saved = await apiFetch('/api/spcr', 'POST', data);
         showAlert('s-alertOk', 'ok', '\u2714 SPCR for \u201c' + data.employee_name + '\u201d saved.');
         if (typeof notifyRecordSaved === 'function') notifyRecordSaved('spcr', saved.form || saved);
+        _persistClear(PERSIST_KEY_SPCR);
     } catch (err) {
         showAlert('s-alertErr', 'err', 'Save failed: ' + err.message);
     }
@@ -774,10 +936,23 @@ document.getElementById('sClearBtn').addEventListener('click', function() {
     body.appendChild(createSectionRow('CORE FUNCTIONS :'));
     body.appendChild(createAvgRow('Core', 'core'));
     computeSpcrAverages();
+    computeSpcrFuncSummary();
+    _persistClear(PERSIST_KEY_SPCR);
 
     var filterSel = document.getElementById('spcr-section-filter');
     if (filterSel) { filterSel.value = ''; filterSpcrBySection(''); }
 });
+
+/* ── Auto-save SPCR draft to localStorage on every change ── */
+(function _wireSpcrPersist() {
+    _persistWireBody('spcrBody', PERSIST_KEY_SPCR, readSpcrForm);
+    ['s_emp_name','s_emp_position','s_period','s_supervisor','s_approved_by'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', function() {
+            _persistSave(PERSIST_KEY_SPCR, readSpcrForm);
+        });
+    });
+})();
 
 /* Section filter change handler */
 document.addEventListener('change', function(e) {

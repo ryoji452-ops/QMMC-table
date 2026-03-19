@@ -135,6 +135,36 @@
         </tbody>
     </table>
 
+    {{-- SPCR Function Summary Table (mirrors IPCR pattern) --}}
+    <div class="ipcr-summary" id="spcrFuncSummary" style="margin-top:14px;">
+        <table class="ipcr-rating-summary">
+            <thead>
+                <tr>
+                    <th>Functions</th>
+                    <th>Percentage Distribution *</th>
+                    <th>Average Rating per Function</th>
+                    <th>Final Rating per Functions<br><span style="font-weight:normal;font-size:9px;">(Average Rating × Percentage Distribution)</span></th>
+                    <th>Final Average Rating</th>
+                    <th>Adjectival Rating</th>
+                </tr>
+            </thead>
+            <tbody id="spcrFuncSummaryBody">
+                {{-- filled by computeSpcrFuncSummary() in spcr.js --}}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" style="text-align:right;font-weight:700;padding:4px 8px;">Final Average Rating:</td>
+                    <td id="spcr_final_avg" style="text-align:center;font-weight:700;font-size:12px;">—</td>
+                    <td id="spcr_adjectival" style="text-align:center;font-weight:700;font-size:11px;">—</td>
+                </tr>
+            </tfoot>
+        </table>
+        <div id="spcr_pct_warning" style="display:none;margin-top:6px;padding:5px 10px;background:#fff0f0;border:1.5px solid #c00;border-radius:3px;color:#c00;font-size:10px;font-weight:700;"></div>
+        <div style="font-size:9px;margin-top:4px;color:#555;">
+            &nbsp;|&nbsp; Legend: 1 – Quantity &nbsp; 2 – Efficiency &nbsp; 3 – Timeliness &nbsp; 4 – Average
+        </div>
+    </div>
+
     {{-- Action Bar --}}
     <div class="action-bar">
         <button type="button" class="btn-action btn-navy"   id="sAddRowBtn">+ Add Row</button>

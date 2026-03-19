@@ -40,10 +40,25 @@
         </div>
         <div class="rec-toolbar-right">
             <input type="text" id="rec-search" class="rec-search-input"
-                   placeholder="🔍  Search by name, division,"
+                   placeholder="🔍  Search by name, division, …"
                    oninput="renderRecords()">
             <button class="rec-refresh-btn" onclick="loadAllRecords()" title="Refresh">⟳ Refresh</button>
         </div>
+    </div>
+
+    {{-- Bulk Action Bar (shown only when rows are checked) --}}
+    <div id="rec-bulk-bar" class="rec-bulk-bar" style="display:none;">
+        <span id="rec-bulk-count" class="rec-bulk-count">0 records selected</span>
+        <button type="button" class="rec-bulk-del-btn"
+                onclick="recBulkDeleteSelected()"
+                title="Delete all selected records">
+            Delete Selected
+        </button>
+        <button type="button" class="rec-bulk-clear-btn"
+                onclick="REC_SELECTED.clear(); renderRecords(); _updateBulkBar();"
+                title="Clear selection">
+            Clear Selection
+        </button>
     </div>
 
     {{-- Alert --}}
@@ -51,7 +66,43 @@
 
     {{-- Records Container --}}
     <div id="rec-container">
-        <div class="rec-loading">records.</div>
+        <div class="rec-loading">⏳ Click the Records tab to load records.</div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════
+         BULK DELETE CONFIRMATION MODAL
+    ═══════════════════════════════════════════════════════ --}}
+    <div class="rec-bulk-modal-overlay" id="rec-bulk-confirm-modal"
+         onclick="if(event.target===this) recCloseBulkConfirm()">
+        <div class="rec-bulk-modal-box">
+            <button class="rec-bulk-modal-close" onclick="recCloseBulkConfirm()" title="Cancel">&times;</button>
+
+            <div class="rec-bulk-modal-header">
+                <span class="rec-bulk-modal-title">Confirm Bulk Delete</span>
+            </div>
+
+            <div class="rec-bulk-modal-warn">
+                You are about to permanently delete
+                <strong id="rec-bulk-confirm-count">0 records</strong>.
+                This action <strong>cannot be undone</strong>.
+                Please review the list below before confirming.
+            </div>
+
+            <div id="rec-bulk-confirm-list" class="rec-bulk-confirm-list">
+                {{-- Populated by JS --}}
+            </div>
+
+            <div class="rec-bulk-modal-footer">
+                <button type="button" class="rec-bulk-confirm-cancel"
+                        onclick="recCloseBulkConfirm()">
+                    Cancel
+                </button>
+                <button type="button" class="rec-bulk-confirm-del"
+                        onclick="recConfirmBulkDelete()">
+                    Yes, Delete All
+                </button>
+            </div>
+        </div>
     </div>
 
 </div>{{-- /page-records --}}

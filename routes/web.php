@@ -42,6 +42,7 @@ Route::prefix('api/spcr')->name('spcr.form.')->group(function () {
     Route::get('/',          [SPCRFormController::class, 'index'])  ->name('index');
     Route::post('/',         [SPCRFormController::class, 'store'])  ->name('store');
     Route::get('/{form}',    [SPCRFormController::class, 'show'])   ->name('show');
+    Route::put('/{form}',    [SPCRFormController::class, 'update']) ->name('update');
     Route::delete('/{form}', [SPCRFormController::class, 'destroy'])->name('destroy');
 });
 
@@ -52,5 +53,6 @@ Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
     Route::get('/',          [IPCRController::class, 'index'])  ->name('index');
     Route::post('/',         [IPCRController::class, 'store'])  ->name('store');
     Route::get('/{form}',    [IPCRController::class, 'show'])   ->name('show');
+    Route::put('/{form}',    [IPCRController::class, 'update']) ->name('update');
     Route::delete('/{form}', [IPCRController::class, 'destroy'])->name('destroy');
 });

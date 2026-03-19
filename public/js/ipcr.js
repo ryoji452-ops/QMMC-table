@@ -246,8 +246,17 @@ function createIpcrRow(data) {
     viewLinkedBtn.textContent = '👁 Links';
     viewLinkedBtn.style.color = '#555';
 
+    /* ? Guide button */
+    var guideBtn = document.createElement('button');
+    guideBtn.type      = 'button';
+    guideBtn.className = 'row-action-btn no-print';
+    guideBtn.title     = 'How is this row computed?';
+    guideBtn.textContent = '? Guide';
+    guideBtn.style.cssText = 'color:#6a3e9e;font-size:9px;';
+
     tdAct.appendChild(lnkBtn);
     tdAct.appendChild(viewLinkedBtn);
+    tdAct.appendChild(guideBtn);
     tr.appendChild(tdAct);
 
     /* col 2: Strategic Goal */
@@ -285,15 +294,18 @@ function createIpcrRow(data) {
     rIn.style.textAlign = 'center'; rIn.style.width = '100%';
     tdR.appendChild(rIn); tr.appendChild(tdR);
 
-    /* cols 6–9: Q E T A numeric inputs */
-    ['rating_q','rating_e','rating_t','rating_a'].forEach(function(key) {
-        var td = document.createElement('td'); td.className = 'rating-cell';
-        var inp = document.createElement('input'); inp.type = 'number';
-        inp.min = '1'; inp.max = '5'; inp.step = '0.01';
-        inp.placeholder = '—'; inp.value = data[key] != null ? data[key] : '';
-        inp.style.cssText = 'width:100%;text-align:center;border:none;outline:none;background:transparent;font-size:10px;';
-        td.appendChild(inp); tr.appendChild(td);
-    });
+    /* cols 6–9: Q E T A — checkbox + number input, A auto-computed average */
+    var ratingWidget = _buildQETACells({
+        rating_q: data.rating_q,
+        rating_e: data.rating_e,
+        rating_t: data.rating_t,
+        rating_a: data.rating_a,
+        check_q:  data.check_q  !== undefined ? data.check_q  : false,
+        check_e:  data.check_e  !== undefined ? data.check_e  : false,
+        check_t:  data.check_t  !== undefined ? data.check_t  : false,
+    }, function() { computeIpcrSummary(); });
+    ratingWidget.cells.forEach(function(td) { tr.appendChild(td); });
+    tr._ratingWidget = ratingWidget;
 
     /* col 10: Remarks */
     var tdRem = document.createElement('td');
@@ -307,7 +319,7 @@ function createIpcrRow(data) {
     tdDel.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
     var dBtn = document.createElement('button'); dBtn.type = 'button';
     dBtn.className = 'remove-btn'; dBtn.innerHTML = '&times;';
-    dBtn.onclick = function() { tr.remove(); };
+    dBtn.onclick = function() { tr.remove(); computeIpcrSummary(); };
     tdDel.appendChild(dBtn); tr.appendChild(tdDel);
 
     /* Wire link button */
@@ -334,6 +346,11 @@ function createIpcrRow(data) {
             + '<div><span>Strategic Goal: </span><strong>' + esc(goalText || '(empty)') + '</strong></div>'
             + '</div>';
         _openViewModal(titleStr, metaHtml, _buildIpcrLinkedViewHtml(piText));
+    };
+
+    /* Wire guide button */
+    guideBtn.onclick = function() {
+        _openViewModal('\u2139\uFE0F Computation Guide', '', _ratingComputeGuideHtml());
     };
 
     return tr;
@@ -364,22 +381,22 @@ function readIpcrForm() {
         var indTA  = cells[3]  ? cells[3].querySelector('textarea')  : null;
         var aTA    = cells[4]  ? cells[4].querySelector('textarea')  : null;
         var rIn    = cells[5]  ? cells[5].querySelector('input')     : null;
-        var qIn    = cells[6]  ? cells[6].querySelector('input')     : null;
-        var eIn    = cells[7]  ? cells[7].querySelector('input')     : null;
-        var tIn    = cells[8]  ? cells[8].querySelector('input')     : null;
-        var aRIn   = cells[9]  ? cells[9].querySelector('input')     : null;
         var remTA  = cells[10] ? cells[10].querySelector('textarea') : null;
         if (!goalTA && !indTA) return;
+        var rw = tr._ratingWidget;
         items.push({
             function_type:         currentFunctionType,
             strategic_goal:        goalTA ? goalTA.value.trim() : '',
             performance_indicator: indTA  ? indTA.value.trim()  : '',
             actual_accomplishment: aTA    ? aTA.value.trim()    : null,
             accomplishment_rate:   rIn    ? rIn.value.trim()    : null,
-            rating_q:  qIn  && qIn.value  ? parseFloat(qIn.value)  : null,
-            rating_e:  eIn  && eIn.value  ? parseFloat(eIn.value)  : null,
-            rating_t:  tIn  && tIn.value  ? parseFloat(tIn.value)  : null,
-            rating_a:  aRIn && aRIn.value ? parseFloat(aRIn.value) : null,
+            check_q:  rw ? rw.getCheckQ() : true,
+            check_e:  rw ? rw.getCheckE() : true,
+            check_t:  rw ? rw.getCheckT() : true,
+            rating_q: rw ? rw.getQ()      : null,
+            rating_e: rw ? rw.getE()      : null,
+            rating_t: rw ? rw.getT()      : null,
+            rating_a: rw ? rw.getA()      : null,
             remarks:               remTA  ? remTA.value.trim()  : null,
         });
     });
@@ -405,22 +422,108 @@ function readIpcrForm() {
 
 /* ── COMPUTE SUMMARY ── */
 function computeIpcrSummary() {
-    var pctCore    = parseFloat(document.getElementById('i_pct_core').value)    / 100 || 0.70;
-    var pctSupport = parseFloat(document.getElementById('i_pct_support').value) / 100 || 0.30;
-    var avgCore    = parseFloat(document.getElementById('i_avg_core').value)    || 0;
-    var avgSupport = parseFloat(document.getElementById('i_avg_support').value) || 0;
+    /* Count rows and sum A(4) values per function type */
+    var sums      = { Core: 0, Support: 0, Strategic: 0 };
+    var counts    = { Core: 0, Support: 0, Strategic: 0 };  /* rows with A value */
+    var rowCounts = { Core: 0, Support: 0, Strategic: 0 };  /* ALL data rows */
+    var currentType = 'Core';
+
+    document.querySelectorAll('#ipcrBody tr').forEach(function(tr) {
+        if (tr.classList.contains('section-header')) {
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('SUPPORT'))   currentType = 'Support';
+            else if (up.includes('STRATEGIC')) currentType = 'Strategic';
+            else                               currentType = 'Core';
+            return;
+        }
+        /* Count every data row regardless of A value */
+        rowCounts[currentType] += 1;
+        var rw = tr._ratingWidget;
+        if (!rw) return;
+        var aVal = rw.getA();
+        if (aVal !== null && !isNaN(aVal)) {
+            sums[currentType]   += aVal;
+            counts[currentType] += 1;
+        }
+    });
+
+    var totalRows = rowCounts.Core + rowCounts.Support + rowCounts.Strategic;
+
+    /* Dynamic % per function = its row count ÷ total rows */
+    var pctCore      = totalRows > 0 ? rowCounts.Core      / totalRows : 0;
+    var pctSupport   = totalRows > 0 ? rowCounts.Support   / totalRows : 0;
+
+    /* Auto-update the pct input fields to show the computed dynamic % */
+    var pctCoreEl    = document.getElementById('i_pct_core');
+    var pctSupportEl = document.getElementById('i_pct_support');
+    if (pctCoreEl    && !pctCoreEl.dataset.manualOverride)
+        pctCoreEl.value    = Math.round(pctCore    * 1000) / 10 + '%';
+    if (pctSupportEl && !pctSupportEl.dataset.manualOverride)
+        pctSupportEl.value = Math.round(pctSupport * 1000) / 10 + '%';
+
+    /* If manually overridden, read the manual pct values instead */
+    if (pctCoreEl    && pctCoreEl.dataset.manualOverride)
+        pctCore    = parseFloat(pctCoreEl.value)    / 100 || pctCore;
+    if (pctSupportEl && pctSupportEl.dataset.manualOverride)
+        pctSupport = parseFloat(pctSupportEl.value) / 100 || pctSupport;
+
+    /* Auto-fill avg inputs from A(4) row values (unless manually overridden) */
+    var avgCoreEl    = document.getElementById('i_avg_core');
+    var avgSupportEl = document.getElementById('i_avg_support');
+    var autoCore     = counts.Core    ? (sums.Core    / counts.Core   ).toFixed(2) : '';
+    var autoSupport  = counts.Support ? (sums.Support / counts.Support).toFixed(2) : '';
+    if (avgCoreEl    && !avgCoreEl.dataset.manualOverride)    avgCoreEl.value    = autoCore;
+    if (avgSupportEl && !avgSupportEl.dataset.manualOverride) avgSupportEl.value = autoSupport;
+
+    var avgCore    = parseFloat(avgCoreEl    ? avgCoreEl.value    : 0) || 0;
+    var avgSupport = parseFloat(avgSupportEl ? avgSupportEl.value : 0) || 0;
+
+    /* Read raw numeric pct values for sum validation */
+    var pctCoreNum    = parseFloat((pctCoreEl    ? pctCoreEl.value    : '').replace('%','')) || 0;
+    var pctSupportNum = parseFloat((pctSupportEl ? pctSupportEl.value : '').replace('%','')) || 0;
+    var pctTotal      = pctCoreNum + pctSupportNum;
+
+    /* 100% validation warning */
+    var warn = document.getElementById('ipcr_pct_warning');
+    var pctOk = (pctCoreEl && pctSupportEl)
+        ? Math.abs(pctTotal - 100) <= 0.05
+        : true;  /* no inputs yet — don't warn */
+
+    if (warn) {
+        if (!pctOk && (pctCoreNum > 0 || pctSupportNum > 0)) {
+            warn.textContent = '⚠ Percentages total ' + Math.round(pctTotal * 10) / 10 + '% — must equal 100%';
+            warn.style.display = 'block';
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    /* Style pct inputs red when invalid */
+    if (pctCoreEl)    pctCoreEl.style.borderBottom    = pctOk ? '' : '2px solid #c00';
+    if (pctSupportEl) pctSupportEl.style.borderBottom = pctOk ? '' : '2px solid #c00';
+
     var finalCore    = avgCore    * pctCore;
     var finalSupport = avgSupport * pctSupport;
-    var finalAvg     = finalCore  + finalSupport;
+    var finalAvg     = pctOk ? (finalCore + finalSupport) : 0;
+
     document.getElementById('i_final_core').textContent    = finalCore    ? finalCore.toFixed(8)    : '—';
     document.getElementById('i_final_support').textContent = finalSupport ? finalSupport.toFixed(8) : '—';
-    document.getElementById('i_final_avg').textContent     = finalAvg     ? finalAvg.toFixed(2)     : '—';
+    document.getElementById('i_final_avg').textContent     = (finalAvg && pctOk) ? finalAvg.toFixed(2) : '—';
+
     var adj = '—';
-    if      (finalAvg >= 5) adj = 'Outstanding';
-    else if (finalAvg >= 4) adj = 'Very Satisfactory';
-    else if (finalAvg >= 3) adj = 'Satisfactory';
-    else if (finalAvg >= 2) adj = 'Unsatisfactory';
-    else if (finalAvg >= 1) adj = 'Poor';
+    if (pctOk) {
+        if      (finalAvg >= 5) adj = 'Outstanding';
+        else if (finalAvg >= 4) adj = 'Very Satisfactory';
+        else if (finalAvg >= 3) adj = 'Satisfactory';
+        else if (finalAvg >= 2) adj = 'Unsatisfactory';
+        else if (finalAvg >= 1) adj = 'Poor';
+    }
     document.getElementById('i_adjectival').textContent = adj;
 }
 
@@ -450,6 +553,9 @@ function hydrateIpcrForm(form) {
             performance_indicator: item.performance_indicator,
             actual_accomplishment: item.actual_accomplishment,
             accomplishment_rate:   item.accomplishment_rate,
+            check_q:               item.check_q,
+            check_e:               item.check_e,
+            check_t:               item.check_t,
             rating_q:              item.rating_q,
             rating_e:              item.rating_e,
             rating_t:              item.rating_t,
@@ -488,6 +594,7 @@ document.getElementById('iSaveBtn').addEventListener('click', async function() {
         var saved = await apiFetch('/api/ipcr', 'POST', data);
         showAlert('i-alertOk', 'ok', '\u2714 IPCR for \u201c' + data.employee_name + '\u201d saved to database.');
         if (typeof notifyRecordSaved === 'function') notifyRecordSaved('ipcr', saved.form || saved.ipcr || saved);
+        _persistClear(PERSIST_KEY_IPCR);
     } catch (err) { showAlert('i-alertErr', 'err', 'Save failed: ' + err.message); }
 });
 
@@ -520,6 +627,7 @@ document.getElementById('iClearBtn').addEventListener('click', function() {
     document.getElementById('i_avg_core').value    = '';
     document.getElementById('i_avg_support').value = '';
     computeIpcrSummary();
+    _persistClear(PERSIST_KEY_IPCR);
 
 });
 
@@ -535,20 +643,86 @@ document.getElementById('i_approved_by').addEventListener('input', function() {
 });
 
 ['i_pct_core','i_pct_support','i_avg_core','i_avg_support'].forEach(function(id) {
-    document.getElementById(id).addEventListener('input', computeIpcrSummary);
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+        /* Mark as manually overridden so auto-compute from rows won't clobber it.
+           Clearing the field removes the override so auto-compute resumes. */
+        el.dataset.manualOverride = el.value.trim() ? '1' : '';
+        computeIpcrSummary();
+    });
 });
 
 /* ── INIT ── */
 (function init() {
-    if (window.DB_LATEST_SPCR)        hydrateSpcrForm(window.DB_LATEST_SPCR);
-    else if (window.DB_LATEST_MATRIX) hydrateSpcrForm(window.DB_LATEST_MATRIX);
+    /* ── Priority order for each form: ──────────────────────────────
+       1. localStorage draft  (most recent in-session work)
+       2. DB_LATEST_*         (last saved to database)
+       3. Empty               (fresh / default state)
+       ─────────────────────────────────────────────────────────────── */
 
-    if (window.DB_LATEST_DPCR) hydrateDpcrForm(window.DB_LATEST_DPCR);
-    if (window.DB_LATEST_IPCR) hydrateIpcrForm(window.DB_LATEST_IPCR);
+    var dpcrDraft = _persistLoad(PERSIST_KEY_DPCR);
+    var spcrDraft = _persistLoad(PERSIST_KEY_SPCR);
+    var ipcrDraft = _persistLoad(PERSIST_KEY_IPCR);
+
+    /* DPCR */
+    if (dpcrDraft) {
+        hydrateDpcrForm(dpcrDraft);
+    } else if (window.DB_LATEST_DPCR) {
+        hydrateDpcrForm(window.DB_LATEST_DPCR);
+    }
+    /* else: leave empty — just the default section header already in blade */
+
+    /* SPCR */
+    if (spcrDraft) {
+        hydrateSpcrForm(spcrDraft);
+    } else if (window.DB_LATEST_SPCR) {
+        hydrateSpcrForm(window.DB_LATEST_SPCR);
+    } else if (window.DB_LATEST_MATRIX) {
+        hydrateSpcrForm(window.DB_LATEST_MATRIX);
+    }
+    /* else: leave empty */
+
+    /* IPCR */
+    if (ipcrDraft) {
+        hydrateIpcrForm(ipcrDraft);
+    } else if (window.DB_LATEST_IPCR) {
+        hydrateIpcrForm(window.DB_LATEST_IPCR);
+    }
+    /* else: leave empty */
 
     initDragSort(document.getElementById('spcrBody'));
     initDragSort(document.getElementById('dpcrBody'));
     initDragSort(document.getElementById('ipcrBody'));
+
+    /* After any drag-drop, recompute summaries + persist draft */
+    var dpcrBody = document.getElementById('dpcrBody');
+    var spcrBody = document.getElementById('spcrBody');
+    var ipcrBody = document.getElementById('ipcrBody');
+
+    registerDragCallback(function(tbody) {
+        if (tbody === dpcrBody) {
+            if (typeof computeDpcrFuncSummary === 'function') computeDpcrFuncSummary();
+            _persistSave(PERSIST_KEY_DPCR, readDpcrForm);
+        } else if (tbody === spcrBody) {
+            if (typeof computeSpcrFuncSummary === 'function') computeSpcrFuncSummary();
+            if (typeof computeSpcrAverages    === 'function') computeSpcrAverages();
+            _persistSave(PERSIST_KEY_SPCR, readSpcrForm);
+        } else if (tbody === ipcrBody) {
+            if (typeof computeIpcrSummary === 'function') computeIpcrSummary();
+            _persistSave(PERSIST_KEY_IPCR, readIpcrForm);
+        }
+    });
+
+    /* ── Auto-save IPCR draft to localStorage on every change ── */
+    _persistWireBody('ipcrBody', PERSIST_KEY_IPCR, readIpcrForm);
+    ['i_emp_name','i_emp_position','i_emp_unit','i_period',
+     'i_supervisor','i_approved_by','i_recommending'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', function() {
+            _persistSave(PERSIST_KEY_IPCR, readIpcrForm);
+        });
+    });
 
     rebuildSpcrSectionFilter();
 

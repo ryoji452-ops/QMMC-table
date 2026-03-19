@@ -49,23 +49,110 @@ function _rmHasContent(val) {
 
 function _rmSetCell(cell, hasContent) {
     if (!cell) return;
+    /* Legacy badge cleanup — remove old ✔ / N/A spans if present */
     cell.querySelectorAll('.rm-rating-check, .rm-rating-na').forEach(el => el.remove());
     const numInp = cell.querySelector('input[type="number"]');
     if (numInp) numInp.style.display = 'none';
+    /* Visual badge still shown in the cell so the RM column shows current status */
     const badge = document.createElement('span');
     badge.className   = hasContent ? 'rm-rating-check' : 'rm-rating-na';
     badge.textContent = hasContent ? '✔' : 'N/A';
     badge.title = hasContent
-        ? 'Criterion defined in Rating Matrix'
-        : 'No criterion defined in Rating Matrix';
+        ? 'Criterion defined in Rating Matrix — checkbox enabled in form row'
+        : 'No criterion defined — checkbox disabled in form row';
     cell.style.textAlign     = 'center';
     cell.style.verticalAlign = 'middle';
     cell.appendChild(badge);
 }
 
+/**
+ * Apply QET state from rating matrix to a linked form row.
+ * Instead of replacing cell content with badges, this function
+ * drives the _ratingWidget checkboxes:
+ *   – If the RM has content for Q/E/T → check that criterion ON  (and show its number input)
+ *   – If the RM has NO content        → uncheck (and hide number input, clear value)
+ * The _ratingWidget then recomputes A(4) automatically.
+ */
 function _rmApplyQET(formRow, tabKey, qet) {
     const col   = RM_COL[tabKey];
     const cells = formRow.querySelectorAll('td');
+
+    /* Drive _ratingWidget if it exists on the form row (new implementation) */
+    const rw = formRow._ratingWidget;
+    if (rw) {
+        /* alwaysOpen rows (SPCR) — inputs stay visible/editable at all times.
+           When RM pushes a criterion, clear the DPCR pre-fill so the rater
+           enters a score based on the RM criterion, not the old DPCR value.
+           When RM has NO criterion for a dimension, clear the value too so
+           the placeholder "N/A" shows — signalling that dimension is not rated. */
+        if (rw.alwaysOpen) {
+            [
+                { key: 'q', colKey: 'Q', hasContent: _rmHasContent(qet.q) },
+                { key: 'e', colKey: 'E', hasContent: _rmHasContent(qet.e) },
+                { key: 't', colKey: 'T', hasContent: _rmHasContent(qet.t) },
+            ].forEach(function(item) {
+                var colIndex = col[item.colKey];
+                var td  = cells[colIndex];
+                if (!td) return;
+                var inp = td.querySelector('input.rating-num');
+                if (!inp) return;
+                /* Always clear the old value — user must enter a fresh RM-based score */
+                inp.value = '';
+                /* Update the saved-val so future re-links don't restore the old DPCR value */
+                inp.dataset.savedVal = '';
+                /* Placeholder: blank-able "N/A" when no RM criterion, empty when there is one */
+                inp.placeholder = item.hasContent ? '—' : 'N/A';
+                inp.disabled = false;  /* always editable */
+            });
+            if (typeof rw.computeA === 'function') rw.computeA();
+            return;
+        }
+
+        /* Locked-mode rows (DPCR / IPCR) — RM controls visibility of each cell */
+        [
+            { key: 'q', hasContent: _rmHasContent(qet.q) },
+            { key: 'e', hasContent: _rmHasContent(qet.e) },
+            { key: 't', hasContent: _rmHasContent(qet.t) },
+        ].forEach(function(item) {
+            var colIndex = col[item.key.toUpperCase()];
+            var td = cells[colIndex];
+            if (!td) return;
+            var chk        = td.querySelector('input.rating-chk');
+            var inp        = td.querySelector('input.rating-num');
+            var lockBadge  = td.querySelector('.qet-lock-badge');
+            if (!chk) return;
+
+            chk.checked = item.hasContent;
+            chk.disabled = true;
+            chk.title = item.hasContent
+                ? 'Enabled — criterion defined in Rating Matrix'
+                : 'Disabled — no criterion in Rating Matrix for this row';
+
+            if (inp) {
+                if (item.hasContent) {
+                    inp.style.display = 'block';
+                    inp.disabled      = false;
+                    inp.style.cursor  = 'text';
+                    inp.style.color   = '';
+                    if (!inp.value && inp.dataset.savedVal) {
+                        inp.value = inp.dataset.savedVal;
+                    }
+                } else {
+                    inp.style.display = 'none';
+                    inp.disabled      = true;
+                    inp.value         = '';
+                }
+            }
+            if (lockBadge) {
+                lockBadge.style.display = item.hasContent ? 'none' : 'inline-block';
+            }
+        });
+
+        if (typeof rw.computeA === 'function') rw.computeA();
+        return;
+    }
+
+    /* Fallback for rows without _ratingWidget (legacy / plain badge mode) */
     _rmSetCell(cells[col.Q], _rmHasContent(qet.q));
     _rmSetCell(cells[col.E], _rmHasContent(qet.e));
     _rmSetCell(cells[col.T], _rmHasContent(qet.t));
@@ -120,11 +207,15 @@ function createRatingMatrix(tabKey, containerEl) {
     function _ensureLinkedRow(formRow, piTA) {
         if (formRow._rmSourceRow) {
             if (!formRow._rmSourceRow._formRow) formRow._rmSourceRow._formRow = formRow;
+            /* Apply current QET state from the already-linked RM row */
+            _rmApplyQET(formRow, tabKey, _readQET(formRow._rmSourceRow));
             return;
         }
         if (formRow._rmAutoRow) {
             const pmTA = formRow._rmAutoRow.querySelector('textarea[data-key="performance_measure"]');
             if (pmTA && pmTA.value !== piTA.value) { pmTA.value = piTA.value; autoExpand(pmTA); }
+            /* Apply current QET state from the already-linked RM row */
+            _rmApplyQET(formRow, tabKey, _readQET(formRow._rmAutoRow));
             return;
         }
 
@@ -152,6 +243,9 @@ function createRatingMatrix(tabKey, containerEl) {
         formRow._rmAutoRow = rmRow;
         rmRow._formRow     = formRow;
         if (!_pushed.has(rmRow)) _pushed.set(rmRow, []);
+
+        /* Apply initial QET state (new row = all empty → all unchecked) */
+        _rmApplyQET(formRow, tabKey, _readQET(rmRow));
 
         const pmTA = rmRow.querySelector('textarea[data-key="performance_measure"]');
         if (pmTA) {
@@ -652,29 +746,55 @@ function createRatingMatrix(tabKey, containerEl) {
 /* ─────────────────────────────────────────────────────────────────
    GLOBAL  _rmEnsureLinkedRow  SHIM
    ─────────────────────────────────────────────────────────────────
-   dpcr.js / spcr.js / ipcr.js row factories call the global
-   _rmEnsureLinkedRow(formRow, piTA).  This shim detects which
-   form tbody the row belongs to and routes to the correct instance.
+   Called by dpcr.js / spcr.js / ipcr.js whenever a PI value is
+   set on a form row.  If the RM instance for that tab is not yet
+   ready (e.g. called from a DOMContentLoaded handler that fires
+   before rating_matrix.js finishes), the call is queued and
+   replayed automatically once the instance registers itself.
 ───────────────────────────────────────────────────────────────── */
+var _rmPendingQueue = [];
+
 function _rmEnsureLinkedRow(formRow, piTA) {
-    let tabKey = null;
+    var tabKey = null;
     if      (formRow.closest('#dpcrBody')) tabKey = 'dpcr';
     else if (formRow.closest('#spcrBody')) tabKey = 'spcr';
     else if (formRow.closest('#ipcrBody')) tabKey = 'ipcr';
+    if (!tabKey) return;
 
-    const fn = tabKey && window['_rmEnsureLinkedRow_' + tabKey];
-    if (typeof fn === 'function') fn(formRow, piTA);
+    var fn = window['_rmEnsureLinkedRow_' + tabKey];
+    if (typeof fn === 'function') {
+        fn(formRow, piTA);
+    } else {
+        // Instance not ready yet — queue for replay after instantiation
+        _rmPendingQueue.push({ tabKey: tabKey, formRow: formRow, piTA: piTA });
+    }
+}
+
+/* Replay queued calls for a newly-instantiated tabKey */
+function _rmFlushQueue(tabKey) {
+    var fn = window['_rmEnsureLinkedRow_' + tabKey];
+    if (typeof fn !== 'function') return;
+    var remaining = [];
+    _rmPendingQueue.forEach(function(item) {
+        if (item.tabKey === tabKey && item.formRow.isConnected) {
+            fn(item.formRow, item.piTA);
+        } else if (item.tabKey !== tabKey) {
+            remaining.push(item);
+        }
+        // discard entries whose row left the DOM
+    });
+    _rmPendingQueue = remaining;
 }
 
 /* ─────────────────────────────────────────────────────────────────
    INSTANTIATION — three independent Rating Matrix instances
 ───────────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-    const elDpcr = document.getElementById('rm-body-dpcr');
-    const elSpcr = document.getElementById('rm-body-spcr');
-    const elIpcr = document.getElementById('rm-body-ipcr');
+document.addEventListener('DOMContentLoaded', function() {
+    var elDpcr = document.getElementById('rm-body-dpcr');
+    var elSpcr = document.getElementById('rm-body-spcr');
+    var elIpcr = document.getElementById('rm-body-ipcr');
 
-    if (elDpcr) window.RM_DPCR = createRatingMatrix('dpcr', elDpcr);
-    if (elSpcr) window.RM_SPCR = createRatingMatrix('spcr', elSpcr);
-    if (elIpcr) window.RM_IPCR = createRatingMatrix('ipcr', elIpcr);
+    if (elDpcr) { window.RM_DPCR = createRatingMatrix('dpcr', elDpcr); _rmFlushQueue('dpcr'); }
+    if (elSpcr) { window.RM_SPCR = createRatingMatrix('spcr', elSpcr); _rmFlushQueue('spcr'); }
+    if (elIpcr) { window.RM_IPCR = createRatingMatrix('ipcr', elIpcr); _rmFlushQueue('ipcr'); }
 });
