@@ -6,7 +6,7 @@
     <div id="d-alertInfo" class="alert-info"></div>
     <div id="transferBanner" class="transfer-banner"></div>
 
-    <div class="form-ref">DPCR – SPMS Form 2</div>
+    <div class="form-ref">DOH – SPMS Form 2</div>
 
     {{-- Header --}}
     <div class="doc-header">
@@ -116,7 +116,7 @@
         </tbody>
     </table>
 
-    {{-- DPCR Function Summary Table (mirrors IPCR pattern) --}}
+    {{-- DPCR Function Summary Table --}}
     <div class="ipcr-summary" id="dpcrFuncSummary" style="margin-top:14px;">
         <table class="ipcr-rating-summary">
             <thead>
@@ -147,7 +147,7 @@
     </div>
 
     {{-- Action Bar --}}
-    <div class="action-bar">
+    <div class="action-bar no-print">
         <button type="button" class="btn-action btn-navy"  id="dAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate" id="dAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-teal"  id="dViewSavedBtn"
@@ -156,13 +156,23 @@
         </button>
         <button type="button" class="btn-action btn-green" id="dSaveBtn"
                 style="margin-left:auto;">💾 Save DPCR</button>
-        <button type="button" class="btn-action btn-navy"  onclick="printDpcr()">🖨 Print DPCR</button>
+
+        {{-- Two-button print group --}}
+        <div class="print-btn-group" title="Print options">
+            <button type="button" class="btn-print-target"
+                    onclick="printDpcrTarget()"
+                    title="Print target form — budget, actuals and ratings are blank; Q/E/T show ✓ or –">
+                🖨 Print Target
+            </button>
+            <button type="button" class="btn-print-actual"
+                    onclick="printDpcrActual()"
+                    title="Print full form with all data filled in">
+                🖨 Print Actual
+            </button>
+        </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════════
-         Rating Matrix — embedded below the DPCR table.
-         #rm-panel is moved here by switchTab() on every tab switch.
-    ═══════════════════════════════════════════════════════════════ --}}
+    {{-- Rating Matrix embed slot (screen only; hidden in all print modes via CSS) --}}
     <div class="rm-embed-slot" id="rm-slot-dpcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">

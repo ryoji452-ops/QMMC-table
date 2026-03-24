@@ -5,7 +5,7 @@
     <div id="i-alertErr"  class="alert-err"></div>
     <div id="i-alertInfo" class="alert-info"></div>
 
-    <div class="form-ref">IPCR – SPMS Form 4</div>
+    <div class="form-ref">DOH – SPMS Form 4</div>
 
     {{-- Header --}}
     <div class="doc-header">
@@ -91,10 +91,9 @@
                 <div>2–2.99 – Unsatisfactory</div>
                 <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
             </div>
-        </div> 
+        </div>
 
     </div>
-
 
     {{-- IPCR Table --}}
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
@@ -206,7 +205,7 @@
     </div>
 
     {{-- Action Bar --}}
-    <div class="action-bar">
+    <div class="action-bar no-print">
         <button type="button" class="btn-action btn-navy"   id="iAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="iAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="iClearBtn">Clear Form</button>
@@ -216,13 +215,23 @@
         </button>
         <button type="button" class="btn-action btn-green"  id="iSaveBtn"
                 style="margin-left:auto;"> Save IPCR</button>
-        <button type="button" class="btn-action btn-navy"   onclick="printIpcr()">🖨 Print IPCR</button>
+
+        {{-- Two-button print group --}}
+        <div class="print-btn-group" title="Print options">
+            <button type="button" class="btn-print-target"
+                    onclick="printIpcrTarget()"
+                    title="Print target form — actuals and ratings are blank; Q/E/T show ✓ or –">
+                🖨 Print Target
+            </button>
+            <button type="button" class="btn-print-actual"
+                    onclick="printIpcrActual()"
+                    title="Print full form with all data filled in">
+                🖨 Print Actual
+            </button>
+        </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════════
-         Rating Matrix — embedded below the IPCR table.
-         #rm-panel is moved here by switchTab() on every tab switch.
-    ═══════════════════════════════════════════════════════════════ --}}
+    {{-- Rating Matrix embed slot --}}
     <div class="rm-embed-slot" id="rm-slot-ipcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">

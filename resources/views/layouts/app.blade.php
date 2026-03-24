@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{{ asset('css/ipcr.css') }}">
     <link rel="stylesheet" href="{{ asset('css/records.css') }}">
     <link rel="stylesheet" href="{{ asset('css/rating_matrix.css') }}">
+    {{-- Print target / actual modes --}}
+    <link rel="stylesheet" href="{{ asset('css/print_modes.css') }}">
     @stack('styles')
 </head>
 <body>
@@ -23,8 +25,10 @@
     <script src="{{ asset('js/spcr.js') }}"></script>
     <script src="{{ asset('js/ipcr.js') }}"></script>
     <script src="{{ asset('js/records.js') }}"></script>
-    {{-- Rating Matrix loads last — uses createDpcrRow / createSpcrRow / createIpcrRow --}}
+    {{-- Rating Matrix loads after row factories --}}
     <script src="{{ asset('js/rating_matrix.js') }}"></script>
+    {{-- Print mode controller — must load LAST (uses all row factories) --}}
+    <script src="{{ asset('js/print_modes.js') }}"></script>
 
 </body>
 </html>

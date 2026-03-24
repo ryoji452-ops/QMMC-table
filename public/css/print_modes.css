@@ -1,0 +1,234 @@
+/* ═══════════════════════════════════════════════════════════════
+   print_modes.css
+   Controls "Print Target" vs "Print Actual" rendering.
+
+   JS adds ONE of these classes to <body> before window.print():
+     .print-target-mode   → target form (blank actuals, Q/E/T as ✓/–)
+     .print-actual-mode   → full data form
+
+   Both modes hide: Rating Matrix embed, no-print elements.
+
+   ── DPCR column map (0-based <td>, after no-print cols removed) ──
+   Printed cols: goal(1) | indicator(2) | target%(3) | budget(4) |
+                 section(5) | actual(6) | rate(7) | Q(8) E(9) T(10) A(11) | remarks(12)
+   nth-child counts only visible <td> in tbody data rows.
+   BUT: nth-child in CSS counts ALL siblings including hidden ones,
+   so we use the actual DOM position:
+     td:nth-child(1) = drag (hidden)   td:nth-child(2) = actions (hidden)
+     td:nth-child(3) = goal            td:nth-child(4) = indicator
+     td:nth-child(5) = target%         td:nth-child(6) = budget
+     td:nth-child(7) = section         td:nth-child(8) = actual
+     td:nth-child(9) = rate            td:nth-child(10)= Q
+     td:nth-child(11)= E               td:nth-child(12)= T
+     td:nth-child(13)= A               td:nth-child(14)= remarks
+     td:nth-child(15)= delete (hidden)
+
+   ── SPCR column map ──
+     td:nth-child(1)=drag  td:nth-child(2)=actions
+     td:nth-child(3)=goal  td:nth-child(4)=indicator
+     td:nth-child(5)=budget td:nth-child(6)=person
+     td:nth-child(7)=actual td:nth-child(8)=rate
+     td:nth-child(9)=Q  td:nth-child(10)=E  td:nth-child(11)=T  td:nth-child(12)=A
+     td:nth-child(13)=remarks  td:nth-child(14)=delete(hidden)
+
+   ── IPCR column map ──
+     td:nth-child(1)=drag  td:nth-child(2)=actions
+     td:nth-child(3)=goal  td:nth-child(4)=indicator
+     td:nth-child(5)=actual td:nth-child(6)=rate
+     td:nth-child(7)=Q  td:nth-child(8)=E  td:nth-child(9)=T  td:nth-child(10)=A
+     td:nth-child(11)=remarks  td:nth-child(12)=delete(hidden)
+═══════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   BASE: .qet-print-symbol — hidden on screen; shown in target print
+══════════════════════════════════════════════════════════════ */
+.qet-print-symbol {
+    display: none;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOTH PRINT MODES: always hide Rating Matrix embed
+══════════════════════════════════════════════════════════════ */
+@media print {
+    .rm-embed-slot,
+    .rm-embed-body,
+    #rm-panel { display: none !important; }
+
+    /* Also hide the no-print divider heading */
+    .rm-section-divider { display: none !important; }
+
+    /* Ensure action bars never print */
+    .action-bar { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT TARGET MODE
+══════════════════════════════════════════════════════════════ */
+@media print {
+
+    /* ── Hide function summary tables ── */
+    .print-target-mode #dpcrFuncSummary,
+    .print-target-mode #spcrFuncSummary,
+    .print-target-mode #ipcrSummary { display: none !important; }
+
+    /* ── Hide SPCR average footer rows ── */
+    .print-target-mode .spcr-avg-row { display: none !important; }
+
+    /* ════════════════════════════
+       DPCR — target mode blanking
+       Col indices (DOM position):
+         5=target%  6=budget  8=actual  9=rate  13=A
+    ════════════════════════════ */
+
+    /* Target % — blank */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(5) > *    { visibility: hidden !important; }
+
+    /* Budget — blank */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(6) > *    { visibility: hidden !important; }
+
+    /* Actual Accomplishment — blank (textarea + actual% input + label) */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(8) > *    { visibility: hidden !important; }
+
+    /* Accomplishment Rate — blank */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(9) > *    { visibility: hidden !important; }
+
+    /* A(4) — blank */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(13) .rating-a-display,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+        tr:not(.section-header) > td:nth-child(13) .rating-a-print  { visibility: hidden !important; }
+
+    /* Q/E/T — hide number inputs, show symbol span */
+    .print-target-mode #page-dpcr .dpcr-table .rating-num { display: none !important; }
+    .print-target-mode #page-dpcr .dpcr-table .qet-print-symbol { display: block !important; }
+
+    /* ════════════════════════════
+       SPCR — target mode blanking
+       Col indices:
+         5=budget  7=actual  8=rate  12=A
+    ════════════════════════════ */
+
+    /* Budget — blank */
+    .print-target-mode #page-spcr .spcr-table tbody
+        tr:not(.spcr-section-row):not(.spcr-avg-row) > td:nth-child(5) > * { visibility: hidden !important; }
+
+    /* Actual Accomplishment — blank */
+    .print-target-mode #page-spcr .spcr-table tbody
+        tr:not(.spcr-section-row):not(.spcr-avg-row) > td:nth-child(7) > * { visibility: hidden !important; }
+
+    /* Accomplishment Rate — blank */
+    .print-target-mode #page-spcr .spcr-table tbody
+        tr:not(.spcr-section-row):not(.spcr-avg-row) > td:nth-child(8) > * { visibility: hidden !important; }
+
+    /* A(4) — blank */
+    .print-target-mode #page-spcr .spcr-table tbody
+        tr:not(.spcr-section-row):not(.spcr-avg-row) > td:nth-child(12) .rating-a-display,
+    .print-target-mode #page-spcr .spcr-table tbody
+        tr:not(.spcr-section-row):not(.spcr-avg-row) > td:nth-child(12) .rating-a-print { visibility: hidden !important; }
+
+    /* Q/E/T — hide number, show symbol */
+    .print-target-mode #page-spcr .spcr-table .rating-num { display: none !important; }
+    .print-target-mode #page-spcr .spcr-table .qet-print-symbol { display: block !important; }
+
+    /* ════════════════════════════
+       IPCR — target mode blanking
+       Col indices:
+         5=actual  6=rate  10=A
+    ════════════════════════════ */
+
+    /* Actual Accomplishment — blank */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+        tr:not(.section-header) > td:nth-child(5) > *    { visibility: hidden !important; }
+
+    /* Accomplishment Rate — blank */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+        tr:not(.section-header) > td:nth-child(6) > *    { visibility: hidden !important; }
+
+    /* A(4) — blank */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+        tr:not(.section-header) > td:nth-child(10) .rating-a-display,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+        tr:not(.section-header) > td:nth-child(10) .rating-a-print { visibility: hidden !important; }
+
+    /* Q/E/T — hide number, show symbol */
+    .print-target-mode #page-ipcr .ipcr-table .rating-num { display: none !important; }
+    .print-target-mode #page-ipcr .ipcr-table .qet-print-symbol { display: block !important; }
+
+    /* IPCR summary — hide in target mode */
+    .print-target-mode #page-ipcr #ipcrSummary { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT ACTUAL MODE — everything prints normally
+   Only rating matrix and no-print are suppressed (handled above)
+══════════════════════════════════════════════════════════════ */
+@media print {
+    /* Ensure number inputs show in actual mode */
+    .print-actual-mode .rating-num      { display: block !important; }
+    /* Ensure symbols are hidden in actual mode */
+    .print-actual-mode .qet-print-symbol { display: none !important; }
+
+    /* Ensure A(4) shows */
+    .print-actual-mode .rating-a-display { display: block !important; }
+    .print-actual-mode .rating-a-print   { display: inline !important; }
+
+    /* SPCR avg footer rows: show in actual mode */
+    .print-actual-mode .spcr-avg-row { display: table-row !important; }
+
+    /* Function summaries: show in actual mode */
+    .print-actual-mode #dpcrFuncSummary,
+    .print-actual-mode #spcrFuncSummary,
+    .print-actual-mode #ipcrSummary    { display: block !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT BUTTON PAIR STYLING (screen only)
+══════════════════════════════════════════════════════════════ */
+.print-btn-group {
+    display: inline-flex;
+    gap: 0;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1.5px solid var(--navy, #1a3b6e);
+}
+.print-btn-group .btn-print-target {
+    background: #fff;
+    color: var(--navy, #1a3b6e);
+    border: none;
+    padding: 5px 13px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    border-right: 1.5px solid var(--navy, #1a3b6e);
+    letter-spacing: .2px;
+    white-space: nowrap;
+    transition: background .12s;
+}
+.print-btn-group .btn-print-target:hover { background: #dce4f0; }
+.print-btn-group .btn-print-actual {
+    background: var(--navy, #1a3b6e);
+    color: #fff;
+    border: none;
+    padding: 5px 13px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    letter-spacing: .2px;
+    white-space: nowrap;
+    transition: background .12s;
+}
+.print-btn-group .btn-print-actual:hover { background: #0f2651; }
+
+@media print {
+    .print-btn-group { display: none !important; }
+}

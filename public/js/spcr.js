@@ -811,9 +811,14 @@ function computeSpcrFuncSummary() {
 
     var tbody = document.getElementById('spcrFuncSummaryBody');
     if (!tbody) return;
-    tbody.innerHTML = '';
     var totalFinal = 0;
     var totalPct   = 0;
+
+    /* ── Smart update: rebuild rows only when the function set changes.
+       Otherwise update avg/final cells in-place so the % input keeps focus. ── */
+    var existingFtKeys = Array.from(tbody.querySelectorAll('tr[data-ft]')).map(function(r) { return r.dataset.ft; });
+    var needsRebuild = activeFunctions.join(',') !== existingFtKeys.join(',');
+    if (needsRebuild) { tbody.innerHTML = ''; }
 
     activeFunctions.forEach(function(ft) {
         var defaultPct = activeFunctions.length > 0 ? (100 / activeFunctions.length) : 0;
@@ -826,27 +831,46 @@ function computeSpcrFuncSummary() {
         if (final !== null) totalFinal += final;
         totalPct += pct;
 
-        var row = document.createElement('tr');
-        var pctInp = document.createElement('input');
-        pctInp.type  = 'number'; pctInp.min = '0'; pctInp.max = '100'; pctInp.step = '0.1';
-        pctInp.value = Math.round(pct * 10) / 10;
-        pctInp.style.cssText = 'width:58px;text-align:center;border:1px solid #ccc;border-radius:2px;font-size:10px;font-family:Arial,sans-serif;padding:1px 3px;';
-        pctInp.title = 'Enter percentage for ' + ft + ' functions';
-        pctInp.dataset.ft = ft;
-        pctInp.addEventListener('input', function() {
-            var v = parseFloat(pctInp.value);
-            _spcrPctOverrides[ft] = isNaN(v) ? 0 : v;
-            computeSpcrFuncSummary();
-        });
+        /* Find existing row for this ft, or create a new one */
+        var row = tbody.querySelector('tr[data-ft="' + ft + '"]');
+        if (!row) {
+            row = document.createElement('tr');
+            row.dataset.ft = ft;
 
-        var tdFt  = document.createElement('td'); tdFt.textContent = ft;
-        var tdPct = document.createElement('td'); tdPct.style.textAlign = 'center'; tdPct.appendChild(pctInp);
-        var tdPctS = document.createElement('span'); tdPctS.textContent = ' %'; tdPctS.style.fontSize = '10px';
-        tdPct.appendChild(tdPctS);
-        var tdAvg = document.createElement('td'); tdAvg.style.textAlign = 'center'; tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
-        var tdFin = document.createElement('td'); tdFin.style.cssText = 'text-align:center;font-weight:700;'; tdFin.textContent = final !== null ? final.toFixed(4) : '—';
-        row.appendChild(tdFt); row.appendChild(tdPct); row.appendChild(tdAvg); row.appendChild(tdFin);
-        tbody.appendChild(row);
+            var pctInp = document.createElement('input');
+            pctInp.type  = 'number'; pctInp.min = '0'; pctInp.max = '100'; pctInp.step = '0.1';
+            pctInp.value = Math.round(pct * 10) / 10;
+            pctInp.style.cssText = 'width:58px;text-align:center;border:1px solid #ccc;border-radius:2px;font-size:10px;font-family:Arial,sans-serif;padding:1px 3px;';
+            pctInp.title = 'Enter percentage for ' + ft + ' functions';
+            pctInp.dataset.ft = ft;
+            pctInp.className = 'func-pct-inp';
+            pctInp.addEventListener('input', function() {
+                var v = parseFloat(pctInp.value);
+                _spcrPctOverrides[ft] = isNaN(v) ? 0 : v;
+                computeSpcrFuncSummary();
+            });
+
+            var tdFt  = document.createElement('td'); tdFt.textContent = ft; tdFt.className = 'func-td-ft';
+            var tdPct = document.createElement('td'); tdPct.style.textAlign = 'center'; tdPct.className = 'func-td-pct'; tdPct.appendChild(pctInp);
+            var tdPctS = document.createElement('span'); tdPctS.textContent = ' %'; tdPctS.style.fontSize = '10px';
+            tdPct.appendChild(tdPctS);
+            var tdAvg = document.createElement('td'); tdAvg.style.textAlign = 'center'; tdAvg.className = 'func-td-avg';
+            var tdFin = document.createElement('td'); tdFin.style.cssText = 'text-align:center;font-weight:700;'; tdFin.className = 'func-td-fin';
+            row.appendChild(tdFt); row.appendChild(tdPct); row.appendChild(tdAvg); row.appendChild(tdFin);
+            tbody.appendChild(row);
+        } else {
+            /* Row already exists — only update the pct input if user is NOT focused on it */
+            var pctInp = row.querySelector('input.func-pct-inp');
+            if (pctInp && document.activeElement !== pctInp) {
+                pctInp.value = Math.round(pct * 10) / 10;
+            }
+        }
+
+        /* Always update avg and final cells */
+        var tdAvg = row.querySelector('.func-td-avg');
+        var tdFin = row.querySelector('.func-td-fin');
+        if (tdAvg) tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
+        if (tdFin) tdFin.textContent = final !== null ? final.toFixed(4) : '—';
     });
 
     /* 100% validation warning */

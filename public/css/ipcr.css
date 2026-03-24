@@ -149,3 +149,77 @@
         print-color-adjust: exact !important;
     }
 }
+/* ══════════════════════════════════════════════════════════════
+   IPCR INLINE AVERAGE ROW
+   Appears inside #ipcrBody just after the last data row of each
+   function group. Rebuilt automatically by computeIpcrSummary().
+══════════════════════════════════════════════════════════════ */
+.ipcr-table .ipcr-avg-row td {
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+.ipcr-table .ipcr-avg-row .ipcr-avg-val {
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Print — keep avg rows visible and coloured */
+@media print {
+    #page-ipcr .ipcr-table .ipcr-avg-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 9px !important;
+    }
+    /* In target-mode print, hide avg rows (no actuals = no avg) */
+    .print-target-mode #page-ipcr .ipcr-table .ipcr-avg-row {
+        display: none !important;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IPCR LINK-FROM-SPCR TABLE (inside viewModal)
+   Full SPCR table view used when clicking the Link button on a row.
+══════════════════════════════════════════════════════════════ */
+.ipcr-link-spcr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+}
+.ipcr-link-spcr-table th {
+    background: #dce4f0;
+    border: 1px solid #b8c4d8;
+    padding: 5px 7px;
+    font-weight: 700;
+    color: #1a3b6e;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 9.5px;
+    white-space: nowrap;
+}
+.ipcr-link-spcr-table td {
+    border: 1px solid #dde3ef;
+    padding: 5px 7px;
+    vertical-align: top;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.ipcr-link-spcr-table tbody tr:nth-child(even):not([colspan]) td {
+    background: #fafbfd;
+}
+.ipcr-link-spcr-table tbody tr:hover:not([colspan]) td {
+    background: #eef2fb;
+}
+/* Section header rows inside the link table */
+.ipcr-link-spcr-table td[colspan] {
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: .3px;
+    padding: 5px 8px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}

@@ -135,7 +135,7 @@
         </tbody>
     </table>
 
-    {{-- SPCR Function Summary Table (mirrors IPCR pattern) --}}
+    {{-- SPCR Function Summary Table --}}
     <div class="ipcr-summary" id="spcrFuncSummary" style="margin-top:14px;">
         <table class="ipcr-rating-summary">
             <thead>
@@ -166,7 +166,7 @@
     </div>
 
     {{-- Action Bar --}}
-    <div class="action-bar">
+    <div class="action-bar no-print">
         <button type="button" class="btn-action btn-navy"   id="sAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="sAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="sClearBtn">Clear Form</button>
@@ -176,13 +176,23 @@
         </button>
         <button type="button" class="btn-action btn-green"  id="sSaveBtn"
                 style="margin-left:auto;">💾 Save SPCR</button>
-        <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
+        
+        {{-- Two-button print group --}}
+        <div class="print-btn-group" title="Print options">
+            <button type="button" class="btn-print-target"
+                    onclick="printSpcrTarget()"
+                    title="Print target form — budget, actuals and ratings are blank; Q/E/T show ✓ or –">
+                🖨 Print Target
+            </button>
+            <button type="button" class="btn-print-actual"
+                    onclick="printSpcrActual()"
+                    title="Print full form with all data filled in">
+                🖨 Print Actual
+            </button>
+        </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════════
-         Rating Matrix — embedded below the SPCR table.
-         #rm-panel is moved here by switchTab() on every tab switch.
-    ═══════════════════════════════════════════════════════════════ --}}
+    {{-- Rating Matrix embed slot --}}
     <div class="rm-embed-slot" id="rm-slot-spcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">

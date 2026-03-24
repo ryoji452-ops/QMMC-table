@@ -100,7 +100,7 @@ function createIpcrSectionRow(label) {
     del.className = 'remove-btn no-print';
     del.innerHTML = '&times;';
     del.style.cssText = 'margin-left:8px;vertical-align:middle;';
-    del.onclick = function() { tr.remove(); };
+    del.onclick = function() { tr.remove(); computeIpcrSummary(); };
 
     td.appendChild(btnBar);
     td.appendChild(inp);
@@ -322,17 +322,9 @@ function createIpcrRow(data) {
     dBtn.onclick = function() { tr.remove(); computeIpcrSummary(); };
     tdDel.appendChild(dBtn); tr.appendChild(tdDel);
 
-    /* Wire link button */
+    /* Wire link button — opens full SPCR table view with per-row "Link" buttons */
     lnkBtn.onclick = function() {
-        var spcrRows = _getAllSpcrRows();
-        openLinkModal('Link from SPCR \u2014 Performance Measure', spcrRows, function(row) {
-            tr.dataset.linkedSpcrId = row.rowEl ? (row.rowEl.rowIndex ? row.rowEl.rowIndex.toString() : 'linked') : 'linked';
-            indTA.value = row.text || '';
-            autoExpand(indTA);
-            var odTA = row.rowEl ? row.rowEl.querySelector('textarea[data-key="strategic_goal"]') : null;
-            if (odTA && odTA.value.trim()) { goalTA.value = odTA.value.trim(); autoExpand(goalTA); }
-            _updateIpcrLinkBtn(lnkBtn, 'linked');
-        });
+        _openIpcrLinkFromSpcrTable(tr, indTA, goalTA, lnkBtn);
     };
 
     /* Wire view-links button */
@@ -356,6 +348,304 @@ function createIpcrRow(data) {
     return tr;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   LINK FROM SPCR — full table view
+   Opens the viewModal showing the entire live SPCR table.
+   Each data row has a "Link" button the user clicks to pull
+   that row's PI and Goal into the IPCR row.
+══════════════════════════════════════════════════════════════ */
+function _openIpcrLinkFromSpcrTable(ipcrTr, indTA, goalTA, lnkBtn) {
+    /* Collect all SPCR data rows from the live DOM */
+    var spcrDataRows = [];
+    var currentSection = '';
+    document.querySelectorAll('#spcrBody tr').forEach(function(tr) {
+        if (tr.classList.contains('spcr-section-row') || tr.classList.contains('spcr-avg-row')) {
+            var inp = tr.querySelector('input[data-key="section_label"]');
+            var tdC = tr.querySelector('td[colspan]');
+            currentSection = (inp ? inp.value.trim() : (tdC ? tdC.textContent.trim() : '')) || currentSection;
+            return;
+        }
+        var piTA   = tr.querySelector('textarea.pi-custom');
+        var gTA    = tr.querySelector('textarea[data-key="strategic_goal"]');
+        var pIn    = tr.querySelector('input[data-key="person_accountable"]');
+        var cells  = tr.querySelectorAll('td');
+        spcrDataRows.push({
+            rowEl:    tr,
+            section:  currentSection,
+            goal:     gTA   ? gTA.value.trim()  : '',
+            pi:       piTA  ? piTA.value.trim()  : '',
+            person:   pIn   ? pIn.value.trim()   : '',
+            actual:   cells[6] ? ((cells[6].querySelector('textarea') || {}).value || '') : '',
+            rate:     cells[7] ? ((cells[7].querySelector('input')    || {}).value || '') : '',
+            remarks:  cells[12]? ((cells[12].querySelector('textarea')|| {}).value || '') : '',
+        });
+    });
+
+    var modal  = document.getElementById('viewModal');
+    var titleEl = document.getElementById('viewModalTitle');
+    var bodyEl  = document.getElementById('viewModalContent');
+    if (!modal || !titleEl || !bodyEl) return;
+
+    titleEl.textContent = 'Select a row from SPCR to link';
+
+    if (!spcrDataRows.length) {
+        bodyEl.innerHTML = '<p class="view-linked-empty" style="padding:18px 0;">'
+            + 'No rows in the SPCR table. Add rows to SPCR first, or load a saved SPCR.'
+            + '</p>';
+        modal.classList.add('open');
+        return;
+    }
+
+    /* Group rows under their section headers */
+    var html = '<p style="font-size:10px;color:#555;margin-bottom:12px;font-style:italic;">'
+        + 'Click <strong>Link</strong> on any row to copy its Performance Indicator and Strategic Goal into the IPCR row.'
+        + '</p>';
+
+    /* Build a full table — one <tbody> group per section */
+    html += '<table class="view-tbl ipcr-link-spcr-table" style="width:100%;border-collapse:collapse;">'
+        + '<thead><tr>'
+        + '<th style="width:15%;">Strategic Goal</th>'
+        + '<th style="width:22%;">Performance Indicator</th>'
+        + '<th style="width:10%;">Person Accountable</th>'
+        + '<th style="width:18%;">Actual Accomplishment</th>'
+        + '<th style="width:8%;text-align:center;">Rate</th>'
+        + '<th style="width:18%;">Remarks</th>'
+        + '<th style="width:9%;text-align:center;" class="no-print">Action</th>'
+        + '</tr></thead>';
+
+    var lastSection = null;
+    spcrDataRows.forEach(function(r, idx) {
+        if (r.section !== lastSection) {
+            /* Section header row inside the table */
+            var secCfg = { color: '#1a3b6e', bg: '#dce4f0' };
+            var up = (r.section || '').toUpperCase();
+            if      (up.includes('CORE'))    secCfg = { color: '#1e6e3a', bg: '#d4edda' };
+            else if (up.includes('SUPPORT')) secCfg = { color: '#7a4f00', bg: '#fff3cd' };
+            html += '<tr><td colspan="7" style="background:' + secCfg.bg
+                + ';color:' + secCfg.color
+                + ';font-weight:700;border-left:4px solid ' + secCfg.color
+                + ';padding:4px 8px;font-size:9.5px;letter-spacing:.3px;">'
+                + esc(r.section || 'SECTION')
+                + '</td></tr>';
+            lastSection = r.section;
+        }
+        html += '<tr data-spcr-idx="' + idx + '">'
+            + '<td>' + esc(r.goal   || '\u2014') + '</td>'
+            + '<td><strong>' + esc(r.pi     || '\u2014') + '</strong></td>'
+            + '<td>' + esc(r.person || '\u2014') + '</td>'
+            + '<td>' + esc(r.actual || '\u2014') + '</td>'
+            + '<td style="text-align:center;font-weight:700;">' + esc(r.rate   || '\u2014') + '</td>'
+            + '<td>' + esc(r.remarks|| '\u2014') + '</td>'
+            + '<td style="text-align:center;" class="no-print">'
+            + '<button type="button" class="ipcr-link-pick-btn badge-btn badge-view" data-idx="' + idx + '" '
+            + 'style="background:var(--navy);color:#fff;border:none;border-radius:3px;padding:3px 10px;'
+            + 'font-size:10px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Link</button>'
+            + '</td>'
+            + '</tr>';
+    });
+    html += '</table>';
+
+    bodyEl.innerHTML = html;
+    modal.classList.add('open');
+
+    /* Wire the Link buttons — use event delegation on the table */
+    bodyEl.addEventListener('click', function handler(e) {
+        var btn = e.target.closest('.ipcr-link-pick-btn');
+        if (!btn) return;
+        var idx = parseInt(btn.dataset.idx, 10);
+        var row = spcrDataRows[idx];
+        if (!row) return;
+
+        /* Copy PI and Goal into the IPCR row */
+        if (row.pi) {
+            indTA.value = row.pi;
+            autoExpand(indTA);
+            if (typeof _rmEnsureLinkedRow === 'function') _rmEnsureLinkedRow(ipcrTr, indTA);
+        }
+        if (row.goal) {
+            goalTA.value = row.goal;
+            autoExpand(goalTA);
+        }
+        ipcrTr.dataset.linkedSpcrId = 'linked';
+        _updateIpcrLinkBtn(lnkBtn, 'linked');
+
+        /* Close modal and flash the IPCR row */
+        modal.classList.remove('open');
+        setTimeout(function() {
+            ipcrTr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            ipcrTr.classList.add('row-highlight');
+            setTimeout(function() { ipcrTr.classList.remove('row-highlight'); }, 2000);
+        }, 80);
+
+        bodyEl.removeEventListener('click', handler);
+    });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IPCR AVERAGE ROW — factory + rebuild
+   Creates a summary row showing the average A(4) for a function
+   group. Inserted just before each section-header row (i.e. at
+   the bottom of the preceding function's rows) and at the very
+   end of the tbody after the last function's rows.
+══════════════════════════════════════════════════════════════ */
+
+/* Create one avg row for a given function type + computed average */
+function createIpcrAvgRow(funcType, avgValue) {
+    var cfgMap = {
+        Core:      { color: '#1e6e3a', bg: '#eaf6ee' },
+        Support:   { color: '#7a4f00', bg: '#fdf6e3' },
+        Strategic: { color: '#1a3b6e', bg: '#edf1f8' },
+    };
+    var cfg = cfgMap[funcType] || { color: '#333', bg: '#f5f5f5' };
+
+    var tr = document.createElement('tr');
+    tr.className = 'ipcr-avg-row';
+    tr.dataset.funcType = funcType;
+    tr.style.cssText = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+
+    /* col 0: drag-handle placeholder */
+    var tdH = document.createElement('td');
+    tdH.className = 'no-print';
+    tdH.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
+    tr.appendChild(tdH);
+
+    /* col 1: actions placeholder */
+    var tdA = document.createElement('td');
+    tdA.className = 'no-print';
+    tdA.style.cssText = 'border:none;background:transparent;padding:0;width:54px;';
+    tr.appendChild(tdA);
+
+    /* cols 2–8: label spanning goal → rate (7 cols) */
+    var tdLabel = document.createElement('td');
+    tdLabel.colSpan = 7;
+    tdLabel.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:9.5px;text-align:right;padding:4px 10px;'
+        + 'border-top:1.5px solid ' + cfg.color + ';letter-spacing:.2px;'
+        + '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+    tdLabel.textContent = 'Average Rating \u2014 ' + funcType + ' Functions:';
+    tr.appendChild(tdLabel);
+
+    /* col 9: A value */
+    var tdVal = document.createElement('td');
+    tdVal.className = 'ipcr-avg-val';
+    tdVal.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:11px;text-align:center;padding:4px 6px;'
+        + 'border-top:1.5px solid ' + cfg.color
+        + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+    tdVal.textContent = (avgValue !== null && !isNaN(avgValue))
+        ? parseFloat(avgValue).toFixed(2)
+        : '\u2014';
+    tr.appendChild(tdVal);
+
+    /* col 10: remarks — empty filler */
+    var tdRem = document.createElement('td');
+    tdRem.style.cssText = 'background:' + cfg.bg
+        + ';border-top:1.5px solid ' + cfg.color
+        + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+    tr.appendChild(tdRem);
+
+    /* col 11: delete button placeholder (no-print) */
+    var tdDel = document.createElement('td');
+    tdDel.className = 'no-print';
+    tdDel.style.cssText = 'border:none;background:transparent;padding:0;width:26px;';
+    tr.appendChild(tdDel);
+
+    return tr;
+}
+
+/**
+ * Rebuild all IPCR average rows.
+ * Removes existing .ipcr-avg-row rows, then for each function group
+ * (determined by section headers) inserts a fresh avg row just BEFORE
+ * the next section-header (or at the end of the tbody for the last group).
+ * Called at the end of computeIpcrSummary().
+ */
+function _rebuildIpcrAvgRows() {
+    var body = document.getElementById('ipcrBody');
+    if (!body) return;
+
+    /* Remove existing avg rows */
+    body.querySelectorAll('.ipcr-avg-row').forEach(function(r) { r.remove(); });
+
+    /* Walk the tbody, grouping data rows by current function type */
+    var groups = [];   /* [{type, lastDataRow}] */
+    var currentType = 'Core';
+    var lastDataRow = null;
+
+    var rows = Array.from(body.querySelectorAll('tr'));
+    rows.forEach(function(tr) {
+        if (tr.classList.contains('section-header')) {
+            /* If we have a preceding group with data rows, record it */
+            if (lastDataRow !== null) {
+                groups.push({ type: currentType, lastDataRow: lastDataRow });
+                lastDataRow = null;
+            }
+            /* Determine type from label */
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('SUPPORT'))   currentType = 'Support';
+            else if (up.includes('STRATEGIC')) currentType = 'Strategic';
+            else                               currentType = 'Core';
+            return;
+        }
+        /* Skip any non-data rows (old avg rows already removed) */
+        if (tr.classList.contains('ipcr-avg-row')) return;
+        /* Any remaining row is a data row */
+        lastDataRow = tr;
+    });
+    /* Handle the final group */
+    if (lastDataRow !== null) {
+        groups.push({ type: currentType, lastDataRow: lastDataRow });
+    }
+
+    /* Compute averages per type from _ratingWidget */
+    var sums   = { Core: 0, Support: 0, Strategic: 0 };
+    var counts = { Core: 0, Support: 0, Strategic: 0 };
+    var curType = 'Core';
+    Array.from(body.querySelectorAll('tr')).forEach(function(tr) {
+        if (tr.classList.contains('section-header')) {
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('SUPPORT'))   curType = 'Support';
+            else if (up.includes('STRATEGIC')) curType = 'Strategic';
+            else                               curType = 'Core';
+            return;
+        }
+        if (tr.classList.contains('ipcr-avg-row')) return;
+        var rw = tr._ratingWidget;
+        if (!rw) return;
+        var aVal = rw.getA();
+        if (aVal !== null && !isNaN(aVal)) {
+            sums[curType]   += aVal;
+            counts[curType] += 1;
+        }
+    });
+
+    /* Insert avg row after lastDataRow of each group */
+    groups.forEach(function(g) {
+        var avg = counts[g.type] ? sums[g.type] / counts[g.type] : null;
+        var avgRow = createIpcrAvgRow(g.type, avg);
+        /* Insert after lastDataRow */
+        var next = g.lastDataRow.nextSibling;
+        if (next) {
+            body.insertBefore(avgRow, next);
+        } else {
+            body.appendChild(avgRow);
+        }
+    });
+}
+
+
 function _updateIpcrLinkBtn(btn, val) {
     if (val) { btn.textContent = '\uD83D\uDD17 SPCR'; btn.style.color = '#1e6e3a'; }
     else      { btn.textContent = '\u2B21 link';      btn.style.color = ''; }
@@ -374,6 +664,7 @@ function readIpcrForm() {
             else if (txt.includes('CORE'))  currentFunctionType = 'Core';
             return;
         }
+        if (tr.classList.contains('ipcr-avg-row')) return;  /* skip inline avg rows */
         var cells = tr.querySelectorAll('td');
         if (!cells.length) return;
         /* 0=drag,1=actions,2=goal,3=ind,4=actual,5=rate,6=Q,7=E,8=T,9=A,10=remarks,11=del */
@@ -442,7 +733,7 @@ function computeIpcrSummary() {
             else                               currentType = 'Core';
             return;
         }
-        /* Count every data row regardless of A value */
+        if (tr.classList.contains('ipcr-avg-row')) return;  /* skip inline avg rows */
         rowCounts[currentType] += 1;
         var rw = tr._ratingWidget;
         if (!rw) return;
@@ -525,6 +816,9 @@ function computeIpcrSummary() {
         else if (finalAvg >= 1) adj = 'Poor';
     }
     document.getElementById('i_adjectival').textContent = adj;
+
+    /* Rebuild inline average rows inside ipcrBody */
+    _rebuildIpcrAvgRows();
 }
 
 /* ── HYDRATE FROM DB ── */
@@ -657,39 +951,29 @@ document.getElementById('i_approved_by').addEventListener('input', function() {
 (function init() {
     /* ── Priority order for each form: ──────────────────────────────
        1. localStorage draft  (most recent in-session work)
-       2. DB_LATEST_*         (last saved to database)
-       3. Empty               (fresh / default state)
+       2. Empty               (fresh / default blank state)
+       NOTE: DB_LATEST_* is intentionally NOT used here so every page
+       load starts blank unless the user had unsaved draft work.
        ─────────────────────────────────────────────────────────────── */
 
     var dpcrDraft = _persistLoad(PERSIST_KEY_DPCR);
     var spcrDraft = _persistLoad(PERSIST_KEY_SPCR);
     var ipcrDraft = _persistLoad(PERSIST_KEY_IPCR);
 
-    /* DPCR */
+    /* DPCR — restore draft only, else leave the blade default blank */
     if (dpcrDraft) {
         hydrateDpcrForm(dpcrDraft);
-    } else if (window.DB_LATEST_DPCR) {
-        hydrateDpcrForm(window.DB_LATEST_DPCR);
     }
-    /* else: leave empty — just the default section header already in blade */
 
-    /* SPCR */
+    /* SPCR — restore draft only, else leave blank */
     if (spcrDraft) {
         hydrateSpcrForm(spcrDraft);
-    } else if (window.DB_LATEST_SPCR) {
-        hydrateSpcrForm(window.DB_LATEST_SPCR);
-    } else if (window.DB_LATEST_MATRIX) {
-        hydrateSpcrForm(window.DB_LATEST_MATRIX);
     }
-    /* else: leave empty */
 
-    /* IPCR */
+    /* IPCR — restore draft only, else leave blank */
     if (ipcrDraft) {
         hydrateIpcrForm(ipcrDraft);
-    } else if (window.DB_LATEST_IPCR) {
-        hydrateIpcrForm(window.DB_LATEST_IPCR);
     }
-    /* else: leave empty */
 
     initDragSort(document.getElementById('spcrBody'));
     initDragSort(document.getElementById('dpcrBody'));
