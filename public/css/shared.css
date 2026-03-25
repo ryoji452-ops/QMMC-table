@@ -113,7 +113,6 @@ body {
     font-weight: 700;
     color: var(--navy);
     text-transform: uppercase;
-    border: 2px solid var(--navy);
     display: inline-block;
     padding: 2px 18px;
 }

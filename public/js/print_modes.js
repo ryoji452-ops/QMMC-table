@@ -1,25 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
-   print_modes.js
+   print_modes.js  — FIXED & STANDARDIZED
    Handles "Print Target" and "Print Actual" for DPCR / SPCR / IPCR.
 
    PRINT TARGET  (body class: print-target-mode)
-     – Allotted Budget cell      → blank (content hidden)
-     – Target % cell             → blank
-     – Actual Accomplishment     → blank
-     – Accomplishment Rate       → blank
-     – Q / E / T cells          → ✓ if criterion active, – if N/A
-     – A(4) cell                 → blank
-     – Rating Matrix embed       → hidden (CSS)
-     – Function summary          → hidden (CSS)
+     – Actual Accomplishment  → blank
+     – Accomplishment Rate    → blank
+     – Q / E / T cells       → ✓ if criterion active, – if N/A
+     – A(4) cell             → blank
+     – Summary avg/final/adj → blank (% Distribution stays visible)
+     – Rating Matrix embed   → hidden (CSS)
 
    PRINT ACTUAL  (body class: print-actual-mode)
      – All data prints normally
-     – Rating Matrix embed       → hidden (CSS)
-     – Function summary          → shown
+     – Rating Matrix embed   → hidden (CSS)
 ═══════════════════════════════════════════════════════════════ */
 
 /* ── Inject .qet-print-symbol spans into every Q/E/T rating cell ──
-   Called once after DOM is ready and again after any hydration.
    Idempotent — checks for existing span before inserting.
 ─────────────────────────────────────────────────────────────── */
 function injectQetPrintSymbols() {
@@ -48,35 +44,59 @@ function injectQetPrintSymbols() {
         }
 
         refreshSymbol();
-
         if (chk) chk.addEventListener('change', refreshSymbol);
         if (inp) inp.addEventListener('input',  refreshSymbol);
-
         td.appendChild(sym);
     });
 }
 
-/* ── Helper: activate one page, set mode class, print, restore ── */
+/* ── Ensure all compute functions have run ──
+   Called just before printing in either mode.
+─────────────────────────────────────────────────────────────── */
+function _runAllComputations() {
+    try { if (typeof computeDpcrFuncSummary === 'function') computeDpcrFuncSummary(); } catch(e) {}
+    try { if (typeof computeSpcrFuncSummary === 'function') computeSpcrFuncSummary(); } catch(e) {}
+    try { if (typeof computeSpcrAverages    === 'function') computeSpcrAverages();    } catch(e) {}
+    try { if (typeof computeIpcrSummary     === 'function') computeIpcrSummary();     } catch(e) {}
+}
+
+/* ── Refresh QET symbols for the given page element ── */
+function _refreshSymbolsForPage(pageEl) {
+    if (!pageEl) return;
+    injectQetPrintSymbols();
+    pageEl.querySelectorAll('.rating-cell').forEach(function(td) {
+        if (td.querySelector('.rating-a-display')) return;
+        var sym = td.querySelector('.qet-print-symbol');
+        if (!sym) return;
+        var chk = td.querySelector('input.rating-chk');
+        var inp = td.querySelector('input.rating-num');
+        var active;
+        if (chk)      active = chk.checked;
+        else if (inp) active = inp.value.trim() !== '';
+        else          active = false;
+        sym.textContent = active ? '\u2713' : '\u2013';
+    });
+}
+
+/* ── Core print helper ──
+   1. Run all computations so summary tables are fully populated.
+   2. Activate only the target page.
+   3. Apply the print-mode class.
+   4. Print.
+   5. Restore everything.
+─────────────────────────────────────────────────────────────── */
 function _printPage(pageId, modeClass) {
     var allPages   = document.querySelectorAll('.page');
     var targetPage = document.getElementById(pageId);
     if (!targetPage) return;
 
-    /* Refresh symbols just before printing so they reflect latest state */
-    injectQetPrintSymbols();
-    targetPage.querySelectorAll('.qet-print-symbol').forEach(function(sym) {
-        var td  = sym.closest('.rating-cell');
-        if (!td) return;
-        var chk = td.querySelector('input.rating-chk');
-        var inp = td.querySelector('input.rating-num');
-        var active;
-        if (chk) active = chk.checked;
-        else if (inp) active = inp.value.trim() !== '';
-        else active = false;
-        sym.textContent = active ? '\u2713' : '\u2013';
-    });
+    /* Step 1 — ensure every computation is up to date */
+    _runAllComputations();
 
-    /* Save active-page state */
+    /* Step 2 — refresh QET symbols on the target page */
+    _refreshSymbolsForPage(targetPage);
+
+    /* Step 3 — capture current active-page state */
     var wasActive = [];
     allPages.forEach(function(p) {
         wasActive.push(p.classList.contains('active'));
@@ -84,13 +104,14 @@ function _printPage(pageId, modeClass) {
     });
     targetPage.classList.add('active');
 
-    /* Apply print mode */
+    /* Step 4 — apply print mode class */
     document.body.classList.remove('print-target-mode', 'print-actual-mode');
     document.body.classList.add(modeClass);
 
+    /* Step 5 — print */
     window.print();
 
-    /* Restore */
+    /* Step 6 — restore */
     document.body.classList.remove('print-target-mode', 'print-actual-mode');
     allPages.forEach(function(p, i) {
         if (wasActive[i]) p.classList.add('active');
@@ -98,9 +119,9 @@ function _printPage(pageId, modeClass) {
     });
 }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    PUBLIC API — called by blade print buttons
-══════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function printDpcrTarget() { _printPage('page-dpcr', 'print-target-mode'); }
 function printDpcrActual() { _printPage('page-dpcr', 'print-actual-mode'); }
 
@@ -128,7 +149,7 @@ if (document.readyState === 'loading') {
         var el = document.getElementById(id);
         if (!el) return;
         new MutationObserver(function() {
-            setTimeout(injectQetPrintSymbols, 100);
+            setTimeout(injectQetPrintSymbols, 150);
         }).observe(el, { childList: true, subtree: false });
     });
 })();

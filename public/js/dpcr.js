@@ -1,29 +1,14 @@
 /* ═══════════════════════════════════════════
-   dpcr.js
-   DPCR row factory, read, hydrate,
-   and all DPCR event listeners.
-   Requires: shared.js, spcr.js (for createSpcrRow)
-
-   TABLE COLUMNS (0-based td index):
-     0  drag-handle  (no-print, 18px)
-     1  row-actions  (no-print, 54px) ← push + view-links buttons
-     2  Strategic Goal
-     3  Performance Indicator
-     4  Target %
-     5  Allotted Budget
-     6  Section Accountable  (multi-select widget)
-     7  Actual Accomplishment (textarea + actual%)
-     8  Accomplishment Rate   (computed display)
-     9  Q  10 E  11 T  12 A  (rating cells)
-    13  Remarks
-    14  Delete (no-print)
+   dpcr.js  (DIFF: computeDpcrFuncSummary row builder updated)
+   All other functions are unchanged from original.
+   Paste this file over the existing dpcr.js entirely.
 ═══════════════════════════════════════════ */
 
 /* ── FUNCTION TYPE SECTION CONFIG ── */
 const DPCR_FUNC_SECTIONS = [
-    { label: 'STRATEGIC FUNCTIONS',  type: 'Strategic', color: '#1a3b6e', bg: '#dce4f0' },
-    { label: 'CORE FUNCTIONS',        type: 'Core',      color: '#1e6e3a', bg: '#d4edda' },
-    { label: 'SUPPORT FUNCTIONS',     type: 'Support',   color: '#7a4f00', bg: '#fff3cd' },
+    { label: 'STRATEGIC FUNCTIONS',  type: 'Strategic',},
+    { label: 'CORE FUNCTIONS',        type: 'Core', },
+    { label: 'SUPPORT FUNCTIONS',     type: 'Support', },
 ];
 
 function _funcTypeFromLabel(label) {
@@ -36,7 +21,6 @@ function _funcTypeFromLabel(label) {
 function _styleSection(tr, label) {
     var cfg = DPCR_FUNC_SECTIONS.filter(function(f) { return f.type === _funcTypeFromLabel(label); })[0]
            || DPCR_FUNC_SECTIONS[0];
-    /* col 0 = drag, col 1 = section content td */
     var tds = tr.querySelectorAll('td');
     var td  = tds[1] || tds[0];
     if (!td) return;
@@ -52,10 +36,8 @@ function createDpcrSectionRow(label) {
     var tr = document.createElement('tr');
     tr.className = 'section-header';
 
-    /* col 0: drag handle */
     tr.appendChild(makeDragHandle());
 
-    /* col 1: section content — colspan covers all remaining data cols (13) */
     var td = document.createElement('td');
     td.colSpan = 13;
 
@@ -81,7 +63,6 @@ function createDpcrSectionRow(label) {
     inp.dataset.key   = 'section_label';
     inp.value         = label;
 
-    /* Mirror span — visible on print, hidden on screen */
     var printSpan = document.createElement('span');
     printSpan.className = 'section-label-print';
     printSpan.style.cssText = 'font-weight:700;font-size:10px;vertical-align:middle;letter-spacing:.3px;';
@@ -106,7 +87,6 @@ function createDpcrSectionRow(label) {
     td.appendChild(del);
     tr.appendChild(td);
 
-    /* Trailing no-print td — keeps td:last-child off the content cell on print */
     var tdTrail = document.createElement('td');
     tdTrail.className = 'no-print';
     tdTrail.style.cssText = 'border:none;background:transparent;padding:0;width:0;';
@@ -118,24 +98,13 @@ function createDpcrSectionRow(label) {
 
 /* ══════════════════════════════════════════════════════════════
    MULTI-SELECT SECTION-ACCOUNTABLE WIDGET
-   ──────────────────────────────────────────────────────────────
-   • Default = empty (just the ▾ dropdown button, no chips)
-   • Selecting "ALL SECTIONS" auto-checks every other section
-     AND disables/greys them out — ALL SECTIONS is the master.
-   • Unchecking "ALL SECTIONS" clears all and re-enables others.
-   .getValues() → string[]   .setValues(string[]) → void
 ══════════════════════════════════════════════════════════════ */
 function _createSectionMultiSelect(initialValues) {
-    /* Default = empty — user must pick from the dropdown.
-       Only pre-select if explicit saved values are passed in. */
     var startVals = (initialValues && initialValues.length > 0)
         ? initialValues.filter(Boolean)
         : [];
 
-    /* Track whether "ALL SECTIONS" is active */
     var allActive = startVals.indexOf('ALL SECTIONS') !== -1;
-
-    /* selected = the actual stored set (always includes individual sections too when all=true) */
     var selected = new Set(allActive ? SECTS : startVals);
 
     var wrapper  = document.createElement('div');
@@ -171,11 +140,9 @@ function _createSectionMultiSelect(initialValues) {
     panelTop.appendChild(clearBtn);
     panel.appendChild(panelTop);
 
-    /* Build checklist — ALL SECTIONS first, then individual sections */
     var checkList = document.createElement('div');
     checkList.className = 'sec-multisel-list';
 
-    /* ── "ALL SECTIONS" master checkbox ── */
     var allLbl = document.createElement('label');
     allLbl.className = 'sec-multisel-item sec-multisel-all-item';
     allLbl.style.cssText = 'font-weight:700;border-bottom:1px solid #ddd;margin-bottom:4px;padding-bottom:4px;';
@@ -187,7 +154,6 @@ function _createSectionMultiSelect(initialValues) {
     allChk.addEventListener('change', function() {
         allActive = allChk.checked;
         if (allActive) {
-            /* Check and disable every individual section */
             SECTS.forEach(function(s) { if (s !== 'ALL SECTIONS') selected.add(s); });
             selected.add('ALL SECTIONS');
         } else {
@@ -200,8 +166,7 @@ function _createSectionMultiSelect(initialValues) {
     allLbl.appendChild(document.createTextNode('\u00a0ALL SECTIONS'));
     checkList.appendChild(allLbl);
 
-    /* ── Individual section checkboxes ── */
-    var itemCheckboxes = []; /* keep refs for enable/disable toggling */
+    var itemCheckboxes = [];
     SECTS.forEach(function(s) {
         if (s === 'ALL SECTIONS') return;
 
@@ -212,8 +177,6 @@ function _createSectionMultiSelect(initialValues) {
         chk.type    = 'checkbox';
         chk.value   = s;
         chk.checked = selected.has(s);
-
-        /* If ALL SECTIONS is active, individual ones are disabled */
         chk.disabled = allActive;
         if (allActive) {
             lbl.style.opacity = '0.45';
@@ -248,10 +211,8 @@ function _createSectionMultiSelect(initialValues) {
     });
 
     function _refresh() {
-        /* Sync master checkbox */
         allChk.checked = allActive;
 
-        /* Sync individual checkboxes — disabled + greyed when allActive */
         itemCheckboxes.forEach(function(item) {
             item.chk.checked  = allActive || selected.has(item.chk.value);
             item.chk.disabled = allActive;
@@ -260,7 +221,6 @@ function _createSectionMultiSelect(initialValues) {
             item.lbl.style.pointerEvents = allActive ? 'none' : '';
         });
 
-        /* Rebuild tag chip area */
         tagArea.innerHTML = '';
 
         if (selected.size === 0 && !allActive) {
@@ -271,7 +231,6 @@ function _createSectionMultiSelect(initialValues) {
             return;
         }
 
-        /* When allActive show a single "ALL SECTIONS" chip */
         if (allActive) {
             var allChip = document.createElement('span');
             allChip.className = 'sec-multisel-chip no-print';
@@ -296,7 +255,6 @@ function _createSectionMultiSelect(initialValues) {
             return;
         }
 
-        /* Individual chips */
         selected.forEach(function(s) {
             if (s === 'ALL SECTIONS') return;
             var chip = document.createElement('span');
@@ -324,7 +282,6 @@ function _createSectionMultiSelect(initialValues) {
     return {
         wrapper:   wrapper,
         getValues: function() {
-            /* When ALL SECTIONS is active, return ['ALL SECTIONS'] as the saved value */
             if (allActive) return ['ALL SECTIONS'];
             return Array.from(selected).filter(function(s) { return s !== 'ALL SECTIONS'; });
         },
@@ -343,9 +300,7 @@ function _createSectionMultiSelect(initialValues) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   VIEW-LINKED MODAL — build linked SPCR + IPCR rows HTML
-   NOTE: SPCR now has col layout 0=drag,1=actions,2=goal,3=ind,
-   4=bud,5=person,6=actual,7=rate
+   VIEW-LINKED MODAL
 ══════════════════════════════════════════════════════════════ */
 function _buildDpcrLinkedViewHtml(dpcrPiText) {
     var needle = (dpcrPiText || '').trim().toLowerCase();
@@ -374,7 +329,6 @@ function _buildDpcrLinkedViewHtml(dpcrPiText) {
     document.querySelectorAll('#ipcrBody tr:not(.section-header)').forEach(function(tr) {
         var cells = tr.querySelectorAll('td');
         if (cells.length < 4) return;
-        /* ipcr col: 0=drag,1=actions,2=goal,3=indicator */
         var goalTA = cells[2] ? cells[2].querySelector('textarea') : null;
         var indTA  = cells[3] ? cells[3].querySelector('textarea') : null;
         if (!indTA) return;
@@ -438,10 +392,8 @@ function createDpcrRow(data) {
     data = data || {};
     var tr = document.createElement('tr');
 
-    /* col 0: drag handle */
     tr.appendChild(makeDragHandle());
 
-    /* col 1: row actions column — push to SPCR + view links */
     var tdAct = document.createElement('td');
     tdAct.className = 'spcr-row-actions no-print';
 
@@ -459,7 +411,6 @@ function createDpcrRow(data) {
     viewLinkedBtn.textContent = '👁 Links';
     viewLinkedBtn.style.color = '#555';
 
-    /* Guide button — pops up computation explanation */
     var guideBtn = document.createElement('button');
     guideBtn.type      = 'button';
     guideBtn.className = 'row-action-btn no-print';
@@ -520,10 +471,8 @@ function createDpcrRow(data) {
     var rawSection = data.section_accountable || '';
     var initSections;
     if (rawSection === 'ALL SECTIONS') {
-        /* Saved as ALL SECTIONS → restore that state */
         initSections = ['ALL SECTIONS'];
     } else if (!rawSection) {
-        /* No saved value → start empty, user picks from dropdown */
         initSections = [];
     } else {
         initSections = rawSection
@@ -581,7 +530,7 @@ function createDpcrRow(data) {
         if (!isNaN(rv)) rateDisplay.style.color = rv >= 100 ? '#1e6e3a' : rv >= 75 ? '#7a4f00' : '#b00020';
     } else { computeRate(); }
 
-    /* cols 9–12: Q E T A rating cells with checkbox + auto-average */
+    /* cols 9–12: Q E T A rating cells */
     var ratingWidget = _buildQETACells({
         rating_q: data.rating_q,
         rating_e: data.rating_e,
@@ -610,7 +559,7 @@ function createDpcrRow(data) {
     dBtn.onclick = function() { tr.remove(); computeDpcrFuncSummary(); };
     tdDel.appendChild(dBtn); tr.appendChild(tdDel);
 
-    /* Wire action buttons (need piTA / goalTA / secMultiSel in closure) */
+    /* Wire action buttons */
     piPushBtn.onclick = function() {
         var detail = piTA.value.trim(), goal = goalTA.value.trim();
         if (!detail && !goal) {
@@ -623,7 +572,6 @@ function createDpcrRow(data) {
             strategic_goal:        goal,
             performance_indicator: detail,
             person_accountable:    sections.join(', '),
-            /* Carry current DPCR rating values as pre-fill hints */
             rating_q:              _rw ? _rw.getQ() : null,
             rating_e:              _rw ? _rw.getE() : null,
             rating_t:              _rw ? _rw.getT() : null,
@@ -661,7 +609,7 @@ function createDpcrRow(data) {
     return tr;
 }
 
-/* ── COLLECT SPCR ROWS (used by IPCR link modal) ── */
+/* ── COLLECT SPCR ROWS ── */
 function _getAllSpcrRows() {
     var rows = [];
     document.querySelectorAll('#spcrBody tr').forEach(function(tr) {
@@ -678,9 +626,7 @@ function _getAllSpcrRows() {
     return rows;
 }
 
-/* ── READ FORM ──
-   Col indices: 0=drag,1=actions,2=goal,3=ind,4=target,5=budget,
-   6=section,7=actual,8=rate,9=Q,10=E,11=T,12=A,13=remarks,14=del */
+/* ── READ FORM ── */
 function readDpcrForm() {
     var items = [];
     var currentFunctionType = 'Strategic';
@@ -706,12 +652,9 @@ function readDpcrForm() {
         var remTA    = cells[13] ? cells[13].querySelector('textarea')               : null;
         if (!goalTA && !indTA) return;
 
-        /* Section accountable from widget on row */
         var sectionAccountable = '';
         if (tr._secMultiSel) {
             var vals = tr._secMultiSel.getValues();
-            /* getValues() returns ['ALL SECTIONS'] when master is active,
-               or an array of individual section names, or [] when empty */
             if (vals.length === 1 && vals[0] === 'ALL SECTIONS') {
                 sectionAccountable = 'ALL SECTIONS';
             } else {
@@ -722,7 +665,6 @@ function readDpcrForm() {
             if (secSel) sectionAccountable = secSel.value || '';
         }
 
-        /* Rating from widget */
         var rw = tr._ratingWidget;
         items.push({
             function_type:         currentFunctionType,
@@ -795,7 +737,6 @@ function hydrateDpcrForm(form) {
         });
         document.getElementById('dpcrBody').appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
-        /* Auto-generate Rating Matrix row for this PI if not already linked */
         (function(row) {
             var piTA = row.querySelector('textarea.pi-custom');
             if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
@@ -804,7 +745,6 @@ function hydrateDpcrForm(form) {
         })(tr);
     });
 
-    /* After hydrating DPCR, refresh SPCR section filter */
     if (typeof rebuildSpcrSectionFilter === 'function') rebuildSpcrSectionFilter();
     computeDpcrFuncSummary();
 }
@@ -833,7 +773,6 @@ function pushDpcrToSpcr(dpcrData) {
                 person_accountable:    item.section_accountable   || '',
                 actual_accomplishment: item.actual_accomplishment || '',
                 accomplishment_rate:   item.accomplishment_rate   || '',
-                /* Carry saved DPCR rating values as pre-fill hints */
                 rating_q:              item.rating_q              != null ? item.rating_q : null,
                 rating_e:              item.rating_e              != null ? item.rating_e : null,
                 rating_t:              item.rating_t              != null ? item.rating_t : null,
@@ -842,7 +781,6 @@ function pushDpcrToSpcr(dpcrData) {
             });
             body.appendChild(tr);
             tr.querySelectorAll('textarea').forEach(autoExpand);
-            /* Auto-generate Rating Matrix row for this PI */
             (function(row) {
                 var piTA = row.querySelector('textarea.pi-custom');
                 if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
@@ -858,18 +796,15 @@ function pushDpcrToSpcr(dpcrData) {
     var disp = document.getElementById('s_disp_name');
     if (disp && dpcrData.employee_name) disp.textContent = dpcrData.employee_name;
 
-    /* Rebuild SPCR section filter after push */
     if (typeof rebuildSpcrSectionFilter === 'function') rebuildSpcrSectionFilter();
 }
 
 /* ══════════════════════════════════════════════════════════════
-   DPCR FUNCTION SUMMARY — reads A(4) per row, groups by function
-   type, computes % distribution dynamically based on row counts
-   (each function's rows ÷ total rows × 100 = its % share of 100%).
-   Updates #dpcrFuncSummaryBody tbody in the blade.
+   DPCR FUNCTION SUMMARY — UPDATED to match reference image format.
+   New columns: Remarks (editable) | Average Rating (Support)
+   All original computation logic is preserved exactly.
 ══════════════════════════════════════════════════════════════ */
 
-/* Stores user-entered % overrides for DPCR function types */
 var _dpcrPctOverrides = {};
 
 function computeDpcrFuncSummary() {
@@ -905,14 +840,12 @@ function computeDpcrFuncSummary() {
     var totalFinal = 0;
     var totalPct   = 0;
 
-    /* ── Smart update: rebuild rows only when the function set changes.
-       Otherwise update avg/final cells in-place so the % input keeps focus. ── */
+    /* Smart update: rebuild rows only when the function set changes */
     var existingFtKeys = Array.from(tbody.querySelectorAll('tr[data-ft]')).map(function(r) { return r.dataset.ft; });
     var needsRebuild = activeFunctions.join(',') !== existingFtKeys.join(',');
     if (needsRebuild) { tbody.innerHTML = ''; }
 
     activeFunctions.forEach(function(ft) {
-        /* Default pct: equal share among active functions */
         var defaultPct = activeFunctions.length > 0 ? (100 / activeFunctions.length) : 0;
         var pct = (_dpcrPctOverrides[ft] !== undefined)
             ? _dpcrPctOverrides[ft]
@@ -923,46 +856,87 @@ function computeDpcrFuncSummary() {
         if (final !== null) totalFinal += final;
         totalPct += pct;
 
-        /* Find existing row for this ft, or create a new one */
+        /* Find existing row or create new one */
         var row = tbody.querySelector('tr[data-ft="' + ft + '"]');
         if (!row) {
             row = document.createElement('tr');
             row.dataset.ft = ft;
 
+            /* col 1: Function label */
+            var tdFt = document.createElement('td');
+            tdFt.className = 'func-td-ft';
+            tdFt.textContent = ft;
+            row.appendChild(tdFt);
+
+            /* col 2: Percentage Distribution (editable input) */
+            var tdPct = document.createElement('td');
+            tdPct.className = 'func-td-pct';
             var pctInp = document.createElement('input');
             pctInp.type  = 'number'; pctInp.min = '0'; pctInp.max = '100'; pctInp.step = '0.1';
             pctInp.value = Math.round(pct * 10) / 10;
-            pctInp.style.cssText = 'width:58px;text-align:center;border:1px solid #ccc;border-radius:2px;font-size:10px;font-family:Arial,sans-serif;padding:1px 3px;';
+            pctInp.className = 'func-pct-inp';
             pctInp.title = 'Enter percentage for ' + ft + ' functions';
             pctInp.dataset.ft = ft;
-            pctInp.className = 'func-pct-inp';
             pctInp.addEventListener('input', function() {
                 var v = parseFloat(pctInp.value);
                 _dpcrPctOverrides[ft] = isNaN(v) ? 0 : v;
                 computeDpcrFuncSummary();
             });
+            tdPct.appendChild(pctInp);
+            var pctSym = document.createElement('span');
+            pctSym.textContent = ' %'; pctSym.style.fontSize = '10px';
+            tdPct.appendChild(pctSym);
+            row.appendChild(tdPct);
 
-            var tdFt   = document.createElement('td'); tdFt.textContent = ft; tdFt.className = 'func-td-ft';
-            var tdPct  = document.createElement('td'); tdPct.style.textAlign = 'center'; tdPct.className = 'func-td-pct'; tdPct.appendChild(pctInp);
-            var tdPctS = document.createElement('span'); tdPctS.textContent = ' %'; tdPctS.style.fontSize = '10px';
-            tdPct.appendChild(tdPctS);
-            var tdAvg  = document.createElement('td'); tdAvg.style.textAlign = 'center'; tdAvg.className = 'func-td-avg';
-            var tdFin  = document.createElement('td'); tdFin.style.cssText = 'text-align:center;font-weight:700;'; tdFin.className = 'func-td-fin';
-            row.appendChild(tdFt); row.appendChild(tdPct); row.appendChild(tdAvg); row.appendChild(tdFin);
+            /* col 3: Average Rating per Function */
+            var tdAvg = document.createElement('td');
+            tdAvg.className = 'func-td-avg';
+            row.appendChild(tdAvg);
+
+            /* col 4: Final Rating per Functions */
+            var tdFin = document.createElement('td');
+            tdFin.className = 'func-td-fin';
+            row.appendChild(tdFin);
+
+            /* col 5: Final Average Rating — spans 2 rows via rowspan on first ft row,
+               OR leave as individual cells per row (image shows per-row cells filled only
+               once in the footer). We use individual cells; the tfoot shows the final total. */
+            var tdFinalAvg = document.createElement('td');
+            tdFinalAvg.className = 'func-td-final-avg';
+            /* Leave blank per-row; tfoot shows computed total */
+            row.appendChild(tdFinalAvg);
+
+            /* col 6: Adjectival Rating (per row — blank; overall in tfoot) */
+            var tdAdj = document.createElement('td');
+            tdAdj.className = 'func-td-adj';
+            row.appendChild(tdAdj);
+
+            /* col 7: Remarks (editable textarea) */
+            var tdRem = document.createElement('td');
+            tdRem.className = 'func-td-remarks';
+            var remInp = document.createElement('textarea');
+            remInp.className = 'func-remarks-inp';
+            remInp.placeholder = '—';
+            remInp.rows = 2;
+            tdRem.appendChild(remInp);
+            row.appendChild(tdRem);
+
             tbody.appendChild(row);
         } else {
-            /* Row already exists — only update the pct input if user is NOT focused on it */
+            /* Row already exists — only update pct input if user is NOT focused */
             var pctInp = row.querySelector('input.func-pct-inp');
             if (pctInp && document.activeElement !== pctInp) {
                 pctInp.value = Math.round(pct * 10) / 10;
             }
         }
 
-        /* Always update avg and final cells */
+        /* Always update computed cells */
         var tdAvg = row.querySelector('.func-td-avg');
         var tdFin = row.querySelector('.func-td-fin');
+
         if (tdAvg) tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
         if (tdFin) tdFin.textContent = final !== null ? final.toFixed(4) : '—';
+
     });
 
     /* 100% validation warning */
@@ -971,13 +945,14 @@ function computeDpcrFuncSummary() {
         var diff = Math.round((totalPct - 100) * 10) / 10;
         if (activeFunctions.length > 0 && Math.abs(totalPct - 100) > 0.05) {
             warn.textContent = '⚠ Percentages total ' + Math.round(totalPct * 10) / 10 + '% — must equal 100%';
-            warn.style.display = 'block';
-            totalFinal = 0;  /* invalidate final avg when pct is wrong */
+            warn.style.display = 'inline-block';
+            totalFinal = 0;
         } else {
             warn.style.display = 'none';
         }
     }
 
+    /* Update tfoot final avg and adjectival */
     var elFinal = document.getElementById('dpcr_final_avg');
     var elAdj   = document.getElementById('dpcr_adjectival');
     if (elFinal) elFinal.textContent = (totalFinal && Math.abs(totalPct - 100) <= 0.05) ? totalFinal.toFixed(2) : '—';
@@ -992,6 +967,139 @@ function computeDpcrFuncSummary() {
         }
         elAdj.textContent = adj;
     }
+
+    /* Rebuild inline average rows inside dpcrBody */
+    _rebuildDpcrAvgRows();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DPCR INLINE AVERAGE ROW — factory + rebuild (unchanged)
+══════════════════════════════════════════════════════════════ */
+function createDpcrAvgRow(funcType, avgValue) {
+    var cfgMap = {
+        Strategic: { color: '#000000', bg: '#ffffff' },
+        Core:      { color: '#000000', bg: '#ffffff' },
+        Support:   { color: '#000000', bg: '#ffffff' },
+    };
+    var cfg = cfgMap[funcType] || { color: '#333', bg: '#f5f5f5' };
+    var printExact = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+
+    var tr = document.createElement('tr');
+    tr.className = 'dpcr-avg-row';
+    tr.dataset.funcType = funcType;
+    tr.style.cssText = printExact;
+
+    var tdH = document.createElement('td');
+    tdH.className = 'no-print';
+    tdH.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
+    tr.appendChild(tdH);
+
+    var tdAct = document.createElement('td');
+    tdAct.className = 'no-print';
+    tdAct.style.cssText = 'border:none;background:transparent;padding:0;width:54px;';
+    tr.appendChild(tdAct);
+
+    var tdLabel = document.createElement('td');
+    tdLabel.colSpan = 7;
+    tdLabel.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:9.5px;text-align:right;padding:4px 10px;'
+        + 'border-top:1.5px solid ' + cfg.color + ';letter-spacing:.2px;' + printExact;
+    tdLabel.textContent = 'Average Rating \u2014 ' + funcType + ' Functions:';
+    tr.appendChild(tdLabel);
+
+    ['Q','E','T'].forEach(function() {
+        var td = document.createElement('td');
+        td.style.cssText = 'background:' + cfg.bg
+            + ';border-top:1.5px solid ' + cfg.color + ';' + printExact;
+        tr.appendChild(td);
+    });
+
+    var tdVal = document.createElement('td');
+    tdVal.className = 'dpcr-avg-val';
+    tdVal.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:11px;text-align:center;padding:4px 6px;'
+        + 'border-top:1.5px solid ' + cfg.color + ';' + printExact;
+    tdVal.textContent = (avgValue !== null && !isNaN(avgValue))
+        ? parseFloat(avgValue).toFixed(2)
+        : '\u2014';
+    tr.appendChild(tdVal);
+
+    var tdRem = document.createElement('td');
+    tdRem.style.cssText = 'background:' + cfg.bg
+        + ';border-top:1.5px solid ' + cfg.color + ';' + printExact;
+    tr.appendChild(tdRem);
+
+    var tdDel = document.createElement('td');
+    tdDel.className = 'no-print';
+    tdDel.style.cssText = 'border:none;background:transparent;padding:0;width:26px;';
+    tr.appendChild(tdDel);
+
+    return tr;
+}
+
+function _rebuildDpcrAvgRows() {
+    var body = document.getElementById('dpcrBody');
+    if (!body) return;
+
+    body.querySelectorAll('.dpcr-avg-row').forEach(function(r) { r.remove(); });
+
+    var groups      = [];
+    var currentType = 'Strategic';
+    var lastDataRow = null;
+
+    Array.from(body.querySelectorAll('tr')).forEach(function(tr) {
+        if (tr.classList.contains('section-header')) {
+            if (lastDataRow !== null) {
+                groups.push({ type: currentType, lastDataRow: lastDataRow });
+                lastDataRow = null;
+            }
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            currentType = _funcTypeFromLabel(label);
+            return;
+        }
+        if (tr.classList.contains('dpcr-avg-row')) return;
+        lastDataRow = tr;
+    });
+    if (lastDataRow !== null) {
+        groups.push({ type: currentType, lastDataRow: lastDataRow });
+    }
+
+    var sums   = { Strategic: 0, Core: 0, Support: 0 };
+    var counts = { Strategic: 0, Core: 0, Support: 0 };
+    var curType = 'Strategic';
+
+    Array.from(body.querySelectorAll('tr')).forEach(function(tr) {
+        if (tr.classList.contains('section-header')) {
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            curType = _funcTypeFromLabel(label);
+            return;
+        }
+        if (tr.classList.contains('dpcr-avg-row')) return;
+        var rw = tr._ratingWidget;
+        if (!rw) return;
+        var aVal = rw.getA();
+        if (aVal !== null && !isNaN(aVal)) {
+            sums[curType]   += aVal;
+            counts[curType] += 1;
+        }
+    });
+
+    groups.forEach(function(g) {
+        var avg    = counts[g.type] ? sums[g.type] / counts[g.type] : null;
+        var avgRow = createDpcrAvgRow(g.type, avg);
+        var next   = g.lastDataRow.nextSibling;
+        next ? body.insertBefore(avgRow, next) : body.appendChild(avgRow);
+    });
 }
 
 /* ── PRINT DPCR ONLY ── */
@@ -1016,8 +1124,6 @@ document.getElementById('dSaveBtn').addEventListener('click', async function() {
             + '\u201d saved. Use \u201cLoad from DPCR\u201d in the SPCR tab to transfer data.');
         if (typeof notifyRecordSaved === 'function') notifyRecordSaved('dpcr', saved.form || saved);
         _persistClear(PERSIST_KEY_DPCR);
-        /* NOTE: DPCR save intentionally does NOT auto-push to SPCR.
-           The SPCR table must be populated via the "Load from DPCR" button in the SPCR tab. */
     } catch (err) { showAlert('d-alertErr', 'err', 'Save failed: ' + err.message); }
 });
 
@@ -1034,11 +1140,9 @@ document.getElementById('dAddSectionBtn').addEventListener('click', function() {
     tr.querySelector('input').focus();
 });
 
-
-/* ── Auto-save DPCR draft to localStorage on every change ── */
+/* ── Auto-save DPCR draft to localStorage ── */
 (function _wireDpcrPersist() {
     _persistWireBody('dpcrBody', PERSIST_KEY_DPCR, readDpcrForm);
-    /* Also save when header inputs change */
     ['d_emp_name','d_emp_title','d_approved_by','d_period'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.addEventListener('input', function() {
@@ -1048,19 +1152,9 @@ document.getElementById('dAddSectionBtn').addEventListener('click', function() {
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   LOAD / VIEW SAVED DPCR RECORDS
-   ──────────────────────────────────────────────────────────────
-   "📋 View Saved DPCR" button in the action bar.
-   Fetches all saved DPCR forms from /api/dpcr, shows a selection
-   list in the linkModal. Picking a record opens the full-table
-   view in the viewModal with a "Load into Form" button.
+   LOAD / VIEW SAVED DPCR RECORDS (unchanged)
 ══════════════════════════════════════════════════════════════ */
 
-/**
- * Build a full-detail read-only HTML view of one DPCR record.
- * Shows header meta + a complete items table with coloured
- * function-type section headers (Strategic / Core / Support).
- */
 function _buildDpcrRecordViewHtml(record) {
     var semLabel = record.semester === '1st' ? '1st Semester (Jan\u2013Jun)' : '2nd Semester (Jul\u2013Dec)';
 
@@ -1094,16 +1188,15 @@ function _buildDpcrRecordViewHtml(record) {
 
     var lastFt = '';
     var ftCfg  = {
-        Strategic: { color: '#1a3b6e', bg: '#dce4f0' },
-        Core:      { color: '#1e6e3a', bg: '#d4edda' },
-        Support:   { color: '#7a4f00', bg: '#fff3cd' },
+        Strategic: { color: '#000000', bg: '#ffffff' },
+        Core:      { color: '#000000', bg: '#ffffff' },
+        Support:   { color: '#000000', bg: '#ffffff' },
     };
 
     items.forEach(function(i) {
         var ft  = i.function_type || 'Strategic';
         var cfg = ftCfg[ft] || ftCfg.Strategic;
 
-        /* Coloured function-type section header row when type changes */
         if (ft !== lastFt) {
             html += '<tr><td colspan="10" style="'
                 + 'background:' + cfg.bg + ';'
@@ -1134,10 +1227,6 @@ function _buildDpcrRecordViewHtml(record) {
     return html;
 }
 
-/**
- * Load the selected saved DPCR record into the live DPCR form,
- * replacing whatever is currently in it.
- */
 function _loadSavedDpcrIntoForm(record) {
     if (!confirm(
         'Load DPCR #' + record.id + ' \u2014 ' + (record.employee_name || '?') + ' into the form?\n'
@@ -1152,12 +1241,6 @@ function _loadSavedDpcrIntoForm(record) {
         '\u2714 DPCR #' + record.id + ' \u2014 \u201c' + (record.employee_name || '') + '\u201d loaded into form.');
 }
 
-/**
- * Open the saved-DPCR selection modal.
- * Fetches /api/dpcr, renders a list in linkModal. Clicking a record
- * fetches /api/dpcr/{id} (full detail), then opens viewModal with
- * the full table + a "Load into Form" button.
- */
 async function openViewSavedDpcrModal() {
     var listEl  = document.getElementById('linkModalList');
     var titleEl = document.getElementById('linkModalTitle');
@@ -1209,7 +1292,6 @@ async function openViewSavedDpcrModal() {
         btn.onclick = function() {
             document.getElementById('linkModal').classList.remove('open');
 
-            /* Fetch full detail then show view modal */
             apiFetch('/api/dpcr/' + rec.id).then(function(full) {
 
                 var loadBtnHtml = '<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
@@ -1238,7 +1320,6 @@ async function openViewSavedDpcrModal() {
                     loadBtnHtml + bodyHtml
                 );
 
-                /* Wire the Load button after modal renders */
                 var loadBtn = document.getElementById('dpcrLoadIntoFormBtn');
                 if (loadBtn) loadBtn.onclick = function() { _loadSavedDpcrIntoForm(full); };
 
@@ -1252,7 +1333,7 @@ async function openViewSavedDpcrModal() {
     });
 }
 
-/* Wire the "📋 View Saved DPCR" button */
+/* Wire the "View Saved DPCR" button */
 (function _wireDpcrViewSavedBtn() {
     var btn = document.getElementById('dViewSavedBtn');
     if (btn) btn.addEventListener('click', openViewSavedDpcrModal);

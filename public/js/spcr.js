@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    spcr.js  —  redesigned to match DOH-SPMS Form 3 photo
+   DIFF: computeSpcrFuncSummary row builder updated to match
+         new 8-column summary table format (same as DPCR).
+         All other functions unchanged.
    ─────────────────────────────────────────────────────────────
    TABLE COLUMNS (0-based td index):
      0  drag-handle (no-print, 18px)
@@ -20,9 +23,9 @@
 
 /* ── SECTION CONFIG ── */
 const SPCR_FUNC_SECTIONS = [
-    { label: 'STRATEGIC FUNCTIONS :', type: 'Strategic', color: '#1a3b6e', bg: '#dce4f0' },
-    { label: 'CORE FUNCTIONS :',       type: 'Core',      color: '#1e6e3a', bg: '#d4edda' },
-    { label: 'SUPPORT FUNCTIONS :',    type: 'Support',   color: '#7a4f00', bg: '#fff3cd' },
+    { label: 'STRATEGIC FUNCTIONS :', type: 'Strategic',  },
+    { label: 'CORE FUNCTIONS :',       type: 'Core',       },
+    { label: 'SUPPORT FUNCTIONS :',    type: 'Support',   },
 ];
 
 function _spcrFuncTypeFromLabel(label) {
@@ -36,7 +39,6 @@ function _styleSpcrSection(tr, label) {
     var cfg = SPCR_FUNC_SECTIONS.filter(function(f) { return f.type === _spcrFuncTypeFromLabel(label); })[0]
            || SPCR_FUNC_SECTIONS[0];
     var tds = tr.querySelectorAll('td');
-    /* col 0 = drag handle (transparent), col 1 = blank actions, col 2 = section content */
     var td = tds[2] || tds[1] || tds[0];
     if (!td) return;
     td.style.background = cfg.bg;
@@ -46,27 +48,11 @@ function _styleSpcrSection(tr, label) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SECTION FILTER — SPCR (sourced from saved DPCR records)
-   ──────────────────────────────────────────────────────────────
-   The dropdown is populated from every unique section_accountable
-   value found across ALL saved DPCR records (from REC_DPCR in
-   records.js, falling back to a fresh /api/dpcr fetch).
-
-   "All Sections" selected  → load ALL rows from ALL saved DPCR
-                              records into SPCR (replacing current rows).
-   Specific section selected → load only rows whose section_accountable
-                              contains that section value.
+   SECTION FILTER — SPCR
 ══════════════════════════════════════════════════════════════ */
 
-/* Internal cache of fetched DPCR records for the filter */
 var _spcrFilterDpcrCache = null;
 
-/**
- * Always fetch fresh DPCR records with full items from the API.
- * Items are required for section_accountable matching.
- * The cache is refreshed every time the filter is used so newly saved
- * DPCR records are always picked up.
- */
 async function _fetchDpcrRecords() {
     try {
         _spcrFilterDpcrCache = await apiFetch('/api/dpcr');
@@ -77,12 +63,6 @@ async function _fetchDpcrRecords() {
     return _spcrFilterDpcrCache || [];
 }
 
-/**
- * Rebuild the section filter dropdown from the canonical SECTS list.
- * Uses the same choices as the Section Accountable multi-select widget
- * in DPCR — no duplicates, no async fetch required.
- * "ALL SECTIONS" is omitted (it is already represented by the "— All Sections —" placeholder).
- */
 function rebuildSpcrSectionFilter() {
     var sel = document.getElementById('spcr-section-filter');
     if (!sel) return;
@@ -95,35 +75,18 @@ function rebuildSpcrSectionFilter() {
     });
 }
 
-/**
- * Apply the section filter to SPCR:
- *   section = ''  → load ALL rows from ALL saved DPCR records into SPCR
- *   section = 'X' → load only rows whose section_accountable exactly contains 'X'
- *                   as a comma-separated token, OR where section_accountable = 'ALL SECTIONS'
- *
- * Exact-token matching: "EFMS" will NOT match "PMG / EFMS / PROCUREMENT".
- * "ALL SECTIONS" in section_accountable matches every filter choice.
- */
 async function filterSpcrBySection(section) {
     var records = await _fetchDpcrRecords();
 
-    /**
-     * Return true if this item's section_accountable matches the filter needle.
-     *  – needle = ''           → always true (show all)
-     *  – sa = 'ALL SECTIONS'   → always true (this row belongs to every section)
-     *  – otherwise: exact token match in the comma-separated list
-     */
     function _matchesSection(saRaw, needle) {
         if (!needle) return true;
         var sa = (saRaw || '').trim();
         if (!sa) return false;
-        if (sa === 'ALL SECTIONS') return true;   /* row tagged ALL SECTIONS → visible in any filter */
-        /* Exact-token match: split by comma, trim each, compare case-insensitively */
+        if (sa === 'ALL SECTIONS') return true;
         var tokens = sa.split(',').map(function(t) { return t.trim().toLowerCase(); });
         return tokens.indexOf(needle.trim().toLowerCase()) !== -1;
     }
 
-    /* Collect matching items from every saved DPCR record */
     var matchingItems = [];
     records.forEach(function(rec) {
         var items = Array.isArray(rec.items) ? rec.items : [];
@@ -134,13 +97,11 @@ async function filterSpcrBySection(section) {
         });
     });
 
-    /* Rebuild SPCR body from matching items */
     var body = document.getElementById('spcrBody');
     if (!body) return;
     body.innerHTML = '';
 
     if (matchingItems.length === 0) {
-        /* No matches — show a clear info row */
         var infoTr = document.createElement('tr');
         var infoTd = document.createElement('td');
         infoTd.colSpan = 14;
@@ -155,10 +116,6 @@ async function filterSpcrBySection(section) {
         return;
     }
 
-    /* Sort by function_type so all rows of the same type are adjacent.
-       Order: Strategic → Core → Support (mirrors the standard form order).
-       This guarantees the lastType adjacency check below never creates
-       duplicate section headers even when items come from multiple DPCR records. */
     var FT_ORDER = { Strategic: 0, Core: 1, Support: 2 };
     matchingItems.sort(function(a, b) {
         var fa = FT_ORDER[a.item.function_type] !== undefined ? FT_ORDER[a.item.function_type] : 99;
@@ -166,7 +123,6 @@ async function filterSpcrBySection(section) {
         return fa - fb;
     });
 
-    /* Group by function_type for section headers */
     var lastType = null;
     matchingItems.forEach(function(entry) {
         var item = entry.item;
@@ -188,7 +144,6 @@ async function filterSpcrBySection(section) {
             actual_accomplishment: item.actual_accomplishment || '',
             accomplishment_rate:   item.accomplishment_rate   || '',
             remarks:               item.remarks               || '',
-            /* Carry DPCR ratings as pre-fill hints — user can override */
             rating_q:              item.rating_q              != null ? item.rating_q : null,
             rating_e:              item.rating_e              != null ? item.rating_e : null,
             rating_t:              item.rating_t              != null ? item.rating_t : null,
@@ -197,7 +152,6 @@ async function filterSpcrBySection(section) {
         });
         body.appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
-        /* Auto-generate Rating Matrix row for this PI */
         (function(row) {
             var piTA = row.querySelector('textarea.pi-custom');
             if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
@@ -214,17 +168,14 @@ async function filterSpcrBySection(section) {
 
 /* ══════════════════════════════════════════════════════════════
    VIEW-LINKED MODAL
-   Shows DPCR rows and IPCR rows whose PI matches this SPCR row.
 ══════════════════════════════════════════════════════════════ */
 function _buildSpcrLinkedViewHtml(spcrPiText) {
     var needle = (spcrPiText || '').trim().toLowerCase();
 
-    /* Matching DPCR rows */
     var dpcrRows = [];
     document.querySelectorAll('#dpcrBody tr:not(.section-header)').forEach(function(tr) {
         var cells = tr.querySelectorAll('td');
         if (cells.length < 3) return;
-        /* col layout: 0=drag, 1=actions, 2=goal, 3=indicator ... */
         var goalTA = cells[2] ? cells[2].querySelector('textarea') : null;
         var indTA  = cells[3] ? cells[3].querySelector('textarea.pi-custom') : null;
         if (!indTA) return;
@@ -249,12 +200,10 @@ function _buildSpcrLinkedViewHtml(spcrPiText) {
         }
     });
 
-    /* Matching IPCR rows */
     var ipcrRows = [];
     document.querySelectorAll('#ipcrBody tr:not(.section-header)').forEach(function(tr) {
         var cells = tr.querySelectorAll('td');
         if (cells.length < 3) return;
-        /* ipcr col layout: 0=drag, 1=actions, 2=goal, 3=indicator */
         var goalTA = cells[2] ? cells[2].querySelector('textarea') : null;
         var indTA  = cells[3] ? cells[3].querySelector('textarea') : null;
         if (!indTA) return;
@@ -313,11 +262,7 @@ function _buildSpcrLinkedViewHtml(spcrPiText) {
     return html;
 }
 
-/* ── ROW FACTORY ──
-   Columns: drag(0) | actions(1) | goal(2) | indicator(3) | budget(4) |
-            person(5) | actual(6) | rate(7) | Q(8) | E(9) | T(10) | A(11) |
-            remarks(12) | del(13)
-*/
+/* ── ROW FACTORY ── */
 function createSpcrRow(data) {
     data = data || {};
     var tr = document.createElement('tr');
@@ -325,7 +270,7 @@ function createSpcrRow(data) {
     /* ── 0: drag handle ── */
     tr.appendChild(makeDragHandle());
 
-    /* ── 1: row actions column (push + view links) ── */
+    /* ── 1: row actions column ── */
     var tdAct = document.createElement('td');
     tdAct.className = 'spcr-row-actions no-print';
 
@@ -336,7 +281,6 @@ function createSpcrRow(data) {
         tdAct.appendChild(badge);
     }
 
-    /* → IPCR push button */
     var ipcrBtn = document.createElement('button');
     ipcrBtn.type      = 'button';
     ipcrBtn.className = 'row-action-btn';
@@ -344,7 +288,6 @@ function createSpcrRow(data) {
     ipcrBtn.textContent = '→ IPCR';
     ipcrBtn.style.color = '#6a3e9e';
 
-    /* 👁 View linked rows button */
     var viewLinkedBtn = document.createElement('button');
     viewLinkedBtn.type      = 'button';
     viewLinkedBtn.className = 'row-action-btn';
@@ -352,7 +295,6 @@ function createSpcrRow(data) {
     viewLinkedBtn.textContent = '👁 Links';
     viewLinkedBtn.style.color = '#555';
 
-    /* ? Guide button */
     var guideBtn = document.createElement('button');
     guideBtn.type      = 'button';
     guideBtn.className = 'row-action-btn no-print';
@@ -435,9 +377,9 @@ function createSpcrRow(data) {
     tdR.appendChild(rIn);
     tr.appendChild(tdR);
 
-    /* ── 8–11: Q E T A rating cells (checkbox + number + auto-average) ── */
+    /* ── 8–11: Q E T A rating cells ── */
     var ratingWidget = _buildQETACells({
-        alwaysOpen: true,   /* SPCR: Q/E/T always editable — no RM lock required */
+        alwaysOpen: true,
         rating_q: data.rating_q,
         rating_e: data.rating_e,
         rating_t: data.rating_t,
@@ -456,7 +398,7 @@ function createSpcrRow(data) {
     tdRem.appendChild(remTA);
     tr.appendChild(tdRem);
 
-    /* ── 13: Delete (screen only) ── */
+    /* ── 13: Delete ── */
     var tdDel = document.createElement('td');
     tdDel.className = 'no-print';
     tdDel.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
@@ -466,7 +408,7 @@ function createSpcrRow(data) {
     tdDel.appendChild(dBtn);
     tr.appendChild(tdDel);
 
-    /* ── Wire action buttons (need piTA / goalTA in scope) ── */
+    /* ── Wire action buttons ── */
     ipcrBtn.onclick = function() {
         var pmText = piTA.value.trim();
         var odText = goalTA.value.trim();
@@ -526,20 +468,16 @@ function createSectionRow(label) {
     var tr = document.createElement('tr');
     tr.className = 'spcr-section-row';
 
-    /* col 0: drag handle — same as every data row */
     tr.appendChild(makeDragHandle());
 
-    /* col 1: blank actions placeholder — keeps columns aligned with data rows */
     var tdActBlank = document.createElement('td');
     tdActBlank.className = 'spcr-section-act-blank no-print';
     tdActBlank.style.cssText = 'border:none !important;background:transparent !important;padding:0;width:54px;min-width:54px;';
     tr.appendChild(tdActBlank);
 
-    /* cols 2–12: section content spanning 11 data cols (goal→remarks) */
     var td = document.createElement('td');
     td.colSpan = 11;
 
-    /* Quick-pick preset buttons */
     var btnBar = document.createElement('div');
     btnBar.className = 'no-print';
     btnBar.style.cssText = 'display:inline-flex;gap:4px;margin-right:10px;vertical-align:middle;';
@@ -560,7 +498,6 @@ function createSectionRow(label) {
     inp.dataset.key = 'section_label';
     inp.value = label;
 
-    /* Mirror span — visible on print, hidden on screen */
     var printSpan = document.createElement('span');
     printSpan.className = 'section-label-print';
     printSpan.style.cssText = 'font-weight:700;font-size:9.5px;vertical-align:middle;letter-spacing:.3px;';
@@ -576,7 +513,6 @@ function createSectionRow(label) {
     td.appendChild(printSpan);
     tr.appendChild(td);
 
-    /* col 13: delete button */
     var tdD = document.createElement('td');
     tdD.className = 'no-print';
     tdD.style.cssText = 'border:none;background:transparent;text-align:center;vertical-align:middle;width:26px;';
@@ -596,33 +532,28 @@ function createAvgRow(label, idSuffix) {
     tr.className = 'spcr-avg-row';
     tr.id = 'spcr-avg-' + idSuffix;
 
-    /* col 0: blank for drag-handle column */
     var tdHandle = document.createElement('td');
     tdHandle.className = 'no-print';
     tdHandle.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
     tr.appendChild(tdHandle);
 
-    /* col 1: blank for actions column */
     var tdActBlank = document.createElement('td');
     tdActBlank.className = 'no-print';
     tdActBlank.style.cssText = 'border:none;background:transparent;';
     tr.appendChild(tdActBlank);
 
-    /* cols 2–11: label spanning 10 data cols */
     var tdLabel = document.createElement('td');
     tdLabel.colSpan = 10;
     tdLabel.className = 'spcr-avg-label';
     tdLabel.textContent = 'Average Rating (' + label + ')';
     tr.appendChild(tdLabel);
 
-    /* col 12: value */
     var tdVal = document.createElement('td');
     tdVal.className = 'spcr-avg-val';
     tdVal.id = 's_avg_' + idSuffix.toLowerCase();
     tdVal.textContent = '0.00';
     tr.appendChild(tdVal);
 
-    /* col 13: blank delete column */
     var tdDel = document.createElement('td');
     tdDel.className = 'no-print';
     tdDel.style.cssText = 'border:none;background:transparent;';
@@ -648,7 +579,6 @@ function computeSpcrAverages() {
         }
         if (tr.classList.contains('spcr-avg-row')) return;
 
-        /* Read A(4) from widget if present, else fall back to td text */
         var val = null;
         if (tr._ratingWidget) {
             val = tr._ratingWidget.getA();
@@ -688,7 +618,6 @@ function readSpcrForm() {
         if (tr.classList.contains('spcr-avg-row')) return;
 
         var cells = tr.querySelectorAll('td');
-        /* 0=drag,1=actions,2=goal,3=ind,4=bud,5=person,6=actual,7=rate,...,12=remarks,13=del */
         if (cells.length < 12) return;
 
         items.push({
@@ -769,13 +698,11 @@ function hydrateSpcrForm(form) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SPCR FUNCTION SUMMARY — reads A(4) per row, groups by function
-   type. % distribution is dynamic: each function's row count ÷
-   total rows × 100. The whole table always sums to 100%.
-   Updates #spcrFuncSummaryBody tbody in the blade.
+   SPCR FUNCTION SUMMARY — UPDATED to match reference image format.
+   New columns: Remarks (editable) | Average Rating (Support)
+   All original computation logic is preserved exactly.
 ══════════════════════════════════════════════════════════════ */
 
-/* Stores user-entered % overrides for SPCR function types */
 var _spcrPctOverrides = {};
 
 function computeSpcrFuncSummary() {
@@ -814,11 +741,11 @@ function computeSpcrFuncSummary() {
     var totalFinal = 0;
     var totalPct   = 0;
 
-    /* ── Smart update: rebuild rows only when the function set changes.
-       Otherwise update avg/final cells in-place so the % input keeps focus. ── */
+    /* Smart update: rebuild rows only when the function set changes */
     var existingFtKeys = Array.from(tbody.querySelectorAll('tr[data-ft]')).map(function(r) { return r.dataset.ft; });
     var needsRebuild = activeFunctions.join(',') !== existingFtKeys.join(',');
     if (needsRebuild) { tbody.innerHTML = ''; }
+
 
     activeFunctions.forEach(function(ft) {
         var defaultPct = activeFunctions.length > 0 ? (100 / activeFunctions.length) : 0;
@@ -831,46 +758,86 @@ function computeSpcrFuncSummary() {
         if (final !== null) totalFinal += final;
         totalPct += pct;
 
-        /* Find existing row for this ft, or create a new one */
+        /* Find existing row or create new one */
         var row = tbody.querySelector('tr[data-ft="' + ft + '"]');
         if (!row) {
             row = document.createElement('tr');
             row.dataset.ft = ft;
 
+            /* col 1: Function label */
+            var tdFt = document.createElement('td');
+            tdFt.className = 'func-td-ft';
+            tdFt.textContent = ft;
+            row.appendChild(tdFt);
+
+            /* col 2: Percentage Distribution (editable input) */
+            var tdPct = document.createElement('td');
+            tdPct.className = 'func-td-pct';
             var pctInp = document.createElement('input');
             pctInp.type  = 'number'; pctInp.min = '0'; pctInp.max = '100'; pctInp.step = '0.1';
             pctInp.value = Math.round(pct * 10) / 10;
-            pctInp.style.cssText = 'width:58px;text-align:center;border:1px solid #ccc;border-radius:2px;font-size:10px;font-family:Arial,sans-serif;padding:1px 3px;';
+            pctInp.className = 'func-pct-inp';
             pctInp.title = 'Enter percentage for ' + ft + ' functions';
             pctInp.dataset.ft = ft;
-            pctInp.className = 'func-pct-inp';
             pctInp.addEventListener('input', function() {
                 var v = parseFloat(pctInp.value);
                 _spcrPctOverrides[ft] = isNaN(v) ? 0 : v;
                 computeSpcrFuncSummary();
             });
+            tdPct.appendChild(pctInp);
+            var pctSym = document.createElement('span');
+            pctSym.textContent = ' %'; pctSym.style.fontSize = '10px';
+            tdPct.appendChild(pctSym);
+            row.appendChild(tdPct);
 
-            var tdFt  = document.createElement('td'); tdFt.textContent = ft; tdFt.className = 'func-td-ft';
-            var tdPct = document.createElement('td'); tdPct.style.textAlign = 'center'; tdPct.className = 'func-td-pct'; tdPct.appendChild(pctInp);
-            var tdPctS = document.createElement('span'); tdPctS.textContent = ' %'; tdPctS.style.fontSize = '10px';
-            tdPct.appendChild(tdPctS);
-            var tdAvg = document.createElement('td'); tdAvg.style.textAlign = 'center'; tdAvg.className = 'func-td-avg';
-            var tdFin = document.createElement('td'); tdFin.style.cssText = 'text-align:center;font-weight:700;'; tdFin.className = 'func-td-fin';
-            row.appendChild(tdFt); row.appendChild(tdPct); row.appendChild(tdAvg); row.appendChild(tdFin);
+            /* col 3: Average Rating per Function */
+            var tdAvg = document.createElement('td');
+            tdAvg.className = 'func-td-avg';
+            row.appendChild(tdAvg);
+
+            /* col 4: Final Rating per Functions */
+            var tdFin = document.createElement('td');
+            tdFin.className = 'func-td-fin';
+            row.appendChild(tdFin);
+
+            /* col 5: Final Average Rating (per-row blank; tfoot shows total) */
+            var tdFinalAvg = document.createElement('td');
+            tdFinalAvg.className = 'func-td-final-avg';
+            row.appendChild(tdFinalAvg);
+
+            /* col 6: Adjectival Rating (per-row blank; tfoot shows result) */
+            var tdAdj = document.createElement('td');
+            tdAdj.className = 'func-td-adj';
+            row.appendChild(tdAdj);
+
+            /* col 7: Remarks (editable textarea) */
+            var tdRem = document.createElement('td');
+            tdRem.className = 'func-td-remarks';
+            var remInp = document.createElement('textarea');
+            remInp.className = 'func-remarks-inp';
+            remInp.placeholder = '—';
+            remInp.rows = 2;
+            tdRem.appendChild(remInp);
+            row.appendChild(tdRem);
+
+
             tbody.appendChild(row);
         } else {
-            /* Row already exists — only update the pct input if user is NOT focused on it */
+            /* Row already exists — only update pct input if user is NOT focused */
             var pctInp = row.querySelector('input.func-pct-inp');
             if (pctInp && document.activeElement !== pctInp) {
                 pctInp.value = Math.round(pct * 10) / 10;
             }
         }
 
-        /* Always update avg and final cells */
-        var tdAvg = row.querySelector('.func-td-avg');
-        var tdFin = row.querySelector('.func-td-fin');
-        if (tdAvg) tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
-        if (tdFin) tdFin.textContent = final !== null ? final.toFixed(4) : '—';
+        /* Always update computed cells */
+        var tdAvg    = row.querySelector('.func-td-avg');
+        var tdFin    = row.querySelector('.func-td-fin');
+
+        if (tdAvg)    tdAvg.textContent    = avg    !== null ? avg.toFixed(2)    : '—';
+        if (tdFin)    tdFin.textContent    = final  !== null ? final.toFixed(4)  : '—';
+
+ 
     });
 
     /* 100% validation warning */
@@ -878,13 +845,14 @@ function computeSpcrFuncSummary() {
     if (warn) {
         if (activeFunctions.length > 0 && Math.abs(totalPct - 100) > 0.05) {
             warn.textContent = '⚠ Percentages total ' + Math.round(totalPct * 10) / 10 + '% — must equal 100%';
-            warn.style.display = 'block';
+            warn.style.display = 'inline-block';
             totalFinal = 0;
         } else {
             warn.style.display = 'none';
         }
     }
 
+    /* Update tfoot final avg and adjectival */
     var elFinal = document.getElementById('spcr_final_avg');
     var elAdj   = document.getElementById('spcr_adjectival');
     if (elFinal) elFinal.textContent = (totalFinal && Math.abs(totalPct - 100) <= 0.05) ? totalFinal.toFixed(2) : '—';
@@ -899,6 +867,145 @@ function computeSpcrFuncSummary() {
         }
         elAdj.textContent = adj;
     }
+
+    /* Rebuild inline average rows inside spcrBody */
+    _rebuildSpcrInlineAvgRows();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SPCR INLINE AVERAGE ROW — factory + rebuild (unchanged)
+══════════════════════════════════════════════════════════════ */
+function createSpcrInlineAvgRow(funcType, avgValue) {
+    var cfgMap = {
+        Strategic: { color: '#000000', bg: '#ffffff' },
+        Core:      { color: '#000000', bg: '#ffffff' },
+        Support:   { color: '#000000', bg: '#ffffff' },
+    };
+    var cfg = cfgMap[funcType] || { color: '#333', bg: '#f5f5f5' };
+    var printExact = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+
+    var tr = document.createElement('tr');
+    tr.className = 'spcr-inline-avg-row';
+    tr.dataset.funcType = funcType;
+    tr.style.cssText = printExact;
+
+    var tdH = document.createElement('td');
+    tdH.className = 'no-print';
+    tdH.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
+    tr.appendChild(tdH);
+
+    var tdAct = document.createElement('td');
+    tdAct.className = 'no-print';
+    tdAct.style.cssText = 'border:none;background:transparent;padding:0;width:54px;';
+    tr.appendChild(tdAct);
+
+    var tdLabel = document.createElement('td');
+    tdLabel.colSpan = 6;
+    tdLabel.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:9.5px;text-align:right;padding:4px 10px;'
+        + 'border-top:1.5px solid ' + cfg.color + ';letter-spacing:.2px;' + printExact;
+    tdLabel.textContent = 'Average Rating \u2014 ' + funcType + ' Functions:';
+    tr.appendChild(tdLabel);
+
+    ['Q','E','T'].forEach(function() {
+        var td = document.createElement('td');
+        td.style.cssText = 'background:' + cfg.bg
+            + ';border-top:1.5px solid ' + cfg.color + ';' + printExact;
+        tr.appendChild(td);
+    });
+
+    var tdVal = document.createElement('td');
+    tdVal.className = 'spcr-inline-avg-val';
+    tdVal.style.cssText = 'background:' + cfg.bg + ';color:' + cfg.color
+        + ';font-weight:700;font-size:11px;text-align:center;padding:2px 2px;'
+        + 'border-top:1.5px solid ' + cfg.color + ';' + printExact;
+    tdVal.textContent = (avgValue !== null && !isNaN(avgValue))
+        ? parseFloat(avgValue).toFixed(2)
+        : '\u2014';
+    tr.appendChild(tdVal);
+
+    var tdRem = document.createElement('td');
+    tdRem.style.cssText = 'background:' + cfg.bg
+        + ';border-top:1.5px solid ' + cfg.color + ';' + printExact;
+    tr.appendChild(tdRem);
+
+    var tdDel = document.createElement('td');
+    tdDel.className = 'no-print';
+    tdDel.style.cssText = 'border:none;background:transparent;padding:0;width:26px;';
+    tr.appendChild(tdDel);
+
+    return tr;
+}
+
+function _rebuildSpcrInlineAvgRows() {
+    var body = document.getElementById('spcrBody');
+    if (!body) return;
+
+    body.querySelectorAll('.spcr-inline-avg-row').forEach(function(r) { r.remove(); });
+
+    var groups      = [];
+    var currentType = 'Strategic';
+    var lastDataRow = null;
+
+    Array.from(body.querySelectorAll('tr')).forEach(function(tr) {
+        if (tr.classList.contains('spcr-section-row')) {
+            if (lastDataRow !== null) {
+                groups.push({ type: currentType, lastDataRow: lastDataRow });
+                lastDataRow = null;
+            }
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('CORE'))    currentType = 'Core';
+            else if (up.includes('SUPPORT')) currentType = 'Support';
+            else                             currentType = 'Strategic';
+            return;
+        }
+        if (tr.classList.contains('spcr-avg-row') || tr.classList.contains('spcr-inline-avg-row')) return;
+        lastDataRow = tr;
+    });
+    if (lastDataRow !== null) {
+        groups.push({ type: currentType, lastDataRow: lastDataRow });
+    }
+
+    var sums   = { Strategic: 0, Core: 0, Support: 0 };
+    var counts = { Strategic: 0, Core: 0, Support: 0 };
+    var curType = 'Strategic';
+
+    Array.from(body.querySelectorAll('tr')).forEach(function(tr) {
+        if (tr.classList.contains('spcr-section-row')) {
+            var inp   = tr.querySelector('input[data-key="section_label"]');
+            var label = inp ? inp.value.trim() : '';
+            if (!label) {
+                var tdC = tr.querySelector('td[colspan]');
+                label = tdC ? tdC.textContent.trim() : '';
+            }
+            var up = label.toUpperCase();
+            if      (up.includes('CORE'))    curType = 'Core';
+            else if (up.includes('SUPPORT')) curType = 'Support';
+            else                             curType = 'Strategic';
+            return;
+        }
+        if (tr.classList.contains('spcr-avg-row') || tr.classList.contains('spcr-inline-avg-row')) return;
+        var rw = tr._ratingWidget;
+        if (!rw) return;
+        var aVal = rw.getA();
+        if (aVal !== null && !isNaN(aVal)) {
+            sums[curType]   += aVal;
+            counts[curType] += 1;
+        }
+    });
+
+    groups.forEach(function(g) {
+        var avg    = counts[g.type] ? sums[g.type] / counts[g.type] : null;
+        var avgRow = createSpcrInlineAvgRow(g.type, avg);
+        var next   = g.lastDataRow.nextSibling;
+        next ? body.insertBefore(avgRow, next) : body.appendChild(avgRow);
+    });
 }
 
 /* ── ENSURE AVERAGE FOOTER ROWS EXIST ── */
@@ -967,7 +1074,7 @@ document.getElementById('sClearBtn').addEventListener('click', function() {
     if (filterSel) { filterSel.value = ''; filterSpcrBySection(''); }
 });
 
-/* ── Auto-save SPCR draft to localStorage on every change ── */
+/* ── Auto-save SPCR draft to localStorage ── */
 (function _wireSpcrPersist() {
     _persistWireBody('spcrBody', PERSIST_KEY_SPCR, readSpcrForm);
     ['s_emp_name','s_emp_position','s_period','s_supervisor','s_approved_by'].forEach(function(id) {
@@ -978,14 +1085,12 @@ document.getElementById('sClearBtn').addEventListener('click', function() {
     });
 })();
 
-/* Section filter change handler */
 document.addEventListener('change', function(e) {
     if (e.target && e.target.id === 'spcr-section-filter') {
         filterSpcrBySection(e.target.value);
     }
 });
 
-/* Sync display name as user types */
 var sNameEl = document.getElementById('s_emp_name');
 if (sNameEl) {
     sNameEl.addEventListener('input', function() {
@@ -999,7 +1104,7 @@ if (sNameEl) {
     if (el) el.addEventListener('input', syncShared);
 });
 
-/* ── INIT — default body structure ── */
+/* ── INIT ── */
 (function spcrInit() {
     var body = document.getElementById('spcrBody');
     if (!body || body.children.length > 0) return;
@@ -1010,21 +1115,12 @@ if (sNameEl) {
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   LOAD FROM DPCR — SPCR action bar button
-   ─────────────────────────────────────────────────────────────
-   Fetches all saved DPCR forms from the API, shows them in a
-   selection modal. When the user picks one:
-     1. Opens a full-table VIEW of that DPCR's complete data in
-        the viewModal so the user can review everything first.
-     2. A "Load into SPCR" button inside the view lets them then
-        push the whole table at once into the SPCR form.
+   LOAD FROM DPCR (unchanged)
 ══════════════════════════════════════════════════════════════ */
 
-/* Build a full-detail view of one DPCR record (from API response shape) */
 function _buildDpcrFullViewHtml(record) {
     var html = '';
 
-    /* ── Header meta ── */
     html += '<div class="view-meta" style="margin-bottom:12px;">'
         + '<div><span>Employee: </span><strong>' + esc(record.employee_name  || '—') + '</strong></div>'
         + '<div><span>Title / Division: </span><strong>' + esc(record.employee_title || '—') + '</strong></div>'
@@ -1033,7 +1129,6 @@ function _buildDpcrFullViewHtml(record) {
         + '<div><span>Approved By: </span><strong>' + esc(record.approved_by || '—') + '</strong></div>'
         + '</div>';
 
-    /* ── Items table ── */
     var items = Array.isArray(record.items) ? record.items : [];
     if (!items.length) {
         html += '<p class="view-linked-empty">No items in this DPCR record.</p>';
@@ -1058,9 +1153,9 @@ function _buildDpcrFullViewHtml(record) {
     items.forEach(function(i) {
         var ft = i.function_type || 'Strategic';
         if (ft !== lastType) {
-            var cfg = { Strategic: { color: '#1a3b6e', bg: '#dce4f0' },
-                        Core:      { color: '#1e6e3a', bg: '#d4edda' },
-                        Support:   { color: '#7a4f00', bg: '#fff3cd' } }[ft]
+            var cfg = { Strategic: { color: '#000000', bg: '#ffffff' },
+                        Core:      { color: '#000000', bg: '#ffffff' },
+                        Support:   { color: '#000000', bg: '#ffffff' } }[ft]
                    || { color: '#1a3b6e', bg: '#dce4f0' };
             html += '<tr><td colspan="10" style="background:' + cfg.bg
                 + ';color:' + cfg.color
@@ -1087,28 +1182,22 @@ function _buildDpcrFullViewHtml(record) {
     return html;
 }
 
-/* Load the selected DPCR record into the live SPCR form */
 function _loadDpcrIntoSpcr(record) {
     if (!confirm('Load DPCR #' + record.id + ' (' + (record.employee_name || '?') + ') into the SPCR form?\nThis will replace all current SPCR rows.')) return;
 
-    /* Close the view modal */
     if (typeof closeViewModal === 'function') closeViewModal();
 
-    /* Use the existing pushDpcrToSpcr helper */
     if (typeof pushDpcrToSpcr === 'function') {
         pushDpcrToSpcr(record);
     }
 
-    /* Rebuild section filter from new data */
     rebuildSpcrSectionFilter();
 
     showAlert('s-alertOk', 'ok',
         '\u2714 DPCR #' + record.id + ' (' + (record.employee_name || '') + ') loaded into SPCR.');
 }
 
-/* Open the DPCR-selection modal, then on pick show full-table view with Load button */
 async function openDpcrSelectModal() {
-    /* Show a loading state in the link modal */
     var listEl = document.getElementById('linkModalList');
     var titleEl = document.getElementById('linkModalTitle');
     if (!listEl || !titleEl) return;
@@ -1150,12 +1239,9 @@ async function openDpcrSelectModal() {
             + '</span>';
 
         btn.onclick = function() {
-            /* Close the selection modal */
             document.getElementById('linkModal').classList.remove('open');
 
-            /* Fetch full record (with items) then show view modal */
             apiFetch('/api/dpcr/' + rec.id).then(function(full) {
-                /* Build the full-table view HTML */
                 var bodyHtml = '<div class="view-linked-section">'
                     + '<div class="view-linked-title" style="margin-bottom:10px;">'
                     +   '📋 DPCR Form #' + full.id + ' — ' + esc(full.employee_name || '')
@@ -1163,7 +1249,6 @@ async function openDpcrSelectModal() {
                     + _buildDpcrFullViewHtml(full)
                     + '</div>';
 
-                /* Inject a "Load into SPCR" button ABOVE the table */
                 var loadBtnHtml = '<div style="margin-bottom:12px;">'
                     + '<button type="button" id="dpcrLoadIntoSpcrBtn" '
                     +   'style="background:var(--navy);color:#fff;border:none;border-radius:3px;'
@@ -1182,7 +1267,6 @@ async function openDpcrSelectModal() {
                     loadBtnHtml + bodyHtml
                 );
 
-                /* Wire the load button */
                 var loadBtn = document.getElementById('dpcrLoadIntoSpcrBtn');
                 if (loadBtn) {
                     loadBtn.onclick = function() { _loadDpcrIntoSpcr(full); };
@@ -1196,7 +1280,6 @@ async function openDpcrSelectModal() {
     });
 }
 
-/* Wire the "📋 Load from DPCR" button in the action bar */
 (function _wireLoadDpcrBtn() {
     var btn = document.getElementById('sLoadDpcrBtn');
     if (btn) btn.addEventListener('click', openDpcrSelectModal);

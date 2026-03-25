@@ -7,8 +7,9 @@
 
     <div class="form-ref">DOH – SPMS Form 4</div>
 
-    {{-- Header --}}
-    <div class="doc-header">
+    {{-- ─── INTRO BLOCK ─── --}}
+    <div class="intro-block">
+            <div class="doc-header">
         <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
         <div class="header-text">
             <div class="org-name">Quirino Memorial Medical Center</div>
@@ -16,9 +17,6 @@
             <div class="form-title">Individual Performance Commitment and Review (IPCR)</div>
         </div>
     </div>
-
-    {{-- Intro Block --}}
-    <div class="intro-block">
         <div class="intro-line">
             I,&nbsp;
             <input type="text" id="i_emp_name" class="intro-field"
@@ -38,7 +36,7 @@
         </div>
     </div>
 
-    {{-- Signature Row --}}
+    {{-- ─── SIGNATURE ROW ─── --}}
     <div class="d-sig-row" style="align-items:flex-start;">
 
         {{-- Employee --}}
@@ -53,7 +51,7 @@
             </div>
         </div>
 
-        {{-- Supervisor --}}
+        {{-- Immediate Supervisor --}}
         <div class="d-sig-cell" style="flex:2;">
             <div class="sig-label">Immediate Supervisor:</div>
             <div style="margin-bottom:6px;"></div>
@@ -95,23 +93,31 @@
 
     </div>
 
-    {{-- IPCR Table --}}
+    {{-- ─── IPCR MAIN TABLE ─── --}}
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
         <thead>
             <tr>
-                <th class="drag-handle-th no-print" style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
-                <th class="spcr-th-actions no-print" style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
+                <th class="drag-handle-th no-print"
+                    style="width:18px;border:none;background:transparent;padding:0;" rowspan="2"></th>
+                <th class="spcr-th-actions no-print"
+                    style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
                     Performance / Success Indicator<br>(Targets + Measure)
                 </th>
                 <th class="col-actual" rowspan="2">ACTUAL ACCOMPLISHMENT</th>
-                <th class="col-rate" rowspan="2">
-                    Accomplishment Rate<br>(Actual÷Target × 100%)
+                <th class="col-rate"   rowspan="2">
+                    Accomplishment Rate<br>(Actual ÷ Target × 100%)
                 </th>
                 <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
                 <th class="col-remarks" rowspan="2">Remarks / Justification<br>&amp; Unmet Targets</th>
-                <th style="border:none;background:transparent;width:26px;" class="no-print" rowspan="2"></th>
+                {{--
+                    FIX: Delete column uses class="no-print" only.
+                    Do NOT use th:last-child / td:last-child in CSS — that
+                    was eating the A(4) rating column. The .no-print rule
+                    in print_modes.css hides this header correctly.
+                --}}
+                <th class="no-print" style="border:none;background:transparent;width:26px;" rowspan="2"></th>
             </tr>
             <tr>
                 <th class="col-q" style="font-size:9px;">Q<br><span style="font-weight:normal;">(1)</span></th>
@@ -123,100 +129,185 @@
         <tbody id="ipcrBody">
             <tr class="section-header">
                 <td style="border:none;background:transparent;width:18px;padding:0;"></td>
-                <td style="border:none;background:transparent;padding:0;width:54px;min-width:54px;" class="no-print"></td>
-                <td colspan="9" style="background:#d4edda;color:#1e6e3a;font-weight:700;border-left:4px solid #1e6e3a;padding:4px 8px;font-size:10px;letter-spacing:.3px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">CORE FUNCTIONS :</td>
-                <td class="no-print" style="border:none;background:transparent;padding:0;width:0;"></td>
+                <td style="border:none;background:transparent;padding:0;width:54px;min-width:54px;"
+                    class="no-print"></td>
+                <td class="no-print"
+                    style="border:none;background:transparent;padding:0;width:0;"></td>
             </tr>
         </tbody>
     </table>
 
-    {{-- Average Ratings Summary --}}
-    <div class="ipcr-summary" id="ipcrSummary" style="margin-top:14px;">
-        <table class="ipcr-rating-summary">
+    {{-- ═══════════════════════════════════════════════════════
+         IPCR FUNCTION SUMMARY TABLE
+         7 columns: Functions | % Distribution | Avg Rating per Fn |
+                    Final Rating per Fn | Final Avg Rating |
+                    Adjectival Rating | Remarks
+    ═══════════════════════════════════════════════════════════ --}}
+    <div class="dpcr-summary-wrap" id="ipcrFuncSummary" style="margin-top:14px;">
+        <table class="dpcr-func-summary-tbl" id="ipcrFuncSummaryTable">
+            {{-- Inline colgroup widths are overridden in @media print by print_modes.css
+                 to ensure all 7 columns (incl. Adjectival Rating) fit on A4 landscape. --}}
+            <colgroup>
+                <col style="width:12%;">
+                <col style="width:13%;">
+                <col style="width:15%;">
+                <col style="width:20%;">
+                <col style="width:10%;">
+                <col style="width:10%;">
+                <col style="width:20%;">
+            </colgroup>
             <thead>
                 <tr>
-                    <th>Functions</th>
-                    <th>Percentage Distribution *</th>
-                    <th>Average Rating per Function</th>
-                    <th>Final Rating per Function<br>(Average Rating × Percentage Distribution)</th>
-                    <th>Final Average Rating</th>
-                    <th>Adjectival Rating</th>
+                    <th rowspan="2">Functions</th>
+                    <th rowspan="2">Percentage<br>Distribution *</th>
+                    <th rowspan="2">Average Rating<br>per Function</th>
+                    <th rowspan="2">
+                        Final Rating per Functions<br>
+                        <span style="font-weight:normal;font-size:8px;">
+                            (Average Rating × Percentage Distribution)
+                        </span>
+                    </th>
+                    <th colspan="2" style="text-align:center;">Final Average Rating</th>
+                    <th rowspan="2">Remarks :</th>
+                </tr>
+                <tr>
+                    <th style="font-size:9px;font-weight:600;">Final Average<br>Rating</th>
+                    <th style="font-size:9px;font-weight:600;">Adjectival<br>Rating</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>Core</td>
-                    <td><input type="text" class="ipcr-pct-input" id="i_pct_core" value="" style="width:60px;text-align:center;"></td>
-                    <td><input type="text" class="ipcr-avg-input" id="i_avg_core" placeholder="e.g. 4.67" style="width:70px;text-align:center;"></td>
-                    <td id="i_final_core" style="text-align:center;">—</td>
-                    <td rowspan="2" id="i_final_avg" style="text-align:center;font-weight:700;vertical-align:middle;">—</td>
-                    <td rowspan="2" id="i_adjectival" style="text-align:center;font-weight:700;vertical-align:middle;">—</td>
-                </tr>
-                <tr>
-                    <td>Support</td>
-                    <td><input type="text" class="ipcr-pct-input" id="i_pct_support" value="" style="width:60px;text-align:center;"></td>
-                    <td><input type="text" class="ipcr-avg-input" id="i_avg_support" placeholder="e.g. 5.00" style="width:70px;text-align:center;"></td>
-                    <td id="i_final_support" style="text-align:center;">—</td>
-                </tr>
+            <tbody id="ipcrFuncSummaryBody">
+                {{-- Rows injected by computeIpcrSummary() in ipcr.js --}}
             </tbody>
+            <tfoot>
+                <tr class="dpcr-summary-footer-row">
+                    <td colspan="4" class="dpcr-summary-footer-label">
+                        <span id="ipcr_pct_warning"
+                              style="display:none;color:#c00;font-weight:700;font-size:9px;"
+                              class="no-print"></span>
+                    </td>
+                    <td id="i_final_avg"    class="dpcr-summary-final-val">—</td>
+                    <td id="i_adjectival"   class="dpcr-summary-adj-val">—</td>
+                    <td></td>
+                </tr>
+                <tr class="dpcr-approved-rating-row">
+                    <td colspan="4" class="dpcr-approved-label">Approved Final Rating :</td>
+                    <td colspan="2" class="dpcr-approved-val">
+                        <input type="text" placeholder="—"
+                               style="width:100%;border:none;background:transparent;font-size:10px;
+                                      font-family:Arial,sans-serif;outline:none;text-align:center;font-weight:700;">
+                    </td>
+                    <td>
+                        <span style="font-size:9px;">Date:&nbsp;</span>
+                        <input type="date"
+                               style="border:none;border-bottom:1px solid #999;background:transparent;
+                                      font-size:9px;outline:none;">
+                    </td>
+                </tr>
+            </tfoot>
         </table>
-        <div id="ipcr_pct_warning" style="display:none;margin-top:6px;padding:5px 10px;background:#fff0f0;border:1.5px solid #c00;border-radius:3px;color:#c00;font-size:10px;font-weight:700;"></div>
-        <div style="font-size:9px;margin-top:4px;color:#555;">
-            * Core functions should not be less than 70%.
-            &nbsp;|&nbsp; Legend: 1 – Quantity &nbsp; 2 – Efficiency &nbsp; 3 – Timeliness &nbsp; 4 – Average
-        </div>
-    </div>
 
-    {{-- Discussed With / Bottom Signatures --}}
-    <div class="d-sig-row" style="margin-top:14px;border-top:1.5px solid var(--navy);padding-top:8px;">
-        <div class="d-sig-cell" style="flex:1.5;">
-            <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Discussed With:</div>
-            <div style="margin-bottom:18px;"></div>
-            <span class="d-sig-name" style="font-size:11px;" id="i_disp_name2">&nbsp;</span>
-            <div class="d-sig-title"><em>Employee</em></div>
-        </div>
-        <div class="d-sig-cell" style="flex:1.5;">
-            <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Assessed By:</div>
-            <div style="margin-bottom:14px;"></div>
-            <span class="d-sig-name" style="font-size:11px;" id="i_disp_supervisor">&nbsp;</span>
-            <div class="d-sig-title"><em>Supervisor</em></div>
-            <div style="font-size:9px;color:#555;margin-top:2px;font-style:italic;">
-                I certify that I discussed my assessment of this employee's performance with the employee.
-            </div>
-        </div>
-        <div class="d-sig-cell" style="flex:2;">
-            <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Recommending Approval:</div>
-            <div style="margin-bottom:14px;"></div>
-            <input type="text" id="i_recommending" class="sig-name-input"
-                   placeholder="Division Head / Chief" style="min-width:200px;">
-            <div class="d-sig-title"><em>Division Head / Chief</em></div>
-        </div>
-        <div class="d-sig-cell" style="flex:2;">
-            <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Approved Final Rating:</div>
-            <div style="margin-bottom:14px;"></div>
-            <span class="d-sig-name" style="font-size:11px;" id="i_disp_approved">&nbsp;</span>
-            <div class="d-sig-title"><em>Medical Center Chief II</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;font-size:10px;outline:none;">
-            </div>
-        </div>
-    </div>
+        {{-- ── "Discussed with" four-signature block ── --}}
+        <div class="dpcr-discussed-block">
+            <div class="ipcr-sig-quad">
 
-    {{-- Action Bar --}}
+                {{--
+                    sig 1: Discussed with (Employee)
+                    FIX: id="i_disp_name2" added here as a <span> that mirrors
+                    the employee name. ipcr.js references this id in:
+                      • hydrateIpcrForm()
+                      • iClearBtn handler
+                      • i_emp_name input listener
+                    Without this element the JS threw silent errors that
+                    prevented computeIpcrSummary() from completing.
+                --}}
+                <div class="dpcr-sig-box">
+                    <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Discussed with:</div>
+                    <div class="dpcr-sig-name-area">
+                        <span class="d-sig-name" id="i_disp_name2">&nbsp;</span>
+                    </div>
+                    <div class="dpcr-sig-role">Employee</div>
+                    <div class="dpcr-sig-date">
+                        Date:&nbsp;
+                        <input type="date"
+                               style="border:none;border-bottom:1px solid #999;background:transparent;
+                                      font-size:9px;outline:none;">
+                    </div>
+                </div>
+
+                {{-- sig 2: Assessed By (Supervisor) --}}
+                <div class="dpcr-sig-box">
+                    <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Assessed By:</div>
+                    <div class="dpcr-sig-name-area">
+                        <span class="d-sig-name" id="i_disp_supervisor">&nbsp;</span>
+                    </div>
+                    <div class="dpcr-sig-role">Supervisor</div>
+                    <div class="dpcr-sig-date">
+                        Date:&nbsp;
+                        <input type="date"
+                               style="border:none;border-bottom:1px solid #999;background:transparent;
+                                      font-size:9px;outline:none;">
+                    </div>
+                </div>
+
+                {{-- sig 3: Recommending Approval --}}
+                <div class="dpcr-sig-box">
+                    <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Recommending Approval:</div>
+                    <div class="dpcr-sig-name-area">
+                        <input type="text" id="i_recommending"
+                               placeholder="Division Head / Chief"
+                               style="border:none;border-bottom:1px solid #000;background:transparent;
+                                      font-size:10px;font-family:Arial,sans-serif;outline:none;
+                                      width:100%;font-weight:700;text-align:center;">
+                    </div>
+                    <div class="dpcr-sig-role">Division Head / Chief</div>
+                    <div class="dpcr-sig-date">
+                        Date:&nbsp;
+                        <input type="date"
+                               style="border:none;border-bottom:1px solid #999;background:transparent;
+                                      font-size:9px;outline:none;">
+                    </div>
+                </div>
+
+                {{-- sig 4: Approved Final Rating --}}
+                <div class="dpcr-sig-box">
+                    <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Approved Final Rating:</div>
+                    <div class="dpcr-sig-name-area">
+                        <span class="d-sig-name" id="i_disp_approved">&nbsp;</span>
+                    </div>
+                    <div class="dpcr-sig-role">Medical Center Chief II</div>
+                    <div class="dpcr-sig-date">
+                        Date:&nbsp;
+                        <input type="date"
+                               style="border:none;border-bottom:1px solid #999;background:transparent;
+                                      font-size:9px;outline:none;">
+                    </div>
+                </div>
+
+            </div>{{-- /.ipcr-sig-quad --}}
+        </div>{{-- /.dpcr-discussed-block --}}
+
+        {{-- Legend --}}
+        <div class="dpcr-summary-legend">
+            Legend: &nbsp; 1 – Quality &nbsp;&nbsp; 2 – Efficiency &nbsp;&nbsp;
+            3 – Timeliness &nbsp;&nbsp; 4 – Average
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <em>* Core functions should not be less than 70%</em>
+        </div>
+
+    </div>{{-- /.dpcr-summary-wrap / #ipcrFuncSummary --}}
+
+    {{-- ─── ACTION BAR (screen only) ─── --}}
     <div class="action-bar no-print">
         <button type="button" class="btn-action btn-navy"   id="iAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="iAddSectionBtn">+ Add Section</button>
         <button type="button" class="btn-action btn-orange" id="iClearBtn">Clear Form</button>
         <button type="button" class="btn-action btn-teal"   id="iLoadSpcrBtn"
                 title="Pick a saved SPCR and load its full table into IPCR">
-             Load from SPCR
+            Load from SPCR
         </button>
         <button type="button" class="btn-action btn-green"  id="iSaveBtn"
-                style="margin-left:auto;"> Save IPCR</button>
+                style="margin-left:auto;">💾 Save IPCR</button>
 
-        {{-- Two-button print group --}}
         <div class="print-btn-group" title="Print options">
             <button type="button" class="btn-print-target"
                     onclick="printIpcrTarget()"
@@ -231,7 +322,7 @@
         </div>
     </div>
 
-    {{-- Rating Matrix embed slot --}}
+    {{-- ─── RATING MATRIX EMBED SLOT ─── --}}
     <div class="rm-embed-slot" id="rm-slot-ipcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">
@@ -240,7 +331,8 @@
                 <span class="rm-section-divider-sub">— source document for IPCR row</span>
             </div>
             <button type="button" class="rm-toggle-btn" id="rm-toggle-ipcr"
-                    onclick="rmToggleCollapse('ipcr')" title="Collapse / expand Rating Matrix">
+                    onclick="rmToggleCollapse('ipcr')"
+                    title="Collapse / expand Rating Matrix">
                 ▲ Collapse
             </button>
         </div>

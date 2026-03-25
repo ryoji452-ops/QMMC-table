@@ -54,10 +54,7 @@
 .dpcr-table select { cursor: pointer; }
 .dpcr-table td:focus-within { background-color: #fffde7; }
 
-/* Column widths — adjusted for new actions column (54px fixed) + drag (18px) + del (26px)
-   Remaining percentage-based columns must sum to ~100% of the flexible width.
-   Rating cols widened from 4% → 5.5% each for proper spacing.
-*/
+/* Column widths */
 .col-goal      { width: 12%; }
 .col-indicator { width: 16%; }
 .col-target    { width: 5%;  text-align: center; }
@@ -172,6 +169,243 @@
     line-height: 1.4;
 }
 
+/* ── ACTIONS COLUMN ── */
+.dpcr-table .spcr-row-actions {
+    width: 54px !important;
+    min-width: 54px !important;
+    max-width: 54px !important;
+    padding: 3px !important;
+    vertical-align: top;
+    border: none !important;
+    background: #f9fafd !important;
+    border-right: 1px solid #dde3ef !important;
+    text-align: center;
+}
+
+/* ── DPCR INLINE AVERAGE ROW ── */
+.dpcr-table .dpcr-avg-row td {
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+.dpcr-table .dpcr-avg-row .dpcr-avg-val {
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DPCR FUNCTION SUMMARY TABLE
+   Matches exact printed format in reference image.
+══════════════════════════════════════════════════════════════ */
+.dpcr-summary-wrap {
+    width: 100%;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+}
+
+.dpcr-func-summary-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    table-layout: fixed;
+    font-size: 10px;
+}
+
+.dpcr-func-summary-tbl th,
+.dpcr-func-summary-tbl td {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    vertical-align: middle;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+.dpcr-func-summary-tbl thead th {
+    background-color: #dce4f0;
+    font-weight: 700;
+    font-size: 9.5px;
+    text-align: center;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+/* Functions column — left-aligned */
+.dpcr-func-summary-tbl td.func-td-ft,
+.dpcr-func-summary-tbl th:first-child {
+    text-align: left;
+    font-weight: 700;
+    padding-left: 8px;
+}
+
+/* Percentage input column */
+.dpcr-func-summary-tbl .func-td-pct {
+    text-align: center;
+}
+.dpcr-func-summary-tbl .func-pct-inp {
+    width: 58px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    padding: 1px 3px;
+}
+
+/* Average Rating per Function column */
+.dpcr-func-summary-tbl .func-td-avg {
+    text-align: center;
+    font-size: 10px;
+}
+
+/* Final Rating per Function column */
+.dpcr-func-summary-tbl .func-td-fin {
+    text-align: center;
+    font-weight: 700;
+    font-size: 10px;
+}
+
+/* Final Average Rating cell */
+.dpcr-summary-final-val {
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+    color: #1a3b6e;
+}
+
+/* Adjectival Rating cell */
+.dpcr-summary-adj-val {
+    font-weight: 700;
+    font-size: 11px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Remarks column — left-aligned */
+.dpcr-func-summary-tbl .func-td-remarks {
+    text-align: left;
+    vertical-align: top;
+    padding: 3px 5px;
+}
+.dpcr-func-summary-tbl .func-remarks-inp {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    min-height: 20px;
+}
+
+/* ── Footer rows ── */
+.dpcr-summary-footer-row td {
+    background: #f8f8f8;
+    font-size: 10px;
+}
+
+.dpcr-summary-footer-label {
+    text-align: right;
+    font-weight: 700;
+    padding-right: 10px !important;
+}
+
+/* Approved Final Rating row */
+.dpcr-approved-rating-row td {
+    background: #edf1f8;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.dpcr-approved-label {
+    text-align: right !important;
+    font-weight: 700 !important;
+    font-size: 10px;
+    padding-right: 10px !important;
+}
+
+.dpcr-approved-val {
+    text-align: center;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+/* ── "Discussed with:" block ── */
+.dpcr-discussed-block {
+    margin-top: 10px;
+    border: 1px solid #000;
+    padding: 8px 12px 12px;
+}
+
+.dpcr-discussed-label {
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: .3px;
+}
+
+.dpcr-sig-pair {
+    display: flex;
+    gap: 40px;
+    justify-content: flex-start;
+}
+
+.dpcr-sig-box {
+    flex: 1;
+    max-width: 300px;
+    text-align: center;
+}
+
+.dpcr-sig-name-area {
+    min-height: 32px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    border-bottom: 1px solid #000;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+}
+
+.dpcr-sig-role {
+    font-size: 9.5px;
+    font-style: italic;
+    margin-top: 2px;
+    color: #333;
+}
+
+.dpcr-sig-date {
+    font-size: 9px;
+    margin-top: 6px;
+    text-align: left;
+}
+
+/* ── Legend ── */
+.dpcr-summary-legend {
+    margin-top: 6px;
+    font-size: 9px;
+    color: #444;
+    padding: 2px 4px;
+}
+
+/* ── % Warning ── */
+#dpcr_pct_warning {
+    font-size: 10px;
+    font-weight: 700;
+    color: #c00;
+    background: #fff0f0;
+    border: 1.5px solid #c00;
+    border-radius: 3px;
+    padding: 3px 8px;
+    display: inline-block;
+}
+
+
 /* ── PRINT OVERRIDES — DPCR ── */
 @media print {
     #page-dpcr { font-size: 9px !important; }
@@ -198,17 +432,39 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
-}
-/* ── ACTIONS COLUMN (added by session update) ── */
-/* Mirrors .spcr-row-actions from spcr.css for the DPCR table context */
-.dpcr-table .spcr-row-actions {
-    width: 54px !important;
-    min-width: 54px !important;
-    max-width: 54px !important;
-    padding: 3px !important;
-    vertical-align: top;
-    border: none !important;
-    background: #f9fafd !important;
-    border-right: 1px solid #dde3ef !important;
-    text-align: center;
+
+    /* Summary table print */
+    #page-dpcr .dpcr-func-summary-tbl th,
+    #page-dpcr .dpcr-func-summary-tbl td {
+        font-size: 8.5px !important;
+        padding: 3px 4px !important;
+    }
+    #page-dpcr .dpcr-func-summary-tbl thead th {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #page-dpcr .dpcr-approved-rating-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #page-dpcr .dpcr-discussed-block {
+        break-inside: avoid;
+    }
+    #page-dpcr .dpcr-summary-legend {
+        font-size: 8px !important;
+    }
+
+    /* Print — keep avg rows visible and coloured */
+    #page-dpcr .dpcr-table .dpcr-avg-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 9px !important;
+    }
+    /* In target-mode print, hide avg rows (no actuals = no avg) */
+    .print-target-mode #page-dpcr .dpcr-table .dpcr-avg-row {
+        display: none !important;
+    }
+    /* Hide screen-only action bar */
+    #page-dpcr .action-bar { display: none !important; }
+    #page-dpcr .no-print   { display: none !important; }
 }

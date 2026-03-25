@@ -8,8 +8,9 @@
     font-size: 10.5px;
     line-height: 1.7;
     font-family: Arial, sans-serif;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 6px;
+    border: 1px solid #000;        /* full border */
+    padding: 6px 10px 4px;         /* matches DPCR/IPCR */
+    margin-bottom: 0;
 }
 .spcr-intro-line {
     display: flex;
@@ -196,7 +197,6 @@
     vertical-align: top;
     padding: 3px 4px;
 }
-/* Ratings are handled in the column-widths section above */
 .spcr-table td:focus-within { background: #fffde7; }
 
 /* Inputs/textareas */
@@ -217,10 +217,7 @@
 }
 .spcr-table textarea { min-height: 52px; line-height: 1.35; }
 
-/* Column widths — matching photo proportions
-   Actions col (54px) + drag (18px) are fixed; rest are percentage.
-   Rating cols widened from 4% → 5.5% each.
-*/
+/* Column widths */
 .spcr-th-goal    { width: 13%; text-align: left; }
 .spcr-th-ind     { width: 18%; text-align: left; }
 .spcr-th-bud     { width: 5%;  text-align: center; }
@@ -270,7 +267,7 @@
     margin: 0 auto;
 }
 
-/* Section rows — style only the content td, not the drag handle or actions blank */
+/* Section rows */
 .spcr-table .spcr-section-row td {
     background: #f5f5f5;
     font-weight: 700;
@@ -282,7 +279,6 @@
     print-color-adjust: exact;
 }
 
-/* Keep drag handle and actions-blank transparent inside section rows */
 .spcr-table .spcr-section-row td.drag-handle,
 .spcr-table .spcr-section-row td.spcr-section-act-blank {
     background: transparent !important;
@@ -331,33 +327,22 @@
     font-style: italic;
 }
 
-/* ── PRINT ── */
-@media print {
-    .no-print { display: none !important; }
-    #page-spcr { font-size: 9px !important; }
-    #page-spcr .spcr-table { font-size: 8.5px !important; width: 100% !important; }
-    #page-spcr .spcr-table th,
-    #page-spcr .spcr-table td { padding: 2px 3px !important; font-size: 8px !important; }
-    #page-spcr .spcr-intro-block,
-    #page-spcr .spcr-sig-row,
-    #page-spcr .spcr-approved-row { font-size: 9px !important; }
-    #page-spcr textarea,
-    #page-spcr input  { font-size: 8px !important; }
-    #page-spcr .spcr-table td:focus-within { background: transparent !important; }
-    #page-spcr .spcr-lock-badge,
-    #page-spcr .row-link-btn { display: none !important; }
-
-    /* Preserve function-type section header colours on print */
-    #page-spcr .spcr-table .spcr-section-row td {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+/* ── SPCR INLINE AVERAGE ROW ── */
+.spcr-table .spcr-inline-avg-row td {
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
+.spcr-table .spcr-inline-avg-row .spcr-inline-avg-val {
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
 /* ══════════════════════════════════════════════════════════
    ROW ACTIONS COLUMN
-   Fixed-width left column (after drag handle) that holds
-   the push → and 👁 Links buttons for every data row.
-   Always hidden on print (.no-print covers it globally).
 ══════════════════════════════════════════════════════════ */
 .spcr-row-actions {
     width: 54px;
@@ -371,7 +356,6 @@
     text-align: center;
 }
 
-/* same column in dpcr-table and ipcr-table */
 .dpcr-table .spcr-row-actions,
 .ipcr-table .spcr-row-actions {
     background: #f9fafd !important;
@@ -402,10 +386,63 @@
     color: var(--navy);
 }
 
-/* Column header placeholder for the actions column */
 .spcr-th-actions {
     width: 54px;
     border: none !important;
     background: transparent !important;
     padding: 0;
+}
+
+/* ── PRINT OVERRIDES — SPCR ── */
+@media print {
+    #page-spcr .spcr-table { font-size: 8.5px !important; width: 100% !important; }
+    #page-spcr .spcr-table th,
+    #page-spcr .spcr-table td { padding: 2px 3px !important; font-size: 8px !important; }
+    #page-spcr .spcr-intro-block,
+    #page-spcr .spcr-sig-row,
+    #page-spcr .spcr-approved-row { font-size: 9px !important; }
+    #page-spcr textarea,
+    #page-spcr input  { font-size: 8px !important; }
+    #page-spcr .spcr-table td:focus-within { background: transparent !important; }
+    #page-spcr .spcr-lock-badge,
+    #page-spcr .row-link-btn { display: none !important; }
+    #page-spcr .action-bar { display: none !important; }
+    #page-spcr .no-print   { display: none !important; }
+
+    /* Preserve function-type section header colours on print */
+    #page-spcr .spcr-table .spcr-section-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Print inline avg rows */
+    #page-spcr .spcr-table .spcr-inline-avg-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 9px !important;
+    }
+    .print-target-mode #page-spcr .spcr-table .spcr-inline-avg-row {
+        display: none !important;
+    }
+
+    /* Summary table print */
+    #page-spcr .dpcr-func-summary-tbl th,
+    #page-spcr .dpcr-func-summary-tbl td {
+        font-size: 8.5px !important;
+        padding: 3px 4px !important;
+    }
+    #page-spcr .dpcr-func-summary-tbl thead th {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #page-spcr .dpcr-approved-rating-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #page-spcr .dpcr-discussed-block {
+        break-inside: avoid;
+    }
+    #page-spcr .dpcr-summary-legend {
+        font-size: 8px !important;
+    }
 }
