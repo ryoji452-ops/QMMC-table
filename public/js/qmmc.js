@@ -131,17 +131,8 @@ function closeLinkModal() { document.getElementById('linkModal').classList.remov
    SYNC: SPCR employee info → DPCR header
 ══════════════════════════════════════════ */
 function syncShared() {
-    const name     = document.getElementById('s_emp_name')?.value || '';
-    const title    = document.getElementById('s_emp_position')?.value || '';
-    const approved = document.getElementById('s_approved_by')?.value || '';
-    const nameEl   = document.getElementById('d_emp_name');
-    const titleEl  = document.getElementById('d_emp_title');
-    const approvedEl = document.getElementById('d_approved_by');
-    const dispEl   = document.getElementById('d_disp_name');
-    if (nameEl)    nameEl.value    = name;
-    if (titleEl)   titleEl.value   = title;
-    if (approvedEl) approvedEl.value = approved;
-    if (dispEl)    dispEl.textContent = name || '\u00a0';
+    /* Intentionally blank:
+       DPCR and SPCR header fields must stay independent. */
 }
 
 /* ══════════════════════════════════════════

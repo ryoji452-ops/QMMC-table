@@ -933,9 +933,23 @@ function computeDpcrFuncSummary() {
         /* Always update computed cells */
         var tdAvg = row.querySelector('.func-td-avg');
         var tdFin = row.querySelector('.func-td-fin');
+        var tdFinalAvg = row.querySelector('.func-td-final-avg');
+        var tdAdj      = row.querySelector('.func-td-adj');
 
         if (tdAvg) tdAvg.textContent = avg !== null ? avg.toFixed(2) : '—';
         if (tdFin) tdFin.textContent = final !== null ? final.toFixed(4) : '—';
+        if (tdFinalAvg) tdFinalAvg.textContent = final !== null ? final.toFixed(4) : '—';
+        if (tdAdj) {
+            var rowAdj = '—';
+            if (avg !== null && !isNaN(avg) && avg >= 1) {
+                if      (avg >= 5) rowAdj = 'Outstanding';
+                else if (avg >= 4) rowAdj = 'Very Satisfactory';
+                else if (avg >= 3) rowAdj = 'Satisfactory';
+                else if (avg >= 2) rowAdj = 'Unsatisfactory';
+                else               rowAdj = 'Poor';
+            }
+            tdAdj.textContent = rowAdj;
+        }
 
     });
 
@@ -1149,6 +1163,15 @@ document.getElementById('dAddSectionBtn').addEventListener('click', function() {
             _persistSave(PERSIST_KEY_DPCR, readDpcrForm);
         });
     });
+
+    /* Keep DPCR header signature name in sync while typing */
+    var dEmpName = document.getElementById('d_emp_name');
+    var dDispName = document.getElementById('d_disp_name');
+    if (dEmpName && dDispName) {
+        dEmpName.addEventListener('input', function() {
+            dDispName.textContent = this.value || '\u00a0';
+        });
+    }
 })();
 
 /* ══════════════════════════════════════════════════════════════

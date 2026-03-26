@@ -1,39 +1,70 @@
 /* ═══════════════════════════════════════════════════════════════
-   print_modes.css  — FIXED & STANDARDIZED v2
-   Controls "Print Target" vs "Print Actual" for DPCR / SPCR / IPCR.
-
-   JS adds ONE of these classes to <body> before window.print():
-     .print-target-mode   → target form (blank actuals, Q/E/T as ✓/–)
+   print_modes.css  — v4 FINAL
+   ─────────────────────────────────────────────────────────────
+   JS adds ONE class to <body> before window.print():
+     .print-target-mode   → blank form, full borders preserved
      .print-actual-mode   → full data form
 
-   COLUMN MAP (DOM 0-based td index, counting ALL tds including hidden)
-   ── DPCR ──
-     td:nth-child(1)=drag(hidden)  td:nth-child(2)=actions(hidden)
-     td:nth-child(3)=goal          td:nth-child(4)=indicator
-     td:nth-child(5)=target%       td:nth-child(6)=budget
-     td:nth-child(7)=section       td:nth-child(8)=actual
-     td:nth-child(9)=rate          td:nth-child(10)=Q
-     td:nth-child(11)=E            td:nth-child(12)=T
-     td:nth-child(13)=A            td:nth-child(14)=remarks
-     td:nth-child(15)=delete(no-print)
-   ── SPCR ──
-     td:nth-child(1)=drag  td:nth-child(2)=actions
-     td:nth-child(3)=goal  td:nth-child(4)=indicator
-     td:nth-child(5)=budget td:nth-child(6)=person
-     td:nth-child(7)=actual td:nth-child(8)=rate
-     td:nth-child(9)=Q  td:nth-child(10)=E  td:nth-child(11)=T  td:nth-child(12)=A
-     td:nth-child(13)=remarks  td:nth-child(14)=delete(no-print)
-   ── IPCR ──
-     td:nth-child(1)=drag  td:nth-child(2)=actions
-     td:nth-child(3)=goal  td:nth-child(4)=indicator
-     td:nth-child(5)=actual td:nth-child(6)=rate
-     td:nth-child(7)=Q  td:nth-child(8)=E  td:nth-child(9)=T  td:nth-child(10)=A
-     td:nth-child(11)=remarks  td:nth-child(12)=delete(no-print)
+   DESIGN CONTRACT
+   ───────────────
+   Print Target must be structurally IDENTICAL to Print Actual:
+   • Same table layout and column widths
+   • Same row heights (no collapsing)
+   • Same complete border grid
+   • Only difference: data cell contents are invisible
+
+   DOM STRUCTURE OF RATING CELLS (from _buildQETACells in shared.js)
+   ──────────────────────────────────────────────────────────────────
+   Q / E / T  →  <td class="rating-cell">
+                   <span class="qet-lock-badge no-print">   ← hidden by .no-print
+                   <input type="checkbox" class="rating-chk"> ← display:none always
+                   <input type="number"   class="rating-num"> ← the score input
+                   <span class="qet-print-symbol">           ← injected by print_modes.js
+                 </td>
+
+   A(4)       →  <td class="rating-cell">
+                   <div   class="rating-a-display">          ← computed average
+                   <input type="hidden" class="rating-a-hidden">
+                   <span  class="rating-a-print print-only"> ← print-only copy
+                 </td>
+
+   BLANKING STRATEGY
+   ─────────────────
+   We NEVER use visibility:hidden on <td> or <tr> elements —
+   that collapses the cell box and destroys the border grid.
+   We NEVER use a wildcard `* { visibility:hidden }` selector —
+   that kills border-rendering contexts in the print engine.
+
+   Instead we use color:transparent on specific leaf elements
+   (inputs, textareas, divs, spans that carry text values).
+   color:transparent makes text invisible while the element
+   retains its full layout dimensions — row height is preserved,
+   cell borders stay intact.
+
+   COLUMN MAP (nth-child counts ALL siblings incl. hidden no-print)
+   ─────────────────────────────────────────────────────────────────
+   DPCR: td:1=drag  td:2=actions  td:3=goal✓  td:4=indicator✓
+         td:5=target%  td:6=budget  td:7=section  td:8=actual
+         td:9=rate  td:10=Q  td:11=E  td:12=T  td:13=A  td:14=remarks
+         td:15=delete
+
+   SPCR: td:1=drag  td:2=actions  td:3=goal✓  td:4=indicator✓
+         td:5=budget  td:6=person  td:7=actual  td:8=rate
+         td:9=Q  td:10=E  td:11=T  td:12=A  td:13=remarks
+         td:14=delete
+
+   IPCR: td:1=drag  td:2=actions  td:3=goal✓  td:4=indicator✓
+         td:5=actual  td:6=rate
+         td:7=Q  td:8=E  td:9=T  td:10=A  td:11=remarks
+         td:12=delete
 ═══════════════════════════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════════════════════════
-   BASE: .qet-print-symbol — hidden on screen; shown in target print
-══════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   SCREEN BASELINE
+   .qet-print-symbol is injected by print_modes.js into each
+   Q/E/T rating cell. Hidden on screen, shown in target print.
+════════════════════════════════════════════════════════════ */
 .qet-print-symbol {
     display: none;
     font-size: 10px;
@@ -42,12 +73,14 @@
     line-height: 1.4;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SHARED PRINT BASE — applies to BOTH modes
-══════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   SHARED PRINT BASE
+   Applies to BOTH print-target-mode and print-actual-mode.
+════════════════════════════════════════════════════════════ */
 @media print {
 
-    /* ── Always hide Rating Matrix embed, action bars, no-print ── */
+    /* ── UI chrome — always hidden ── */
     .rm-embed-slot,
     .rm-embed-body,
     #rm-panel              { display: none !important; }
@@ -65,66 +98,58 @@
     .transfer-banner       { display: none !important; }
     .sync-note             { display: none !important; }
 
-    /* ── Only the active page prints ── */
+    /* ── Page visibility ── */
     .page                  { display: none !important; box-shadow: none; border: none; }
     .page.active           { display: block !important; width: 100% !important; padding: 8px 10px !important; }
 
-    /* ── Hide drag handles explicitly ── */
+    /* ── Drag handles ── */
     .drag-handle,
     th.drag-handle-th      { display: none !important; }
 
-    /* ── FIX: Only hide .no-print / .col-del — NEVER th:last-child or td:last-child.
-       Using last-child was eating the A(4) rating column in all three tables.
-       Delete tds are already marked .no-print in the JS factories,
-       so the .no-print rule above already covers them. ── */
+    /* ── Delete columns ── */
     .col-del               { display: none !important; }
 
-    /* ── Row action columns hidden ── */
+    /* ── Row action columns ── */
     .spcr-row-actions      { display: none !important; }
 
-    /* ══════════════════════════════════════════════════════
-       FORCE PURE BLACK & WHITE — applies to BOTH modes
-    ══════════════════════════════════════════════════════ */
-    .print-target-mode *,
-    .print-actual-mode * {
-        color: #000 !important;
-        background-color: #fff !important;
-        background-image: none !important;
-        box-shadow: none !important;
-        text-shadow: none !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    /* ────────────────────────────────────────────────────────
+       BORDER ENFORCEMENT — single source of truth for BOTH modes.
+       Declared here once so both target and actual share identical
+       border rendering. The border rules use !important so they
+       survive any colour-reset rules in target mode.
+    ──────────────────────────────────────────────────────── */
+
+    /* Table structure */
+    .print-target-mode #page-dpcr .dpcr-table,
+    .print-actual-mode #page-dpcr .dpcr-table,
+    .print-target-mode #page-spcr .spcr-table,
+    .print-actual-mode #page-spcr .spcr-table,
+    .print-target-mode #page-ipcr .ipcr-table,
+    .print-actual-mode #page-ipcr .ipcr-table {
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+        table-layout: fixed !important;
+        width: 100% !important;
+        border: 1px solid #000 !important;
     }
 
-    /* ── All table borders solid black ── */
-    .print-target-mode table,
-    .print-target-mode th,
-    .print-target-mode td,
-    .print-actual-mode table,
-    .print-actual-mode th,
-    .print-actual-mode td {
-        border-color: #000 !important;
+    /* Every th and td — full solid black border */
+    .print-target-mode #page-dpcr .dpcr-table th,
+    .print-target-mode #page-dpcr .dpcr-table td,
+    .print-actual-mode #page-dpcr .dpcr-table th,
+    .print-actual-mode #page-dpcr .dpcr-table td,
+    .print-target-mode #page-spcr .spcr-table th,
+    .print-target-mode #page-spcr .spcr-table td,
+    .print-actual-mode #page-spcr .spcr-table th,
+    .print-actual-mode #page-spcr .spcr-table td,
+    .print-target-mode #page-ipcr .ipcr-table th,
+    .print-target-mode #page-ipcr .ipcr-table td,
+    .print-actual-mode #page-ipcr .ipcr-table th,
+    .print-actual-mode #page-ipcr .ipcr-table td {
+        border: 1px solid #000 !important;
     }
 
-    /* ── Enforce borders on all main tables ── */
-    .print-target-mode .dpcr-table,
-    .print-target-mode .dpcr-table th,
-    .print-target-mode .dpcr-table td,
-    .print-actual-mode .dpcr-table,
-    .print-actual-mode .dpcr-table th,
-    .print-actual-mode .dpcr-table td,
-    .print-target-mode .spcr-table,
-    .print-target-mode .spcr-table th,
-    .print-target-mode .spcr-table td,
-    .print-actual-mode .spcr-table,
-    .print-actual-mode .spcr-table th,
-    .print-actual-mode .spcr-table td,
-    .print-target-mode .ipcr-table,
-    .print-target-mode .ipcr-table th,
-    .print-target-mode .ipcr-table td,
-    .print-actual-mode .ipcr-table,
-    .print-actual-mode .ipcr-table th,
-    .print-actual-mode .ipcr-table td,
+    /* Summary tables */
     .print-target-mode .dpcr-func-summary-tbl,
     .print-target-mode .dpcr-func-summary-tbl th,
     .print-target-mode .dpcr-func-summary-tbl td,
@@ -134,7 +159,33 @@
         border: 1px solid #000 !important;
     }
 
-    /* ── Logo: keep visible ── */
+    /* Section header left accent */
+    .print-target-mode #page-dpcr .dpcr-table .section-header td,
+    .print-actual-mode #page-dpcr .dpcr-table .section-header td  { border-left: 3px solid #000 !important; }
+    .print-target-mode #page-spcr .spcr-table .spcr-section-row td,
+    .print-actual-mode #page-spcr .spcr-table .spcr-section-row td { border-left: 3px solid #000 !important; }
+    .print-target-mode #page-ipcr .ipcr-table .section-header td,
+    .print-actual-mode #page-ipcr .ipcr-table .section-header td  { border-left: 3px solid #000 !important; }
+
+    /* Approved rating row */
+    .print-target-mode .dpcr-approved-rating-row td,
+    .print-actual-mode .dpcr-approved-rating-row td { border: 1px solid #000 !important; }
+
+    /* ── Signature rows ── */
+    .print-target-mode .d-sig-row,
+    .print-actual-mode .d-sig-row {
+        border: 1px solid #000 !important;
+    }
+    .print-target-mode .d-sig-cell,
+    .print-actual-mode .d-sig-cell {
+        border-right: 1px solid #000 !important;
+    }
+    .print-target-mode .dpcr-sig-name-area,
+    .print-actual-mode .dpcr-sig-name-area {
+        border-bottom: 1px solid #000 !important;
+    }
+
+    /* ── Logo ── */
     .print-target-mode .logo,
     .print-actual-mode .logo {
         display: block !important;
@@ -142,50 +193,28 @@
         max-width: 90px !important;
     }
 
-    /* ── Doc header border ── */
+    /* ── Doc header ── */
     .print-target-mode .doc-header,
     .print-actual-mode .doc-header {
         border-bottom: 2px solid #000 !important;
     }
 
-    /* ── Signature rows ── */
-    .print-target-mode .d-sig-row,
-    .print-actual-mode .d-sig-row,
-    .print-target-mode .spcr-sig-row,
-    .print-actual-mode .spcr-sig-row {
-        border: 1px solid #000 !important;
-    }
-    .print-target-mode .d-sig-cell,
-    .print-actual-mode .d-sig-cell,
-    .print-target-mode .spcr-sig-cell,
-    .print-actual-mode .spcr-sig-cell {
-        border-right: 1px solid #000 !important;
-    }
-
-    /* ── FIX: Keep discussed/sig block on same page — never split ── */
+    /* ── Keep discussed/sig block together ── */
     .dpcr-discussed-block {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         border: 1px solid #000 !important;
     }
-    /* ── FIX: Keep entire summary wrap (table + sig) together ── */
     .dpcr-summary-wrap {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
 
-    .print-target-mode .dpcr-sig-name-area,
-    .print-actual-mode .dpcr-sig-name-area {
-        border-bottom: 1px solid #000 !important;
-    }
-
     /* ── Remove focus highlights ── */
     .print-target-mode td:focus-within,
-    .print-actual-mode td:focus-within {
-        background: #fff !important;
-    }
+    .print-actual-mode td:focus-within { background: transparent !important; }
 
-    /* ── Inputs / textareas render their value text ── */
+    /* ── Inputs/textareas: borderless, transparent bg ── */
     .print-target-mode input,
     .print-target-mode textarea,
     .print-actual-mode input,
@@ -195,7 +224,7 @@
         font-size: 8.5px !important;
     }
 
-    /* ── Function summary wrappers: always show in both modes ── */
+    /* ── Summary function wrappers ── */
     #dpcrFuncSummary,
     #spcrFuncSummary,
     #ipcrFuncSummary {
@@ -203,15 +232,32 @@
         margin-top: 8px !important;
     }
 
-    /* ── Summary table font sizes ── */
+    /* ── Summary table typography ── */
     .dpcr-func-summary-tbl th,
     .dpcr-func-summary-tbl td {
         font-size: 8.5px !important;
         padding: 3px 4px !important;
     }
 
-    /* ── Percentage inputs in summary: show their value ── */
-    .dpcr-func-summary-tbl .func-pct-inp,
+    /* ── Summary percentage input ── */
+    .dpcr-func-summary-tbl .func-pct-inp {
+        border: none !important;
+        background: transparent !important;
+        appearance: none !important;
+        -moz-appearance: textfield !important;
+        width: 58px !important;
+        font-size: 8.5px !important;
+        outline: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    .dpcr-func-summary-tbl .func-pct-inp::-webkit-outer-spin-button,
+    .dpcr-func-summary-tbl .func-pct-inp::-webkit-inner-spin-button {
+        -webkit-appearance: none !important;
+        margin: 0 !important;
+    }
+
+    /* ── Summary remarks textarea ── */
     .dpcr-func-summary-tbl .func-remarks-inp {
         border: none !important;
         background: transparent !important;
@@ -219,17 +265,10 @@
         font-size: 8.5px !important;
     }
 
-    /* ── Page sizing ── */
-    @page {
-        size: A4 landscape;
-        margin: 8mm 6mm;
-    }
+    /* ── Adjectival rating column always a table-cell ── */
+    .func-td-adj { display: table-cell !important; }
 
-    /* ══════════════════════════════════════════════════════
-       FIX: Tighten colgroup widths for ALL THREE summary tables
-       so all 7 columns (incl. "Adjectival Rating") fit on A4 landscape.
-       These @media print rules override the inline colgroup style attrs.
-    ══════════════════════════════════════════════════════ */
+    /* ── Summary colgroup widths (A4 landscape) ── */
     #ipcrFuncSummaryTable col:nth-child(1) { width: 11% !important; }
     #ipcrFuncSummaryTable col:nth-child(2) { width: 11% !important; }
     #ipcrFuncSummaryTable col:nth-child(3) { width: 13% !important; }
@@ -254,124 +293,115 @@
     #spcrFuncSummaryTable col:nth-child(6) { width: 10% !important; }
     #spcrFuncSummaryTable col:nth-child(7) { width: 28% !important; }
 
-    /* ── FIX: Adjectival Rating column must always be a real table-cell ── */
-    .func-td-adj {
-        display: table-cell !important;
+    /* ── Table body font sizes ── */
+    #page-dpcr .dpcr-table th,
+    #page-dpcr .dpcr-table td,
+    #page-spcr .spcr-table th,
+    #page-spcr .spcr-table td,
+    #page-ipcr .ipcr-table th,
+    #page-ipcr .ipcr-table td {
+        font-size: 8px !important;
+        padding: 2px 3px !important;
+    }
+
+    /* ── Intro / sig area font sizes ── */
+    #page-dpcr .intro-block,
+    #page-dpcr .intro-field,
+    #page-dpcr .d-sig-row,
+    #page-spcr .spcr-intro-block,
+    #page-spcr .spcr-sig-row,
+    #page-ipcr .intro-block,
+    #page-ipcr .intro-field,
+    #page-ipcr .d-sig-row {
+        font-size: 9px !important;
+    }
+
+    /* ── Page dimensions ── */
+    @page {
+        size: A4 landscape;
+        margin: 8mm 6mm;
     }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PRINT TARGET MODE — specific overrides
+   RM-ONLY PRINT MODE
+   When printing the Rating Matrix, show ONLY the rating matrix
+   panel (#rm-panel) and hide the DPCR / SPCR / IPCR page content.
 ══════════════════════════════════════════════════════════════ */
 @media print {
+    body.print-rm-only-mode #page-dpcr > *:not(#rm-slot-dpcr) {
+        display: none !important;
+    }
+    body.print-rm-only-mode #page-spcr > *:not(#rm-slot-spcr) {
+        display: none !important;
+    }
+    body.print-rm-only-mode #page-ipcr > *:not(#rm-slot-ipcr) {
+        display: none !important;
+    }
 
-    .print-target-mode #dpcrFuncSummary { display: block !important; }
-    .print-target-mode #spcrFuncSummary { display: block !important; }
-    .print-target-mode #ipcrFuncSummary { display: block !important; }
+    /* Override shared base rule that hides the RM panel */
+    body.print-rm-only-mode .rm-embed-slot,
+    body.print-rm-only-mode .rm-embed-body,
+    body.print-rm-only-mode #rm-panel {
+        display: block !important;
+    }
 
-    .print-target-mode .func-td-pct { visibility: visible !important; }
-
-    .print-target-mode #dpcrFuncSummary .func-td-avg,
-    .print-target-mode #dpcrFuncSummary .func-td-fin,
-    .print-target-mode #dpcrFuncSummary .func-td-final-avg,
-    .print-target-mode #dpcrFuncSummary .func-td-adj,
-    .print-target-mode #dpcrFuncSummary #dpcr_final_avg,
-    .print-target-mode #dpcrFuncSummary #dpcr_adjectival { visibility: hidden !important; }
-
-    .print-target-mode #spcrFuncSummary .func-td-avg,
-    .print-target-mode #spcrFuncSummary .func-td-fin,
-    .print-target-mode #spcrFuncSummary .func-td-final-avg,
-    .print-target-mode #spcrFuncSummary .func-td-adj,
-    .print-target-mode #spcrFuncSummary #spcr_final_avg,
-    .print-target-mode #spcrFuncSummary #spcr_adjectival { visibility: hidden !important; }
-
-    .print-target-mode #ipcrFuncSummary .func-td-avg,
-    .print-target-mode #ipcrFuncSummary .func-td-fin,
-    .print-target-mode #ipcrFuncSummary .func-td-final-avg,
-    .print-target-mode #ipcrFuncSummary .func-td-adj,
-    .print-target-mode #ipcrFuncSummary #i_final_avg,
-    .print-target-mode #ipcrFuncSummary #i_adjectival    { visibility: hidden !important; }
-
-    .print-target-mode .spcr-avg-row,
-    .print-target-mode .spcr-inline-avg-row,
-    .print-target-mode .dpcr-avg-row,
-    .print-target-mode .ipcr-avg-row        { display: none !important; }
-
-    /* DPCR TARGET */
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(5) > * { visibility: hidden !important; }
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(6) > * { visibility: hidden !important; }
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(8) > * { visibility: hidden !important; }
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(9) > * { visibility: hidden !important; }
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(13) .rating-a-display,
-    .print-target-mode #page-dpcr .dpcr-table tbody
-        tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(13) .rating-a-print { visibility: hidden !important; }
-    .print-target-mode #page-dpcr .dpcr-table .rating-num       { display: none !important; }
-    .print-target-mode #page-dpcr .dpcr-table .qet-print-symbol { display: block !important; }
-    .print-target-mode #page-dpcr .dpcr-table .qet-lock-badge   { display: none !important; }
-
-    /* SPCR TARGET */
-    .print-target-mode #page-spcr .spcr-table tbody
-        tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(5) > * { visibility: hidden !important; }
-    .print-target-mode #page-spcr .spcr-table tbody
-        tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(7) > * { visibility: hidden !important; }
-    .print-target-mode #page-spcr .spcr-table tbody
-        tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(8) > * { visibility: hidden !important; }
-    .print-target-mode #page-spcr .spcr-table tbody
-        tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(12) .rating-a-display,
-    .print-target-mode #page-spcr .spcr-table tbody
-        tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(12) .rating-a-print { visibility: hidden !important; }
-    .print-target-mode #page-spcr .spcr-table .rating-num       { display: none !important; }
-    .print-target-mode #page-spcr .spcr-table .qet-print-symbol { display: block !important; }
-    .print-target-mode #page-spcr .spcr-table .qet-lock-badge   { display: none !important; }
-
-    /* IPCR TARGET */
-    .print-target-mode #page-ipcr .ipcr-table tbody
-        tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(5) > * { visibility: hidden !important; }
-    .print-target-mode #page-ipcr .ipcr-table tbody
-        tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(6) > * { visibility: hidden !important; }
-    .print-target-mode #page-ipcr .ipcr-table tbody
-        tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(10) .rating-a-display,
-    .print-target-mode #page-ipcr .ipcr-table tbody
-        tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(10) .rating-a-print { visibility: hidden !important; }
-    .print-target-mode #page-ipcr .ipcr-table .rating-num       { display: none !important; }
-    .print-target-mode #page-ipcr .ipcr-table .qet-print-symbol { display: block !important; }
-    .print-target-mode #page-ipcr .ipcr-table .qet-lock-badge   { display: none !important; }
-
-    .print-target-mode .func-td-remarks { visibility: visible !important; }
-
-    .print-target-mode #page-dpcr .dpcr-table .section-header td  { border-left: 3px solid #000 !important; }
-    .print-target-mode #page-spcr .spcr-table .spcr-section-row td { border-left: 3px solid #000 !important; }
-    .print-target-mode #page-ipcr .ipcr-table .section-header td  { border-left: 3px solid #000 !important; }
-    .print-target-mode .dpcr-approved-rating-row td { border: 1px solid #000 !important; }
+    /* Remove extra spacing so it prints as a single clean sheet */
+    body.print-rm-only-mode #rm-panel {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PRINT ACTUAL MODE — everything renders normally
-══════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   PRINT ACTUAL MODE
+   Full fidelity — colors, computed values, all ratings visible.
+════════════════════════════════════════════════════════════ */
 @media print {
 
+    .print-actual-mode * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Preserve section header and special row colors */
+    .print-actual-mode .section-header td,
+    .print-actual-mode .spcr-section-row td,
+    .print-actual-mode .dpcr-avg-row td,
+    .print-actual-mode .ipcr-avg-row td,
+    .print-actual-mode .spcr-inline-avg-row td,
+    .print-actual-mode .dpcr-func-summary-tbl thead th,
+    .print-actual-mode .dpcr-approved-rating-row td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Rating Q/E/T — show number, hide symbol */
     .print-actual-mode .rating-num       { display: block !important; }
     .print-actual-mode .qet-print-symbol { display: none !important; }
     .print-actual-mode .qet-lock-badge   { display: none !important; }
 
-    .print-actual-mode .rating-a-display { display: block !important; visibility: visible !important; }
-    .print-actual-mode .rating-a-print   { display: inline !important; visibility: visible !important; }
+    /* A(4) */
+    .print-actual-mode .rating-a-display {
+        display: block !important;
+        visibility: visible !important;
+    }
+    .print-actual-mode .rating-a-print   { display: none !important; }
 
+    /* Average rows */
     .print-actual-mode .spcr-avg-row,
     .print-actual-mode .spcr-inline-avg-row,
     .print-actual-mode .dpcr-avg-row,
     .print-actual-mode .ipcr-avg-row    { display: table-row !important; }
 
+    /* Summary tables */
     .print-actual-mode #dpcrFuncSummary,
     .print-actual-mode #spcrFuncSummary,
     .print-actual-mode #ipcrFuncSummary { display: block !important; }
 
-    /* FIX: All summary computed cells visible — INCLUDING Adjectival Rating ── */
     .print-actual-mode .func-td-avg,
     .print-actual-mode .func-td-fin,
     .print-actual-mode .func-td-final-avg,
@@ -389,45 +419,370 @@
     .print-actual-mode #i_final_avg,
     .print-actual-mode #i_adjectival    { visibility: visible !important; }
 
-    .print-actual-mode .dpcr-approved-rating-row td { border: 1px solid #000 !important; }
-
-    .print-actual-mode #page-dpcr .dpcr-table .section-header td  { border-left: 3px solid #000 !important; }
-    .print-actual-mode #page-spcr .spcr-table .spcr-section-row td { border-left: 3px solid #000 !important; }
-    .print-actual-mode #page-ipcr .ipcr-table .section-header td  { border-left: 3px solid #000 !important; }
-
     .print-actual-mode .qet-lock-badge  { display: none !important; }
     .print-actual-mode .spcr-lock-badge { display: none !important; }
     .print-actual-mode .row-link-btn    { display: none !important; }
+    .print-actual-mode .rating-a-print  { display: none !important; visibility: hidden !important; }
 
-    .print-actual-mode #page-dpcr .dpcr-table tbody td > * { visibility: visible !important; }
-    .print-actual-mode #page-spcr .spcr-table tbody td > * { visibility: visible !important; }
-    .print-actual-mode #page-ipcr .ipcr-table tbody td > * { visibility: visible !important; }
+    .print-actual-mode #page-dpcr .dpcr-table tbody td > *:not(.rating-a-print) { visibility: visible !important; }
+    .print-actual-mode #page-spcr .spcr-table tbody td > *:not(.rating-a-print) { visibility: visible !important; }
+    .print-actual-mode #page-ipcr .ipcr-table tbody td > *:not(.rating-a-print) { visibility: visible !important; }
+}
 
-    #page-dpcr .dpcr-table th,
-    #page-dpcr .dpcr-table td,
-    #page-spcr .spcr-table th,
-    #page-spcr .spcr-table td,
-    #page-ipcr .ipcr-table th,
-    #page-ipcr .ipcr-table td {
-        font-size: 8px !important;
-        padding: 2px 3px !important;
+
+/* ════════════════════════════════════════════════════════════
+   PRINT TARGET MODE
+   ─────────────────────────────────────────────────────────
+   Structurally identical to Print Actual. Data contents are
+   made invisible using color:transparent on leaf text nodes.
+
+   color:transparent is the correct tool here because:
+   • The element retains its full box dimensions → row height
+     is preserved → <td> borders remain intact.
+   • Unlike visibility:hidden it does not affect layout at all.
+   • Unlike display:none it keeps the element in the flow.
+
+   Columns that REMAIN VISIBLE (show their text):
+     td:3  Strategic Goal
+     td:4  Performance Indicator
+     Q/E/T cells: ✓ or – symbol (the score number is blanked)
+     Summary: Functions label + Percentage Distribution
+
+   Columns that are BLANKED (color:transparent on leaf nodes):
+     All other data columns (inputs, textareas, divs, spans)
+     A(4) computed value (.rating-a-display)
+     Summary computed columns
+════════════════════════════════════════════════════════════ */
+@media print {
+
+    /* ── Target baseline: remove shadows, no color fills on headers ── */
+    .print-target-mode * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    #page-dpcr .intro-block,
-    #page-dpcr .intro-field,
-    #page-dpcr .d-sig-row,
-    #page-spcr .spcr-intro-block,
-    #page-spcr .spcr-sig-row,
-    #page-ipcr .intro-block,
-    #page-ipcr .intro-field,
-    #page-ipcr .d-sig-row {
-        font-size: 9px !important;
+    /* Strip background colours from header rows so the form
+       prints clean black-and-white in target mode */
+    .print-target-mode .section-header td,
+    .print-target-mode .spcr-section-row td,
+    .print-target-mode .dpcr-func-summary-tbl thead th,
+    .print-target-mode .dpcr-avg-row td,
+    .print-target-mode .ipcr-avg-row td,
+    .print-target-mode .spcr-inline-avg-row td {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       RATING Q / E / T CELLS
+
+       The cell contains:
+         .qet-lock-badge  (hidden by .no-print)
+         .rating-chk      (display:none always)
+         .rating-num      (the score input — blank this)
+         .qet-print-symbol (✓ or – — show this)
+
+       We make .rating-num text transparent (keeps its layout
+       dimensions so the cell height matches actual mode exactly)
+       and display the .qet-print-symbol.
+    ──────────────────────────────────────────────────────── */
+    .print-target-mode .rating-cell input.rating-num {
+        color: transparent !important;
+        /* display:block keeps the element in flow */
+        display: block !important;
+    }
+    .print-target-mode .rating-cell .qet-print-symbol {
+        display: block !important;
+        color: #000 !important;
+    }
+    .print-target-mode .qet-lock-badge {
+        display: none !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       A(4) CELL
+
+       The cell contains:
+         .rating-a-display  (the visible average — blank this)
+         .rating-a-hidden   (hidden input — no layout impact)
+         .rating-a-print    (print-only span — keep hidden)
+
+       color:transparent on .rating-a-display makes it invisible
+       while keeping the div's full height → border intact.
+    ──────────────────────────────────────────────────────── */
+    .print-target-mode .rating-a-display {
+        color: transparent !important;
+        display: block !important;
+    }
+    .print-target-mode .rating-a-print {
+        display: none !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       AVERAGE INLINE ROWS
+       Keep the row in the layout (same structure as actual)
+       but make all text transparent.
+    ──────────────────────────────────────────────────────── */
+    .print-target-mode .spcr-avg-row,
+    .print-target-mode .spcr-inline-avg-row,
+    .print-target-mode .dpcr-avg-row,
+    .print-target-mode .ipcr-avg-row {
+        display: table-row !important;
+    }
+    .print-target-mode .spcr-avg-row td,
+    .print-target-mode .spcr-inline-avg-row td,
+    .print-target-mode .dpcr-avg-row td,
+    .print-target-mode .ipcr-avg-row td {
+        color: transparent !important;
+    }
+    .print-target-mode .spcr-avg-row td *,
+    .print-target-mode .spcr-inline-avg-row td *,
+    .print-target-mode .dpcr-avg-row td *,
+    .print-target-mode .ipcr-avg-row td * {
+        color: transparent !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       DPCR DATA ROWS — blank specific columns
+
+       We target only the leaf text elements (input, textarea,
+       div, span) inside specific td:nth-child positions.
+       We exclude .qet-print-symbol from span matches so the
+       ✓/– symbols in Q/E/T cols always remain visible.
+
+       td:3 goal       → always visible (no rule)
+       td:4 indicator  → always visible (no rule)
+       td:5 target %   → blank
+       td:6 budget     → blank
+       td:7 section    → blank (multi-select chips + text)
+       td:8 actual     → blank
+       td:9 rate       → blank
+       td:10 Q  td:11 E  td:12 T → handled by .rating-num above
+       td:13 A  → handled by .rating-a-display above
+       td:14 remarks   → blank
+    ──────────────────────────────────────────────────────── */
+
+    /* td:5 target % */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(5) input,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(5) textarea,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(5) div,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(5) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:6 budget */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(6) input,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(6) div,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(6) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:7 section accountable */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(7) input,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(7) span,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(7) div {
+        color: transparent !important;
+    }
+
+    /* td:8 actual accomplishment */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(8) textarea,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(8) input,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(8) div {
+        color: transparent !important;
+    }
+
+    /* td:9 accomplishment rate */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(9) div,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(9) input,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(9) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:14 remarks */
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(14) textarea,
+    .print-target-mode #page-dpcr .dpcr-table tbody
+    tr:not(.section-header):not(.dpcr-avg-row) > td:nth-child(14) input {
+        color: transparent !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       SPCR DATA ROWS — blank specific columns
+
+       td:3 goal       → always visible
+       td:4 indicator  → always visible
+       td:5 budget     → blank
+       td:6 person     → blank
+       td:7 actual     → blank
+       td:8 rate       → blank
+       td:9 Q  td:10 E  td:11 T → .rating-num
+       td:12 A → .rating-a-display
+       td:13 remarks   → blank
+    ──────────────────────────────────────────────────────── */
+
+    /* td:5 budget */
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(5) input,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(5) div,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(5) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:6 person accountable */
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(6) input,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(6) div,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(6) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:7 actual accomplishment */
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(7) textarea,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(7) input,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(7) div {
+        color: transparent !important;
+    }
+
+    /* td:8 accomplishment rate */
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(8) input,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(8) div,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(8) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:13 remarks */
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(13) textarea,
+    .print-target-mode #page-spcr .spcr-table tbody
+    tr:not(.spcr-section-row):not(.spcr-avg-row):not(.spcr-inline-avg-row) > td:nth-child(13) input {
+        color: transparent !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       IPCR DATA ROWS — blank specific columns
+
+       td:3 goal       → always visible
+       td:4 indicator  → always visible
+       td:5 actual     → blank
+       td:6 rate       → blank
+       td:7 Q  td:8 E  td:9 T → .rating-num
+       td:10 A → .rating-a-display
+       td:11 remarks   → blank
+    ──────────────────────────────────────────────────────── */
+
+    /* td:5 actual accomplishment */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(5) textarea,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(5) input,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(5) div {
+        color: transparent !important;
+    }
+
+    /* td:6 accomplishment rate */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(6) input,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(6) div,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(6) span:not(.qet-print-symbol) {
+        color: transparent !important;
+    }
+
+    /* td:11 remarks */
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(11) textarea,
+    .print-target-mode #page-ipcr .ipcr-table tbody
+    tr:not(.section-header):not(.ipcr-avg-row) > td:nth-child(11) input {
+        color: transparent !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       SUMMARY TABLE — TARGET MODE
+
+       Visible: Functions label (.func-td-ft)
+                Percentage Distribution (.func-td-pct, .func-pct-inp)
+       Blank:   Average Rating, Final Rating, Final Average,
+                Adjectival Rating, Remarks
+    ──────────────────────────────────────────────────────── */
+
+    .print-target-mode #dpcrFuncSummary,
+    .print-target-mode #spcrFuncSummary,
+    .print-target-mode #ipcrFuncSummary { display: block !important; }
+
+    /* Functions label — visible */
+    .print-target-mode .func-td-ft       { color: #000 !important; }
+
+    /* Percentage Distribution — visible */
+    .print-target-mode .func-td-pct      { color: #000 !important; }
+    .print-target-mode .func-pct-inp     { color: #000 !important; }
+
+    /* Computed columns — blank */
+    .print-target-mode .func-td-avg,
+    .print-target-mode .func-td-avg *          { color: transparent !important; }
+
+    .print-target-mode .func-td-fin,
+    .print-target-mode .func-td-fin *          { color: transparent !important; }
+
+    .print-target-mode .func-td-final-avg,
+    .print-target-mode .func-td-final-avg *    { color: transparent !important; }
+
+    .print-target-mode .func-td-adj,
+    .print-target-mode .func-td-adj *          { color: transparent !important; }
+
+    .print-target-mode .func-td-remarks,
+    .print-target-mode .func-td-remarks *,
+    .print-target-mode .func-remarks-inp       { color: transparent !important; }
+
+    /* tfoot final avg + adjectival — blank */
+    .print-target-mode #dpcr_final_avg,
+    .print-target-mode #dpcr_adjectival,
+    .print-target-mode #spcr_final_avg,
+    .print-target-mode #spcr_adjectival,
+    .print-target-mode #i_final_avg,
+    .print-target-mode #i_adjectival           { color: transparent !important; }
+
+    /* Approved Final Rating row inputs — blank */
+    .print-target-mode #dpcrFuncSummary .dpcr-approved-rating-row input,
+    .print-target-mode #spcrFuncSummary .dpcr-approved-rating-row input,
+    .print-target-mode #ipcrFuncSummary .dpcr-approved-rating-row input {
+        color: transparent !important;
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+
+/* ════════════════════════════════════════════════════════════
    PRINT BUTTON PAIR STYLING (screen only)
-══════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 .print-btn-group {
     display: inline-flex;
     gap: 0;

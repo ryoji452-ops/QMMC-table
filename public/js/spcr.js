@@ -111,8 +111,6 @@ async function filterSpcrBySection(section) {
             : 'No saved DPCR records found. Save a DPCR form first.';
         infoTr.appendChild(infoTd);
         body.appendChild(infoTr);
-        _ensureAvgRows();
-        computeSpcrAverages();
         return;
     }
 
@@ -161,7 +159,6 @@ async function filterSpcrBySection(section) {
     });
 
     _ensureAvgRows();
-    computeSpcrAverages();
     computeSpcrFuncSummary();
 }
 
@@ -384,7 +381,7 @@ function createSpcrRow(data) {
         rating_e: data.rating_e,
         rating_t: data.rating_t,
         rating_a: data.rating_a,
-    }, function() { computeSpcrFuncSummary(); computeSpcrAverages(); });
+    }, function() { computeSpcrFuncSummary(); });
     ratingWidget.cells.forEach(function(td) { tr.appendChild(td); });
     tr._ratingWidget = ratingWidget;
 
@@ -404,7 +401,7 @@ function createSpcrRow(data) {
     tdDel.style.cssText = 'border:none;text-align:center;vertical-align:middle;width:26px;padding:2px;';
     var dBtn = document.createElement('button');
     dBtn.type = 'button'; dBtn.className = 'remove-btn'; dBtn.innerHTML = '&times;';
-    dBtn.onclick = function() { tr.remove(); computeSpcrAverages(); computeSpcrFuncSummary(); };
+    dBtn.onclick = function() { tr.remove(); computeSpcrFuncSummary(); };
     tdDel.appendChild(dBtn);
     tr.appendChild(tdDel);
 
@@ -527,83 +524,8 @@ function createSectionRow(label) {
 }
 
 /* ── AVERAGE RATING FOOTER ROW ── */
-function createAvgRow(label, idSuffix) {
-    var tr = document.createElement('tr');
-    tr.className = 'spcr-avg-row';
-    tr.id = 'spcr-avg-' + idSuffix;
-
-    var tdHandle = document.createElement('td');
-    tdHandle.className = 'no-print';
-    tdHandle.style.cssText = 'border:none;background:transparent;padding:0;width:18px;';
-    tr.appendChild(tdHandle);
-
-    var tdActBlank = document.createElement('td');
-    tdActBlank.className = 'no-print';
-    tdActBlank.style.cssText = 'border:none;background:transparent;';
-    tr.appendChild(tdActBlank);
-
-    var tdLabel = document.createElement('td');
-    tdLabel.colSpan = 10;
-    tdLabel.className = 'spcr-avg-label';
-    tdLabel.textContent = 'Average Rating (' + label + ')';
-    tr.appendChild(tdLabel);
-
-    var tdVal = document.createElement('td');
-    tdVal.className = 'spcr-avg-val';
-    tdVal.id = 's_avg_' + idSuffix.toLowerCase();
-    tdVal.textContent = '0.00';
-    tr.appendChild(tdVal);
-
-    var tdDel = document.createElement('td');
-    tdDel.className = 'no-print';
-    tdDel.style.cssText = 'border:none;background:transparent;';
-    tr.appendChild(tdDel);
-
-    return tr;
-}
-
-/* ── COMPUTE AVERAGES (footer rows) ── */
-function computeSpcrAverages() {
-    var stratSum = 0, stratCount = 0;
-    var coreSum  = 0, coreCount  = 0;
-    var current  = 'strategic';
-
-    document.querySelectorAll('#spcrBody tr').forEach(function(tr) {
-        if (tr.classList.contains('spcr-section-row')) {
-            var tds = tr.querySelectorAll('td');
-            var contentTd = tds[2] || tds[1] || tds[0];
-            var txt = ((tr.querySelector('input[data-key="section_label"]') || {}).value
-                    || (contentTd ? contentTd.textContent : '') || '').toUpperCase();
-            current = txt.includes('CORE') ? 'core' : 'strategic';
-            return;
-        }
-        if (tr.classList.contains('spcr-avg-row')) return;
-
-        var val = null;
-        if (tr._ratingWidget) {
-            val = tr._ratingWidget.getA();
-        } else {
-            var cells = tr.querySelectorAll('td');
-            var aCell = cells[11];
-            var raw   = aCell ? aCell.textContent.trim() : '';
-            var parsed = parseFloat(raw);
-            if (!isNaN(parsed)) val = parsed;
-        }
-
-        if (val !== null && !isNaN(val) && val > 0) {
-            if (current === 'core') { coreSum += val; coreCount++; }
-            else                    { stratSum += val; stratCount++; }
-        }
-    });
-
-    var avgStrat = stratCount ? (stratSum / stratCount).toFixed(2) : '0.00';
-    var avgCore  = coreCount  ? (coreSum  / coreCount ).toFixed(2) : '0.00';
-
-    var elS = document.getElementById('s_avg_strategic');
-    var elC = document.getElementById('s_avg_core');
-    if (elS) elS.textContent = avgStrat;
-    if (elC) elC.textContent = avgCore;
-}
+/* computeSpcrAverages removed — average footer rows no longer used */
+function computeSpcrAverages() { /* no-op: avg footer rows removed */ }
 
 /* ── READ FORM ── */
 function readSpcrForm() {
@@ -692,7 +614,6 @@ function hydrateSpcrForm(form) {
     });
 
     _ensureAvgRows();
-    computeSpcrAverages();
     computeSpcrFuncSummary();
     rebuildSpcrSectionFilter();
 }
@@ -833,11 +754,23 @@ function computeSpcrFuncSummary() {
         /* Always update computed cells */
         var tdAvg    = row.querySelector('.func-td-avg');
         var tdFin    = row.querySelector('.func-td-fin');
+        var tdFinalAvg = row.querySelector('.func-td-final-avg');
+        var tdAdj      = row.querySelector('.func-td-adj');
 
         if (tdAvg)    tdAvg.textContent    = avg    !== null ? avg.toFixed(2)    : '—';
         if (tdFin)    tdFin.textContent    = final  !== null ? final.toFixed(4)  : '—';
-
- 
+        if (tdFinalAvg) tdFinalAvg.textContent = final !== null ? final.toFixed(4) : '—';
+        if (tdAdj) {
+            var rowAdj = '—';
+            if (avg !== null && !isNaN(avg) && avg >= 1) {
+                if      (avg >= 5) rowAdj = 'Outstanding';
+                else if (avg >= 4) rowAdj = 'Very Satisfactory';
+                else if (avg >= 3) rowAdj = 'Satisfactory';
+                else if (avg >= 2) rowAdj = 'Unsatisfactory';
+                else               rowAdj = 'Poor';
+            }
+            tdAdj.textContent = rowAdj;
+        }
     });
 
     /* 100% validation warning */
@@ -1008,15 +941,8 @@ function _rebuildSpcrInlineAvgRows() {
     });
 }
 
-/* ── ENSURE AVERAGE FOOTER ROWS EXIST ── */
-function _ensureAvgRows() {
-    if (!document.getElementById('spcr-avg-strategic')) {
-        document.getElementById('spcrBody').appendChild(createAvgRow('Strategic', 'strategic'));
-    }
-    if (!document.getElementById('spcr-avg-core')) {
-        document.getElementById('spcrBody').appendChild(createAvgRow('Core', 'core'));
-    }
-}
+/* _ensureAvgRows removed — avg footer rows no longer used */
+function _ensureAvgRows() { /* no-op */ }
 
 /* ── EVENT LISTENERS ── */
 document.getElementById('sSaveBtn').addEventListener('click', async function() {
@@ -1037,18 +963,16 @@ document.getElementById('sSaveBtn').addEventListener('click', async function() {
 
 document.getElementById('sAddRowBtn').addEventListener('click', function() {
     var body = document.getElementById('spcrBody');
-    var avgS = document.getElementById('spcr-avg-strategic');
     var tr   = createSpcrRow();
-    avgS ? body.insertBefore(tr, avgS) : body.appendChild(tr);
+    body.appendChild(tr);
     tr.querySelectorAll('textarea').forEach(autoExpand);
     tr.querySelector('textarea').focus();
 });
 
 document.getElementById('sAddSectionBtn').addEventListener('click', function() {
     var body = document.getElementById('spcrBody');
-    var avgS = document.getElementById('spcr-avg-strategic');
     var tr   = createSectionRow('');
-    avgS ? body.insertBefore(tr, avgS) : body.appendChild(tr);
+    body.appendChild(tr);
     tr.querySelector('input').focus();
 });
 
@@ -1063,10 +987,7 @@ document.getElementById('sClearBtn').addEventListener('click', function() {
     var body = document.getElementById('spcrBody');
     body.innerHTML = '';
     body.appendChild(createSectionRow('STRATEGIC FUNCTIONS :'));
-    body.appendChild(createAvgRow('Strategic', 'strategic'));
     body.appendChild(createSectionRow('CORE FUNCTIONS :'));
-    body.appendChild(createAvgRow('Core', 'core'));
-    computeSpcrAverages();
     computeSpcrFuncSummary();
     _persistClear(PERSIST_KEY_SPCR);
 
@@ -1096,22 +1017,16 @@ if (sNameEl) {
     sNameEl.addEventListener('input', function() {
         var disp = document.getElementById('s_disp_name');
         if (disp) disp.textContent = this.value || '\u00a0';
-        syncShared();
     });
 }
-['s_emp_position','s_approved_by'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', syncShared);
-});
+/* SPCR employee info is independent from DPCR header fields. */
 
 /* ── INIT ── */
 (function spcrInit() {
     var body = document.getElementById('spcrBody');
     if (!body || body.children.length > 0) return;
     body.appendChild(createSectionRow('STRATEGIC FUNCTIONS :'));
-    body.appendChild(createAvgRow('Strategic', 'strategic'));
     body.appendChild(createSectionRow('CORE FUNCTIONS :'));
-    body.appendChild(createAvgRow('Core', 'core'));
 })();
 
 /* ══════════════════════════════════════════════════════════════

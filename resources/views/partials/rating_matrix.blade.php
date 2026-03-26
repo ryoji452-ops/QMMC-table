@@ -96,7 +96,7 @@
         <button type="button" class="btn-action btn-orange" id="rmClearBtn">Clear Matrix</button>
         <button type="button" class="btn-action btn-green"  id="rmSaveBtn"
                 style="margin-left:auto;">💾 Save Matrix</button>
-        <button type="button" class="btn-action btn-navy"   onclick="window.print()">🖨 Print</button>
+        <button type="button" class="btn-action btn-navy"   onclick="printRatingMatrixOnly()">🖨 Print</button>
     </div>
 
 </div>

@@ -147,21 +147,17 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th rowspan="2">Functions</th>
-                    <th rowspan="2">Percentage<br>Distribution *</th>
-                    <th rowspan="2">Average Rating<br>per Function</th>
-                    <th rowspan="2">
-                        Final Rating per Functions<br>
+                    <th>Functions</th>
+                    <th>Percentage<br>Distribution *</th>
+                    <th>Average Rating<br>per Function</th>
+                    <th>Final Rating per Functions<br>
                         <span style="font-weight:normal;font-size:8px;">
                             (Average Rating × Percentage Distribution)
                         </span>
                     </th>
-                    <th colspan="2" style="text-align:center;">Final Average Rating</th>
-                    <th rowspan="2">Remarks :</th>
-                </tr>
-                <tr>
                     <th style="font-size:9px;font-weight:600;">Final Average<br>Rating</th>
                     <th style="font-size:9px;font-weight:600;">Adjectival<br>Rating</th>
+                    <th>Remarks :</th>
                 </tr>
             </thead>
             <tbody id="dpcrFuncSummaryBody">
@@ -244,7 +240,7 @@
             Legend: &nbsp; 1 – Quality &nbsp;&nbsp; 2 – Efficiency &nbsp;&nbsp;
             3 – Timeliness &nbsp;&nbsp; 4 – Average
             &nbsp;&nbsp;|&nbsp;&nbsp;
-            <em>* Only function that has less than 30% shall be from 10%</em>
+            <em>*  Core functions should not be less than 70%</em>
         </div>
 
     </div>{{-- /.dpcr-summary-wrap / #dpcrFuncSummary --}}

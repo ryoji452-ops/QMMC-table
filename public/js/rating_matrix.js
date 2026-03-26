@@ -715,7 +715,7 @@ function createRatingMatrix(tabKey, containerEl) {
         }
     });
 
-    _eid('printBtn').addEventListener('click', () => window.print());
+    _eid('printBtn').addEventListener('click', () => printRatingMatrixOnly());
 
     /* ── Init rows ──────────────────────────────────────────────── */
     const dbKey = {
@@ -741,6 +741,19 @@ function createRatingMatrix(tabKey, containerEl) {
 
     /* Public API */
     return { tabKey, hydrate: _hydrate, readForm: _readForm, ensureLinkedRow: _ensureLinkedRow };
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   RM-only printing
+   Prints ONLY the Rating Matrix panel content (no DPCR/SPCR/IPCR page tables).
+───────────────────────────────────────────────────────────────── */
+function printRatingMatrixOnly() {
+    document.body.classList.add('print-rm-only-mode');
+    try {
+        window.print();
+    } finally {
+        document.body.classList.remove('print-rm-only-mode');
+    }
 }
 
 /* ─────────────────────────────────────────────────────────────────

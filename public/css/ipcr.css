@@ -84,8 +84,6 @@
 
 /* ══════════════════════════════════════════════════════════════
    IPCR FUNCTION SUMMARY TABLE
-   Reuses .dpcr-func-summary-tbl + .dpcr-summary-wrap from dpcr.css.
-   No extra table CSS needed — only IPCR-specific overrides below.
 ══════════════════════════════════════════════════════════════ */
 #ipcrFuncSummaryBody tr[data-ft] td {
     -webkit-print-color-adjust: exact;
@@ -108,8 +106,6 @@
 
 /* ══════════════════════════════════════════════════════════════
    IPCR INLINE AVERAGE ROW
-   Appears inside #ipcrBody just after the last data row of each
-   function group. Rebuilt automatically by computeIpcrSummary().
 ══════════════════════════════════════════════════════════════ */
 .ipcr-table .ipcr-avg-row td {
     font-size: 10px;
@@ -125,8 +121,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   IPCR LINK-FROM-SPCR TABLE (inside viewModal)
-   Full SPCR table view used when clicking the Link button on a row.
+   IPCR LINK-FROM-SPCR TABLE
 ══════════════════════════════════════════════════════════════ */
 .ipcr-link-spcr-table {
     width: 100%;
@@ -158,7 +153,6 @@
 .ipcr-link-spcr-table tbody tr:hover:not([colspan]) td {
     background: #eef2fb;
 }
-/* Section header rows inside the link table */
 .ipcr-link-spcr-table td[colspan] {
     font-weight: 700;
     font-size: 9.5px;
@@ -168,66 +162,49 @@
     print-color-adjust: exact;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ✅ FIX: SIGNATURE ROW DIVIDERS (THIS IS WHAT YOU NEED)
+══════════════════════════════════════════════════════════════ */
+.d-sig-row {
+    display: flex;
+    width: 100%;
+    align-items: stretch; /* ensures full-height vertical lines */
+}
+
+.d-sig-cell {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* vertical divider lines */
+.d-sig-cell:not(:last-child) {
+    border-right: 1px solid #000;
+}
+
+/* optional: left border to fully enclose like header */
+.d-sig-cell:first-child {
+    border-left: 1px solid #000;
+}
+
 /* ── PRINT OVERRIDES — IPCR ── */
 @media print {
     #page-ipcr { font-size: 9px !important; }
-    #page-ipcr .ipcr-table {
-        font-size: 8.5px !important;
-        table-layout: fixed;
-        width: 100% !important;
-    }
-    #page-ipcr .ipcr-table th,
-    #page-ipcr .ipcr-table td {
-        padding: 3px 4px !important;
-        font-size: 8.5px !important;
-        word-break: break-word;
-    }
-    #page-ipcr .intro-block  { font-size: 9px !important; }
-    #page-ipcr .intro-field  { font-size: 9px !important; }
-    #page-ipcr .d-sig-row    { font-size: 9px !important; }
-    #page-ipcr textarea,
-    #page-ipcr input          { font-size: 8.5px !important; }
-    #page-ipcr .ipcr-table td:focus-within { background: transparent !important; }
 
-    /* Preserve function-type section header colours on print */
-    #page-ipcr .ipcr-table .section-header td {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+    #page-ipcr .d-sig-row {
+        display: flex !important;
+        align-items: stretch !important;
     }
 
-    /* Summary table print — reuses dpcr-func-summary-tbl styles */
-    #page-ipcr .dpcr-func-summary-tbl th,
-    #page-ipcr .dpcr-func-summary-tbl td {
-        font-size: 8.5px !important;
-        padding: 3px 4px !important;
-    }
-    #page-ipcr .dpcr-func-summary-tbl thead th {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    #page-ipcr .dpcr-approved-rating-row td {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    #page-ipcr .dpcr-discussed-block {
-        break-inside: avoid;
-    }
-    #page-ipcr .dpcr-summary-legend {
-        font-size: 8px !important;
+    #page-ipcr .d-sig-cell {
+        border-right: 1px solid #000 !important;
     }
 
-    /* Print — keep avg rows visible and coloured */
-    #page-ipcr .ipcr-table .ipcr-avg-row td {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        font-size: 9px !important;
-    }
-    /* In target-mode print, hide avg rows (no actuals = no avg) */
-    .print-target-mode #page-ipcr .ipcr-table .ipcr-avg-row {
-        display: none !important;
+    #page-ipcr .d-sig-cell:last-child {
+        border-right: none !important;
     }
 
-    /* Hide screen-only action bar */
     #page-ipcr .action-bar { display: none !important; }
     #page-ipcr .no-print   { display: none !important; }
 }

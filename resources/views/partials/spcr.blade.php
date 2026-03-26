@@ -7,89 +7,93 @@
 
     <div class="form-ref">DOH – SPMS Form 3</div>
 
-    {{-- ─── PRINTABLE HEADER ─── --}}
-    <div class="doc-header">
-        <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
-        <div class="header-text">
-            <div class="org-name">QUIRINO MEMORIAL MEDICAL CENTER</div>
-            <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
-            <div class="form-title"
-                 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">
-                Section Performance Commitment and Review (SPCR)
+    {{-- ─── INTRO BLOCK (header + intro text in one bordered block, matching DPCR/IPCR) ─── --}}
+    <div class="intro-block">
+        <div class="doc-header">
+            <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
+            <div class="header-text">
+                <div class="org-name">QUIRINO MEMORIAL MEDICAL CENTER</div>
+                <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
+                <div class="form-title"
+                     style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">
+                    Section Performance Commitment and Review (SPCR)
+                </div>
             </div>
         </div>
-    </div>
-
-    {{-- ─── INTRO PARAGRAPH (now with full border) ─── --}}
-    <div class="spcr-intro-block">
-        <div class="spcr-intro-line">
+        <div class="intro-line">
             I,&nbsp;
-            <span class="spcr-intro-group">
-                <input type="text" id="s_emp_name"
-                       class="spcr-intro-field spcr-name-field"
-                       placeholder="Full Name of Employee">
-                <span class="spcr-intro-label">Name of Employee</span>
-            </span>
-            ,&nbsp;
-            <span class="spcr-intro-group">
-                <input type="text" id="s_emp_position" class="spcr-intro-field"
-                       placeholder="Position / Unit / Section / Department">
-                <span class="spcr-intro-label">Unit / Section / Department</span>
-            </span>
-            of the <em>Quirino Memorial Medical Center, commit to deliver
-            and agree to be rated on the attainment of the following targets in accordance</em>
-            with the indicated measures for the period&nbsp;
-            <span class="spcr-intro-group">
-                <input type="text" id="s_period" class="spcr-intro-field"
-                       placeholder="e.g. July 1, 2025 to December 31, 2025">
-            </span>.
+            <input type="text" id="s_emp_name" class="intro-field"
+                   placeholder="Full Name of Employee" style="min-width:220px;">
+            <span class="label-small"><em>Name of Employee</em></span>,&nbsp;
+            <input type="text" id="s_emp_position" class="intro-field"
+                   placeholder="Position / Unit / Section / Department" style="min-width:240px;">
+            <span class="label-small"><em>Unit / Section / Department</em></span>
+            of the Quirino Memorial Medical Center, commit to deliver and agree to be rated
+            on the attainment of the following targets in accordance with the indicated
+            measures for the period
+            <input type="text" id="s_period" class="intro-field"
+                   placeholder="e.g. July 1, 2025 to December 31, 2025" style="min-width:180px;">.
         </div>
     </div>
 
     {{-- ─── SIGNATURE ROW ─── --}}
-    <div class="spcr-sig-row">
+    <div class="d-sig-row">
 
-        <div class="spcr-sig-cell" style="flex:2;">
-            <div class="spcr-sig-spacer"></div>
-            <div class="spcr-sig-name" id="s_disp_name">&nbsp;</div>
-            <div class="spcr-sig-title-line">Name of Employee</div>
-            <div class="spcr-sig-date-row">
+        {{-- Employee --}}
+        <div class="d-sig-cell" style="flex:2;">
+            <div style="margin-bottom:18px;"></div>
+            <div><span class="d-sig-name" id="s_disp_name">&nbsp;</span></div>
+            <div class="d-sig-title"><em>Name of Employee</em></div>
+            <div style="margin-top:4px;font-size:10px;">
                 <strong>Date:</strong>
-                <input type="date" class="spcr-date-inp">
+                <input type="date"
+                       style="border:none;border-bottom:1px solid #000;background:transparent;
+                              font-size:10px;outline:none;">
             </div>
         </div>
 
-        <div class="spcr-sig-cell" style="flex:2;">
-            <div class="spcr-sig-spacer"></div>
-            <input type="text" id="s_supervisor" class="spcr-sig-name"
-                   placeholder="Section / Department Head name">
-            <div class="spcr-sig-title-line">Name of Section/Department Head</div>
-            <div class="spcr-sig-date-row">
+        {{-- Section / Department Head --}}
+        <div class="d-sig-cell" style="flex:2;">
+            <div class="sig-label">Section / Department Head:</div>
+            <div style="margin-bottom:6px;"></div>
+            <input type="text" id="s_supervisor" class="sig-name-input"
+                   placeholder="Section / Department Head name" style="min-width:200px;">
+            <div class="d-sig-title"><em>Name of Section / Department Head</em></div>
+            <div style="margin-top:4px;font-size:10px;">
                 <strong>Date:</strong>
-                <input type="date" class="spcr-date-inp">
+                <input type="date"
+                       style="border:none;border-bottom:1px solid #000;background:transparent;
+                              font-size:10px;outline:none;">
             </div>
         </div>
 
-        <div class="spcr-sig-cell spcr-rating-key-cell" style="flex:1.2;">
-            <div class="spcr-rating-key">
-                <div class="srk-row"><span class="srk-num">5</span><span>– Outstanding</span></div>
-                <div class="srk-row"><span class="srk-num">4–4.99</span><span>– Very Satisfactory</span></div>
-                <div class="srk-row"><span class="srk-num">3–3.99</span><span>– Satisfactory</span></div>
-                <div class="srk-row"><span class="srk-num">2–2.99</span><span>– Unsatisfactory</span></div>
-                <div class="srk-row"><span class="srk-num">1</span><span>– Poor</span></div>
+        {{-- Approved By --}}
+        <div class="d-sig-cell" style="flex:2;">
+            <div class="sig-label">Approved By:</div>
+            <div style="margin-bottom:6px;"></div>
+            <input type="text" id="s_approved_by" class="sig-name-input"
+                   placeholder="Name of Approver" style="min-width:200px;">
+            <div class="d-sig-title"><em>Medical Center Chief II</em></div>
+            <div style="margin-top:4px;font-size:10px;">
+                <strong>Date:</strong>
+                <input type="date"
+                       style="border:none;border-bottom:1px solid #000;background:transparent;
+                              font-size:10px;outline:none;">
             </div>
         </div>
 
-    </div>
+        {{-- Rating Scale Key --}}
+        <div class="d-sig-cell" style="flex:1;">
+            <div class="rating-key">
+                <div style="font-weight:700;margin-bottom:2px;">Rating Scale:</div>
+                <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
+                <div>4–4.99 – Very Satisfactory</div>
+                <div>3–3.99 – Satisfactory</div>
+                <div>2–2.99 – Unsatisfactory</div>
+                <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
+            </div>
+        </div>
 
-    {{-- ─── APPROVED BY ROW ─── --}}
-    <div class="spcr-approved-row">
-        <span class="spcr-approved-label">Approved By:</span>
-        <span class="spcr-approved-group">
-            <input type="text" id="s_approved_by" class="spcr-approved-inp"
-                   placeholder="Name of Supervisor / Approver">
-            <span class="spcr-approved-sub">Name of Supervisor</span>
-        </span>
     </div>
 
     {{-- ─── SECTION FILTER BAR (screen only) ─── --}}
@@ -161,21 +165,17 @@
             </colgroup>
             <thead>
                  <tr>
-                    <th rowspan="2">Functions</th>
-                    <th rowspan="2">Percentage<br>Distribution *</th>
-                    <th rowspan="2">Average Rating<br>per Function</th>
-                    <th rowspan="2">
-                        Final Rating per Functions<br>
+                    <th>Functions</th>
+                    <th>Percentage<br>Distribution *</th>
+                    <th>Average Rating<br>per Function</th>
+                    <th>Final Rating per Functions<br>
                         <span style="font-weight:normal;font-size:8px;">
                             (Average Rating × Percentage Distribution)
                         </span>
                     </th>
-                    <th colspan="2" style="text-align:center;">Final Average Rating</th>
-                    <th rowspan="2">Remarks :</th>
-                 </tr>
-                 <tr>
                     <th style="font-size:9px;font-weight:600;">Final Average<br>Rating</th>
                     <th style="font-size:9px;font-weight:600;">Adjectival<br>Rating</th>
+                    <th>Remarks :</th>
                  </tr>
             </thead>
             <tbody id="spcrFuncSummaryBody">
@@ -211,14 +211,14 @@
 
         {{-- ── "Discussed with" three-signature block ── --}}
         <div class="dpcr-discussed-block">
+            <div class="dpcr-discussed-label">Discussed with :</div>
             <div class="dpcr-sig-pair">
 
                 {{-- sig 1: Discussed with (Employee) --}}
                 <div class="dpcr-sig-box">
-                    <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Discussed with:</div>
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_discussed_name"
-                               placeholder="Name of Rater / Section Head"
+                               placeholder="Name of Employee"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
                                       width:100%;font-weight:700;text-align:center;">
@@ -234,7 +234,6 @@
 
                 {{-- sig 2: Assessed by (Division Head) --}}
                 <div class="dpcr-sig-box">
-                    <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Assessed by:</div>
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_assessed_by"
                                placeholder="Division Head / Chief"
@@ -253,7 +252,6 @@
 
                 {{-- sig 3: Approved Final Rating (MCC) --}}
                 <div class="dpcr-sig-box">
-                    <div style="font-size:9px;font-weight:700;margin-bottom:4px;">Approved Final Rating:</div>
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_mcc_name"
                                placeholder="Medical Center Chief II Name"

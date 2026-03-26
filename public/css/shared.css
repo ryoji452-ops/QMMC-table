@@ -406,7 +406,10 @@ tr.dragging { opacity: 0.4; }
     .transfer-banner, .sync-note { display: none !important; }
     .page { display: none !important; box-shadow: none; border: none; }
     .page.active { display: block !important; width: 100% !important; padding: 10px 14px !important; }
-    .col-del, th:last-child, td:last-child { display: none !important; }
+    /* Only hide explicit no-print columns.
+       Never use th/td:last-child here: it can delete real data columns
+       (e.g., summary table "Remarks") in DPCR/SPCR/IPCR Print Actual. */
+    .col-del, .no-print { display: none !important; }
     .drag-handle, th.drag-handle-th { display: none !important; }
     .row-link-btn, .link-modal-overlay, #linkModal { display: none !important; }
     .matrix-table td:focus-within,
@@ -1063,7 +1066,10 @@ tr.dragging { opacity: 0.4; }
     .section-label-input  { display: none !important; }
     .section-label-print  { display: inline !important; }
     .rating-chk           { display: none !important; }
-    .rating-a-print       { display: inline !important; font-weight: 700; font-size: 10px; }
+    /* rating-a-print is only for target mode — actual mode uses rating-a-display */
+    .print-target-mode .rating-a-print { display: inline !important; font-weight: 700; font-size: 10px; }
+    .print-actual-mode .rating-a-print { display: none !important; }
+    .print-actual-mode .rating-a-display { display: block !important; }
     .no-print             { display: none !important; }
     .screen-only          { display: none !important; }
     .print-only           { display: inline !important; }
