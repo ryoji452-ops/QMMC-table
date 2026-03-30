@@ -100,8 +100,12 @@ function _rmApplyQET(formRow, tabKey, qet) {
                 inp.value = '';
                 /* Update the saved-val so future re-links don't restore the old DPCR value */
                 inp.dataset.savedVal = '';
-                /* Placeholder: blank-able "N/A" when no RM criterion, empty when there is one */
-                inp.placeholder = item.hasContent ? '—' : 'N/A';
+                /* Placeholder:
+                   - RM has criterion  → show '—' (rater enters fresh score)
+                   - RM has no criterion → fall back to DPCR reference value if present,
+                     otherwise '—' (dimension still editable but no RM guidance) */
+                var dpcrPh = inp.dataset.dpcrPlaceholder || '';
+                inp.placeholder = item.hasContent ? '—' : (dpcrPh !== '' ? dpcrPh : '—');
                 inp.disabled = false;  /* always editable */
             });
             if (typeof rw.computeA === 'function') rw.computeA();
@@ -583,9 +587,8 @@ function createRatingMatrix(tabKey, containerEl) {
   <div id="${pfx}alertErr"  class="alert-err"></div>
   <div id="${pfx}alertInfo" class="alert-info"></div>
 
-  <div class="form-ref">PMT – ${tabLabel} Rating Matrix Rev 0 01 March 2024</div>
-
-  <div class="doc-header">
+  <div class="rm-header-box">
+    <div class="form-ref" style="position:absolute;top:4px;right:10px;">PMT – ${tabLabel} Rating Matrix Rev 0 01 March 2024</div>
     <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
     <div class="header-text">
       <div class="org-name">PANG-ALAALANG SENTRONG MEDIKAL QUIRINO</div>
@@ -739,8 +742,44 @@ function createRatingMatrix(tabKey, containerEl) {
         }
     }
 
+    /* ── Reset for new load ─────────────────────────────────────────
+       Called by hydrate*Form() before rebuilding the form table rows.
+       Clears the RM tbody so stale rows don't accumulate, and strips
+       cross-reference properties from any lingering form rows so that
+       _ensureLinkedRow() will create fresh RM rows for the new data.
+    ─────────────────────────────────────────────────────────────── */
+    function _resetForNewLoad() {
+        /* 1. Clear the RM tbody — wipes all existing RM rows */
+        const tbody = _body();
+        if (tbody) tbody.innerHTML = '';
+
+        /* 2. Scrub cross-reference props from every form row that still
+              references an RM row belonging to this instance's tbody.
+              This prevents stale _rmAutoRow / _rmSourceRow pointers from
+              causing _ensureLinkedRow() to silently skip row creation. */
+        const formBodyEl = document.getElementById(formBodyId);
+        if (formBodyEl) {
+            formBodyEl.querySelectorAll('tr').forEach(function (tr) {
+                /* Only clear refs whose RM row no longer exists in the DOM
+                   (which is all of them after tbody.innerHTML = '' above). */
+                if (tr._rmAutoRow && !tr._rmAutoRow.isConnected) {
+                    delete tr._rmAutoRow;
+                }
+                if (tr._rmSourceRow && !tr._rmSourceRow.isConnected) {
+                    delete tr._rmSourceRow;
+                }
+            });
+        }
+    }
+
     /* Public API */
-    return { tabKey, hydrate: _hydrate, readForm: _readForm, ensureLinkedRow: _ensureLinkedRow };
+    return {
+        tabKey,
+        hydrate:         _hydrate,
+        readForm:        _readForm,
+        ensureLinkedRow: _ensureLinkedRow,
+        reset:           _resetForNewLoad,
+    };
 }
 
 /* ─────────────────────────────────────────────────────────────────

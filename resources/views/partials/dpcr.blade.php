@@ -116,12 +116,6 @@
         <tbody id="dpcrBody">
             <tr class="section-header">
                 <td style="border:none;background:transparent;width:18px;padding:0;"></td>
-                <td colspan="13"
-                    style="background:#dce4f0;color:#1a3b6e;font-weight:700;border-left:4px solid #1a3b6e;
-                           padding:4px 8px;font-size:10px;letter-spacing:.3px;
-                           -webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                    STRATEGIC FUNCTIONS :
-                </td>
                 <td class="no-print"
                     style="border:none;background:transparent;padding:0;width:0;"></td>
             </tr>
@@ -203,7 +197,7 @@
                                placeholder="Name of Rater / Division Chief"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Chief Administrative Officer, HOPSS</div>
                     <div class="dpcr-sig-date">
@@ -221,7 +215,7 @@
                                placeholder="Medical Center Chief II Name"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Medical Center Chief II</div>
                     <div class="dpcr-sig-date">

@@ -1,17 +1,39 @@
 /* ═══════════════════════════════════════════
    rating_matrix.css
    Styles for the Rating Matrix page.
-   Rating Matrix is the ROOT document —
-   rows are pushed FROM here to DPCR/SPCR/IPCR.
 ═══════════════════════════════════════════ */
+
+/* ── HEADER BOX (wraps form-ref + logo + org text) ── */
+.rm-header-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 18px 12px 8px;   /* top padding makes room for the form-ref line */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+.rm-header-box .form-ref {
+    position: absolute;
+    top: 4px;
+    right: 10px;
+    font-size: 8.5px;
+    color: #555;
+    margin: 0;
+}
 
 /* ── SIGNATURE BLOCK ── */
 .rm-sig-block {
     display: flex;
     gap: 0;
     border: 1px solid #000;
-    margin: 10px 0 0;
+    margin: 0;                  /* flush — no gap between header and sig block */
+    border-top: none;           /* header bottom = sig block top, no double line */
     font-size: 10px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 .rm-sig-col {
     flex: 1;
@@ -74,10 +96,13 @@
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #000;
+    border-top: none;           /* sig block bottom = table top, no double line */
     table-layout: fixed;
     font-size: 10px;
     font-family: Arial, sans-serif;
     margin-top: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 .rm-table th,
 .rm-table td {
@@ -93,6 +118,7 @@
     text-align: center;
     vertical-align: middle;
     line-height: 1.35;
+    border-top: 1px solid #000; /* ensure thead top border always shows */
 }
 .rm-th-sub { font-weight: normal; font-size: 8.5px; }
 
@@ -115,6 +141,8 @@
     padding: 5px 8px;
     letter-spacing: .3px;
     border-left: 4px solid #1a3b6e;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
 /* Body cells */
@@ -147,8 +175,6 @@
     vertical-align: middle !important;
     padding: 4px 3px !important;
 }
-
-/* Individual push buttons */
 .rm-push-btn {
     display: block;
     width: 100%;
@@ -165,29 +191,10 @@
     white-space: nowrap;
 }
 .rm-push-btn:hover { opacity: .82; }
-
-.rm-push-btn.dpcr {
-    background: #dce4f0;
-    color: #1a3b6e;
-    border-color: #1a3b6e;
-}
-.rm-push-btn.spcr {
-    background: #e4eaf8;
-    color: #4a6fa5;
-    border-color: #4a6fa5;
-}
-.rm-push-btn.ipcr {
-    background: #ede4f8;
-    color: #6a3e9e;
-    border-color: #6a3e9e;
-}
-
-/* Sent state */
-.rm-push-btn.sent {
-    background: #d4edda !important;
-    color: #1e6e3a !important;
-    border-color: #1e6e3a !important;
-}
+.rm-push-btn.dpcr { background: #dce4f0; color: #1a3b6e; border-color: #1a3b6e; }
+.rm-push-btn.spcr { background: #e4eaf8; color: #4a6fa5; border-color: #4a6fa5; }
+.rm-push-btn.ipcr { background: #ede4f8; color: #6a3e9e; border-color: #6a3e9e; }
+.rm-push-btn.sent { background: #d4edda !important; color: #1e6e3a !important; border-color: #1e6e3a !important; }
 
 /* ── RATING SCALE FOOTER ── */
 .rm-scales-row {
@@ -210,6 +217,8 @@
     font-weight: 700;
     font-size: 9.5px;
     padding: 3px 8px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 .rm-scale-num {
     font-weight: 700;
@@ -218,7 +227,7 @@
     background: #f0f0f0;
 }
 
-/* ── ✔ / N/A badges injected into DPCR / SPCR / IPCR Q E T cells ── */
+/* ── ✔ / N/A badges ── */
 .rm-rating-check {
     display: inline-flex;
     align-items: center;
@@ -234,6 +243,8 @@
     line-height: 1;
     margin: 1px auto;
     flex-shrink: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 .rm-rating-na {
     display: inline-flex;
@@ -252,14 +263,89 @@
     margin: 1px auto;
     letter-spacing: .3px;
     flex-shrink: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
 /* ── PRINT ── */
 @media print {
     .no-print { display: none !important; }
-    #page-rating-matrix .rm-table textarea { min-height: 0 !important; }
-    #page-rating-matrix .rm-table td:focus-within { background: transparent !important; }
-    #page-rating-matrix .rm-sig-input,
-    #page-rating-matrix .rm-sig-sub,
-    #page-rating-matrix .rm-date-inp { border: none !important; }
+
+    /* Reset rm-panel so its padding never clips the header top border */
+    #rm-panel {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Header box — full 4-sided border, heavier bottom separates from sig block */
+    .rm-header-box {
+        position: relative !important;
+        display: flex !important;
+        border: 1px solid #000 !important;
+        border-bottom: 2px solid #000 !important;
+        padding: 18px 12px 8px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .rm-header-box .form-ref {
+        position: absolute !important;
+        top: 4px !important;
+        right: 10px !important;
+        font-size: 8.5px !important;
+        color: #555 !important;
+    }
+
+    /* Sig block — shares left/right/bottom border, top comes from header box */
+    .rm-sig-block {
+        border: 1px solid #000 !important;
+        border-top: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .rm-sig-col {
+        border-right: 1px solid #000 !important;
+    }
+    .rm-sig-col:last-child {
+        border-right: none !important;
+    }
+    .rm-sig-name-wrap {
+        border-bottom: 1px solid #000 !important;
+    }
+    .rm-sig-input,
+    .rm-sig-sub,
+    .rm-date-inp {
+        border: none !important;
+        background: transparent !important;
+    }
+
+    /* Table — shares left/right/bottom border, top comes from sig block */
+    .rm-table {
+        border: 1px solid #000 !important;
+        border-top: none !important;
+        border-collapse: collapse !important;
+    }
+    .rm-table th,
+    .rm-table td {
+        border: 1px solid #000 !important;
+    }
+    .rm-table thead th {
+        border-top: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .rm-table tr.rm-section-row td {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .rm-table textarea {
+        min-height: 0 !important;
+    }
+    .rm-table td:focus-within {
+        background: transparent !important;
+    }
+
+    .rm-td-q { border-left: 3px solid #1a3b6e !important; }
+    .rm-td-e { border-left: 3px solid #1e6e3a !important; }
+    .rm-td-t { border-left: 3px solid #7a4f00 !important; }
 }

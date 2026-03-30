@@ -808,6 +808,13 @@ function computeIpcrSummary() {
 /* ── HYDRATE FROM DB ── */
 function hydrateIpcrForm(form) {
     if (!form) return;
+
+    /* Reset the IPCR Rating Matrix so stale rows don't accumulate when a
+       new record is loaded.  Must happen BEFORE ipcrBody is rebuilt. */
+    if (window.RM_IPCR && typeof window.RM_IPCR.reset === 'function') {
+        window.RM_IPCR.reset();
+    }
+
     document.getElementById('i_emp_name').value      = form.employee_name     || '';
     document.getElementById('i_emp_position').value  = form.employee_position || '';
     document.getElementById('i_emp_unit').value      = form.employee_unit     || '';
@@ -1015,6 +1022,13 @@ function _loadSpcrIntoIpcr(record) {
 
     var body = document.getElementById('ipcrBody');
     if (!body) return;
+
+    /* Reset the IPCR Rating Matrix so stale rows don't accumulate when a
+       saved SPCR is loaded into IPCR. */
+    if (window.RM_IPCR && typeof window.RM_IPCR.reset === 'function') {
+        window.RM_IPCR.reset();
+    }
+
     body.innerHTML = '';
 
     var setVal = function(id, val) { var el = document.getElementById(id); if (el && val) el.value = val; };
@@ -1040,6 +1054,15 @@ function _loadSpcrIntoIpcr(record) {
         });
         body.appendChild(tr);
         tr.querySelectorAll('textarea').forEach(autoExpand);
+
+        /* Trigger Rating Matrix auto-row generation for each PI value,
+           matching the pattern used in hydrateIpcrForm and pushSpcrToIpcr. */
+        (function(row) {
+            var piTA = row.querySelector('textarea.pi-custom');
+            if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                _rmEnsureLinkedRow(row, piTA);
+            }
+        })(tr);
     });
 
     if (!body.querySelector('.section-header')) {

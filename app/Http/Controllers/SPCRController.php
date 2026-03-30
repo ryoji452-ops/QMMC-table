@@ -1,6 +1,7 @@
 <?php
 
 // app/Http/Controllers/SPCRController.php
+// Handles /api/dpcr — Division Performance Commitment and Review
 
 namespace App\Http\Controllers;
 
@@ -11,26 +12,22 @@ use Illuminate\Http\JsonResponse;
 
 class SPCRController extends Controller
 {
-    /**
-     * Return all DPCR forms as JSON.
-     */
+    /** Return all DPCR forms (form_type = 'dpcr') as JSON. */
     public function index(): JsonResponse
     {
-        $forms = SPCRForm::with('items')->latest()->get();
+        $forms = SPCRForm::dpcr()->with('items')->latest()->get();
         return response()->json($forms);
     }
 
-    /**
-     * Save a new DPCR form + its items.
-     * Called via JS fetch POST /api/dpcr
-     */
+    /** Save a new DPCR form. POST /api/dpcr */
     public function store(Request $request): JsonResponse
     {
         $validated = $this->validatePayload($request);
 
         $form = SPCRForm::create([
+            'form_type'         => 'dpcr',               // ← always DPCR
             'employee_name'     => $validated['employee_name'],
-            'employee_title'    => $validated['employee_title'] ?? null,
+            'employee_title'    => $validated['employee_title']    ?? null,
             'division'          => $validated['division']          ?? 'Admin',
             'area'              => $validated['area']              ?? 'HOPSS',
             'year'              => $validated['year'],
@@ -53,22 +50,19 @@ class SPCRController extends Controller
         ], 201);
     }
 
-    /**
-     * Return a single DPCR form with its items.
-     * Called via JS fetch GET /api/dpcr/{id}
-     */
+    /** Return a single DPCR form. GET /api/dpcr/{id} */
     public function show(SPCRForm $form): JsonResponse
     {
+        abort_if($form->form_type !== 'dpcr', 404);
         $form->load('items');
         return response()->json($form);
     }
 
-    /**
-     * Update an existing DPCR form + replace its items.
-     * Called via JS fetch PUT /api/dpcr/{id}
-     */
+    /** Update an existing DPCR form. PUT /api/dpcr/{id} */
     public function update(Request $request, SPCRForm $form): JsonResponse
     {
+        abort_if($form->form_type !== 'dpcr', 404);
+
         $validated = $this->validatePayload($request);
 
         $form->update([
@@ -81,7 +75,6 @@ class SPCRController extends Controller
             'approved_by'    => $validated['approved_by']    ?? null,
         ]);
 
-        // Replace all items
         $form->items()->delete();
         foreach ($validated['items'] as $itemData) {
             SPCRItem::create($this->buildItemRow($form->id, $itemData));
@@ -95,11 +88,10 @@ class SPCRController extends Controller
         ]);
     }
 
-    /**
-     * Delete a DPCR form and its items.
-     */
+    /** Delete a DPCR form. DELETE /api/dpcr/{id} */
     public function destroy(SPCRForm $form): JsonResponse
     {
+        abort_if($form->form_type !== 'dpcr', 404);
         $form->items()->delete();
         $form->delete();
         return response()->json(['success' => true, 'message' => 'DPCR deleted.']);
@@ -107,9 +99,6 @@ class SPCRController extends Controller
 
     /* ── Private helpers ── */
 
-    /**
-     * Validate the incoming request payload.
-     */
     private function validatePayload(Request $request): array
     {
         return $request->validate([
@@ -143,12 +132,9 @@ class SPCRController extends Controller
         ]);
     }
 
-    /**
-     * Build a single item row array for insertion.
-     */
     private function buildItemRow(int $formId, array $itemData): array
     {
-        $row = [
+        return [
             'sprc_form_id'          => $formId,
             'function_type'         => $itemData['function_type']         ?? 'Strategic',
             'strategic_goal'        => $itemData['strategic_goal']        ?? '',
@@ -165,7 +151,5 @@ class SPCRController extends Controller
             'rating_a'              => (float)($itemData['rating_a'] ?? 0),
             'remarks'               => $itemData['remarks']               ?? null,
         ];
-
-        return $row;
     }
 }

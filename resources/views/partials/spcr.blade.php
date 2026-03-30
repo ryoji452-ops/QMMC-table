@@ -148,10 +148,7 @@
 
     {{-- ═══════════════════════════════════════════════════════
          SPCR FUNCTION SUMMARY TABLE
-         7 columns: Functions | % Distribution | Avg Rating per Fn |
-                    Final Rating per Fn | Final Average Rating |
-                    Adjectival Rating | Remarks
-    ═══════════════════════════════════════════════════════════ --}}
+    ═══════════════════════════════════════════════════════ --}}
     <div class="dpcr-summary-wrap" id="spcrFuncSummary" style="margin-top:14px;">
         <table class="dpcr-func-summary-tbl" id="spcrFuncSummaryTable">
             <colgroup>
@@ -221,7 +218,7 @@
                                placeholder="Name of Employee"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Employee</div>
                     <div class="dpcr-sig-date">
@@ -239,7 +236,7 @@
                                placeholder="Division Head / Chief"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Division Head / Chief</div>
                     <div class="dpcr-sig-date">
@@ -257,7 +254,7 @@
                                placeholder="Medical Center Chief II Name"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Medical Center Chief II</div>
                     <div class="dpcr-sig-date">
@@ -290,6 +287,13 @@
                 title="Pick a saved DPCR and load its full table into SPCR">
             Load from DPCR
         </button>
+
+        {{-- ── WHOLE-PAGE PUSH TO IPCR ── --}}
+        <button type="button" class="btn-action btn-purple" id="sPushToIpcrBtn"
+                title="Push the entire SPCR form — all rows and header info — into the IPCR page">
+            ⬆ Push All to IPCR
+        </button>
+
         <button type="button" class="btn-action btn-green"  id="sSaveBtn"
                 style="margin-left:auto;">💾 Save SPCR</button>
 

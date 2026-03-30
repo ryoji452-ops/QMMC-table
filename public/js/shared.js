@@ -258,9 +258,12 @@ function _buildQETACells(savedData, onAChange) {
 
         if (alwaysOpen) {
             /* Always-open mode: input is immediately visible and editable.
-               Placeholder shows N/A when no DPCR value was provided. */
-            inp.value        = _savedVal;
-            inp.placeholder  = 'N/A';
+               DPCR rating_q/e/t are shown as grey placeholder text so the
+               rater sees the reference value but must type a fresh SPCR score.
+               Placeholder shows '—' when no DPCR value was provided. */
+            inp.value        = '';           /* never pre-fill — rater must enter own score */
+            inp.placeholder  = _savedVal !== '' ? _savedVal : '—';
+            inp.dataset.dpcrPlaceholder = _savedVal; /* preserve for RM apply */
             inp.style.display = 'block';
             inp.disabled     = false;
         } else {

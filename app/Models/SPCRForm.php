@@ -12,6 +12,7 @@ class SPCRForm extends Model
     protected $table = 'sprc_forms';
 
     protected $fillable = [
+        'form_type',        // ← 'dpcr' or 'spcr'
         'employee_name',
         'employee_title',
         'division',
@@ -31,5 +32,16 @@ class SPCRForm extends Model
     public function items(): HasMany
     {
         return $this->hasMany(SPCRItem::class, 'sprc_form_id');
+    }
+
+    /* ── Scopes ── */
+    public function scopeDpcr($query)
+    {
+        return $query->where('form_type', 'dpcr');
+    }
+
+    public function scopeSpcr($query)
+    {
+        return $query->where('form_type', 'spcr');
     }
 }

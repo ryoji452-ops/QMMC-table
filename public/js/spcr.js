@@ -97,6 +97,12 @@ async function filterSpcrBySection(section) {
         });
     });
 
+    /* Reset the SPCR Rating Matrix before rebuilding the table so stale
+       RM rows don't accumulate on top of the previous filter's rows. */
+    if (window.RM_SPCR && typeof window.RM_SPCR.reset === 'function') {
+        window.RM_SPCR.reset();
+    }
+
     var body = document.getElementById('spcrBody');
     if (!body) return;
     body.innerHTML = '';
@@ -374,13 +380,17 @@ function createSpcrRow(data) {
     tdR.appendChild(rIn);
     tr.appendChild(tdR);
 
-    /* ── 8–11: Q E T A rating cells ── */
+    /* ── 8–11: Q E T A rating cells ──
+       rating_q/e/t from data (DPCR source) become grey placeholder text.
+       The rater must type a fresh SPCR score; the cell stays empty until they do.
+       rating_a is NOT pre-filled either — it recomputes from whatever Q/E/T the
+       rater enters. ── */
     var ratingWidget = _buildQETACells({
         alwaysOpen: true,
-        rating_q: data.rating_q,
+        rating_q: data.rating_q,   /* used as placeholder in alwaysOpen mode */
         rating_e: data.rating_e,
         rating_t: data.rating_t,
-        rating_a: data.rating_a,
+        rating_a: null,            /* always start blank — recomputed live */
     }, function() { computeSpcrFuncSummary(); });
     ratingWidget.cells.forEach(function(td) { tr.appendChild(td); });
     tr._ratingWidget = ratingWidget;
@@ -574,6 +584,13 @@ function readSpcrForm() {
 /* ── HYDRATE FROM DB ── */
 function hydrateSpcrForm(form) {
     if (!form) return;
+
+    /* Reset the SPCR Rating Matrix so stale rows don't accumulate when a
+       new record is loaded.  Must happen BEFORE spcrBody is rebuilt. */
+    if (window.RM_SPCR && typeof window.RM_SPCR.reset === 'function') {
+        window.RM_SPCR.reset();
+    }
+
     var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
 
     setVal('s_emp_name',     form.employee_name     || '');
@@ -616,6 +633,134 @@ function hydrateSpcrForm(form) {
     _ensureAvgRows();
     computeSpcrFuncSummary();
     rebuildSpcrSectionFilter();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PUSH ENTIRE SPCR PAGE → IPCR
+   Reads every header field and every table row from the current
+   SPCR form and populates the IPCR page wholesale.
+   - Employee name, position, period, supervisor → IPCR header fields
+   - Section rows → converted to matching IPCR section rows
+   - Data rows    → converted to IPCR data rows (goal + PI copied;
+                    actuals, ratings, remarks carried across)
+   - Switches to the IPCR tab when done.
+══════════════════════════════════════════════════════════════ */
+function pushSpcrToIpcr() {
+    var spcrData = readSpcrForm();
+
+    /* Require at least a name so the user knows something happened */
+    var dataRows = (spcrData.items || []).filter(function(i) { return !i.is_section; });
+    if (!spcrData.employee_name && dataRows.length === 0) {
+        alert('The SPCR form is empty. Please fill in data before pushing to IPCR.');
+        return;
+    }
+
+    if (!confirm(
+        'Push the entire SPCR form to IPCR?\n\n' +
+        'This will REPLACE all current IPCR rows with the SPCR content.\n' +
+        'Employee info, section headers, and all rows will be transferred.'
+    )) return;
+
+    /* ── 1. Populate IPCR header fields ── */
+    var setVal = function(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.value = val || '';
+    };
+    setVal('i_emp_name',     spcrData.employee_name);
+    setVal('i_emp_position', spcrData.employee_position);
+    setVal('i_emp_unit',     '');          /* SPCR has no unit field — leave blank */
+    setVal('i_period',       spcrData.period);
+    setVal('i_supervisor',   spcrData.supervisor);
+    setVal('i_approved_by',  spcrData.approved_by);
+    setVal('i_recommending', '');          /* no equivalent in SPCR */
+
+    /* Keep IPCR display-name spans in sync */
+    var syncDisp = function(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val || '\u00a0';
+    };
+    syncDisp('i_disp_name',       spcrData.employee_name);
+    syncDisp('i_disp_name2',      spcrData.employee_name);
+    syncDisp('i_disp_supervisor', spcrData.supervisor);
+    syncDisp('i_disp_approved',   spcrData.approved_by);
+
+    /* ── 2. Clear IPCR body and rebuild from SPCR items ── */
+    var ipcrBody = document.getElementById('ipcrBody');
+    if (!ipcrBody) return;
+
+    /* Reset the IPCR Rating Matrix so stale rows don't accumulate. */
+    if (window.RM_IPCR && typeof window.RM_IPCR.reset === 'function') {
+        window.RM_IPCR.reset();
+    }
+
+    ipcrBody.innerHTML = '';
+
+    /* Reset percentage overrides so defaults recalculate */
+    if (typeof _ipcrPctOverrides !== 'undefined') {
+        Object.keys(_ipcrPctOverrides).forEach(function(k) {
+            delete _ipcrPctOverrides[k];
+        });
+    }
+
+    var hasAnySection = (spcrData.items || []).some(function(i) { return i.is_section; });
+
+    /* If SPCR had no section rows, prepend a default CORE FUNCTIONS header */
+    if (!hasAnySection && dataRows.length > 0) {
+        if (typeof createIpcrSectionRow === 'function') {
+            ipcrBody.appendChild(createIpcrSectionRow('CORE FUNCTIONS :'));
+        }
+    }
+
+    (spcrData.items || []).forEach(function(item) {
+        /* ── Section header row ── */
+        if (item.is_section) {
+            if (typeof createIpcrSectionRow === 'function') {
+                ipcrBody.appendChild(createIpcrSectionRow(item.section_label || ''));
+            }
+            return;
+        }
+
+        /* ── Data row ── */
+        if (typeof createIpcrRow === 'function') {
+            var ipcrTr = createIpcrRow({
+                strategic_goal:        item.strategic_goal        || '',
+                performance_indicator: item.performance_indicator || '',
+                actual_accomplishment: item.actual_accomplishment || '',
+                accomplishment_rate:   item.accomplishment_rate   || '',
+                rating_q:              item.rating_q              != null ? item.rating_q : null,
+                rating_e:              item.rating_e              != null ? item.rating_e : null,
+                rating_t:              item.rating_t              != null ? item.rating_t : null,
+                rating_a:              item.rating_a              != null ? item.rating_a : null,
+                remarks:               item.remarks               || '',
+            });
+            ipcrBody.appendChild(ipcrTr);
+            ipcrTr.querySelectorAll('textarea').forEach(autoExpand);
+
+            /* Wire Rating Matrix link if available */
+            (function(row) {
+                var piTA = row.querySelector('textarea.pi-custom');
+                if (piTA && piTA.value.trim() && typeof _rmEnsureLinkedRow === 'function') {
+                    _rmEnsureLinkedRow(row, piTA);
+                }
+            })(ipcrTr);
+        }
+    });
+
+    /* ── 3. Recompute IPCR summary ── */
+    if (typeof computeIpcrSummary === 'function') computeIpcrSummary();
+
+    /* ── 4. Switch to IPCR tab and show success ── */
+    switchTab('ipcr');
+    showAlert('s-alertOk', 'ok',
+        '\u2714 SPCR pushed to IPCR \u2014 '
+        + dataRows.length + ' row' + (dataRows.length !== 1 ? 's' : '') + ' transferred.'
+    );
+
+    /* Scroll IPCR to top after tab switch */
+    setTimeout(function() {
+        var ipcrPage = document.getElementById('page-ipcr');
+        if (ipcrPage) ipcrPage.scrollTop = 0;
+    }, 80);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -995,6 +1140,12 @@ document.getElementById('sClearBtn').addEventListener('click', function() {
     if (filterSel) { filterSel.value = ''; filterSpcrBySection(''); }
 });
 
+/* Wire the "Push to IPCR" whole-page button */
+(function _wirePushToIpcrBtn() {
+    var btn = document.getElementById('sPushToIpcrBtn');
+    if (btn) btn.addEventListener('click', pushSpcrToIpcr);
+})();
+
 /* ── Auto-save SPCR draft to localStorage ── */
 (function _wireSpcrPersist() {
     _persistWireBody('spcrBody', PERSIST_KEY_SPCR, readSpcrForm);
@@ -1098,7 +1249,10 @@ function _buildDpcrFullViewHtml(record) {
 }
 
 function _loadDpcrIntoSpcr(record) {
-    if (!confirm('Load DPCR #' + record.id + ' (' + (record.employee_name || '?') + ') into the SPCR form?\nThis will replace all current SPCR rows.')) return;
+    if (!confirm(
+        'Load DPCR #' + record.id + ' \u2014 ' + (record.employee_name || '?')
+        + ' into the SPCR form?\nThis will replace all current SPCR rows.'
+    )) return;
 
     if (typeof closeViewModal === 'function') closeViewModal();
 
@@ -1109,90 +1263,204 @@ function _loadDpcrIntoSpcr(record) {
     rebuildSpcrSectionFilter();
 
     showAlert('s-alertOk', 'ok',
-        '\u2714 DPCR #' + record.id + ' (' + (record.employee_name || '') + ') loaded into SPCR.');
+        '\u2714 DPCR #' + record.id + ' \u2014 \u201c' + (record.employee_name || '') + '\u201d loaded into SPCR.');
 }
 
+/* ══════════════════════════════════════════════════════════════
+   LOAD FROM DPCR — two-phase viewModal (matches "View Saved DPCR" in dpcr.js)
+
+   Phase 1 (list): search-filterable list of all saved DPCR records.
+   Phase 2 (detail): full record preview + ← Back + ⬇ Load into SPCR.
+══════════════════════════════════════════════════════════════ */
 async function openDpcrSelectModal() {
-    var listEl = document.getElementById('linkModalList');
-    var titleEl = document.getElementById('linkModalTitle');
-    if (!listEl || !titleEl) return;
+    var modal   = document.getElementById('viewModal');
+    var titleEl = document.getElementById('viewModalTitle');
+    var bodyEl  = document.getElementById('viewModalContent');
+    if (!modal || !titleEl || !bodyEl) return;
 
-    titleEl.textContent = 'Select a saved DPCR to load into SPCR';
-    listEl.innerHTML = '<p style="color:#888;font-style:italic;padding:10px 0;">⏳ Loading saved DPCR forms…</p>';
-    document.getElementById('linkModal').classList.add('open');
+    /* ── Phase 1: searchable list ── */
+    function _renderList(records) {
+        titleEl.textContent = 'Saved DPCR Forms — Load into SPCR';
 
-    var records;
-    try {
-        records = await apiFetch('/api/dpcr');
-    } catch (err) {
-        listEl.innerHTML = '<p style="color:#c00;padding:10px 0;">⚠ Failed to load: ' + esc(err.message) + '</p>';
-        return;
-    }
+        if (!Array.isArray(records) || !records.length) {
+            bodyEl.innerHTML = '<p style="color:#888;font-style:italic;padding:12px 0;">'
+                + 'No saved DPCR forms found. Save a DPCR first.</p>';
+            return;
+        }
 
-    if (!Array.isArray(records) || !records.length) {
-        listEl.innerHTML = '<p style="color:#888;font-style:italic;padding:10px 0;">No saved DPCR forms found. Save a DPCR first.</p>';
-        return;
-    }
+        /* Search bar */
+        var searchWrap = document.createElement('div');
+        searchWrap.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
 
-    listEl.innerHTML = '';
-    records.forEach(function(rec) {
-        var savedAt = rec.created_at
-            ? new Date(rec.created_at).toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
-            : '';
-        var itemCount = Array.isArray(rec.items) ? rec.items.length : (rec.items_count || '?');
+        var searchInp = document.createElement('input');
+        searchInp.type        = 'text';
+        searchInp.placeholder = '\uD83D\uDD0D Search by name, title, year\u2026';
+        searchInp.style.cssText =
+            'flex:1;border:1px solid #b0c0dc;border-radius:3px;padding:5px 10px;'
+            + 'font-size:10.5px;font-family:Arial,sans-serif;outline:none;height:28px;';
 
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'link-row-btn';
-        btn.innerHTML = '<span class="link-row-num">#' + rec.id + '</span>'
-            + ' <strong>' + esc(rec.employee_name || '—') + '</strong>'
-            + ' <span style="color:#555;font-weight:400;"> — ' + esc(rec.employee_title || '') + '</span>'
-            + ' <span style="color:#888;font-size:9px;margin-left:6px;">'
-            +   esc(String(rec.year || '')) + ' · ' + esc(rec.semester || '') + ' · '
-            +   itemCount + ' items'
-            +   (savedAt ? ' · ' + esc(savedAt) : '')
-            + '</span>';
+        var countBadge = document.createElement('span');
+        countBadge.style.cssText = 'font-size:10px;color:#888;white-space:nowrap;';
+        countBadge.textContent   = records.length + ' record' + (records.length !== 1 ? 's' : '');
 
-        btn.onclick = function() {
-            document.getElementById('linkModal').classList.remove('open');
+        searchWrap.appendChild(searchInp);
+        searchWrap.appendChild(countBadge);
 
-            apiFetch('/api/dpcr/' + rec.id).then(function(full) {
-                var bodyHtml = '<div class="view-linked-section">'
-                    + '<div class="view-linked-title" style="margin-bottom:10px;">'
-                    +   '📋 DPCR Form #' + full.id + ' — ' + esc(full.employee_name || '')
-                    + '</div>'
-                    + _buildDpcrFullViewHtml(full)
-                    + '</div>';
+        /* Scrollable list */
+        var listWrap = document.createElement('div');
+        listWrap.style.cssText =
+            'display:flex;flex-direction:column;gap:5px;max-height:60vh;overflow-y:auto;padding-right:4px;';
 
-                var loadBtnHtml = '<div style="margin-bottom:12px;">'
-                    + '<button type="button" id="dpcrLoadIntoSpcrBtn" '
-                    +   'style="background:var(--navy);color:#fff;border:none;border-radius:3px;'
-                    +          'padding:6px 18px;font-size:11px;font-weight:700;cursor:pointer;'
-                    +          'font-family:Arial,sans-serif;letter-spacing:.3px;">'
-                    +   '⬇ Load Entire DPCR into SPCR'
-                    + '</button>'
-                    + '<span style="font-size:9.5px;color:#888;margin-left:10px;font-style:italic;">'
-                    +   'Replaces all current SPCR rows with this DPCR\'s data.'
-                    + '</span>'
-                    + '</div>';
+        function _buildRow(rec) {
+            var savedAt = rec.created_at
+                ? new Date(rec.created_at).toLocaleString('en-PH', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  })
+                : '';
+            var semLabel  = rec.semester === '1st' ? '1st Sem (Jan\u2013Jun)'
+                          : rec.semester === '2nd' ? '2nd Sem (Jul\u2013Dec)'
+                          : (rec.semester || '');
+            var itemCount = Array.isArray(rec.items) ? rec.items.length : (rec.items_count || '?');
 
-                _openViewModal(
-                    'DPCR Form #' + full.id + ' — ' + esc(full.employee_name || ''),
-                    '',
-                    loadBtnHtml + bodyHtml
-                );
+            var btn = document.createElement('button');
+            btn.type      = 'button';
+            btn.className = 'link-row-btn';
+            btn.dataset.searchText = [
+                rec.employee_name  || '',
+                rec.employee_title || '',
+                String(rec.year    || ''),
+                rec.semester       || '',
+                rec.approved_by    || '',
+            ].join(' ').toLowerCase();
 
-                var loadBtn = document.getElementById('dpcrLoadIntoSpcrBtn');
-                if (loadBtn) {
-                    loadBtn.onclick = function() { _loadDpcrIntoSpcr(full); };
-                }
-            }).catch(function(err) {
-                _openViewModal('Error', '<p style="color:#c00;">Failed to load DPCR: ' + esc(err.message) + '</p>', '');
+            btn.innerHTML =
+                '<span class="link-row-num">#' + rec.id + '</span>'
+                + ' <strong>' + esc(rec.employee_name || '\u2014') + '</strong>'
+                + ' <span style="color:#555;font-weight:400;">'
+                +   ' \u2014 ' + esc(rec.employee_title || '') + '</span>'
+                + ' <span style="color:#888;font-size:9px;margin-left:6px;">'
+                +   esc(String(rec.year || '')) + ' \u00B7 ' + esc(semLabel)
+                +   ' \u00B7 ' + itemCount + ' item' + (itemCount !== 1 ? 's' : '')
+                +   (savedAt ? ' \u00B7 ' + esc(savedAt) : '')
+                + '</span>';
+
+            btn.addEventListener('click', function() {
+                _renderDetail(rec.id, records);
             });
-        };
 
-        listEl.appendChild(btn);
-    });
+            return btn;
+        }
+
+        var allButtons = records.map(_buildRow);
+        allButtons.forEach(function(b) { listWrap.appendChild(b); });
+
+        /* Live search */
+        searchInp.addEventListener('input', function() {
+            var needle = searchInp.value.toLowerCase().trim();
+            var visible = 0;
+            allButtons.forEach(function(b) {
+                var match = !needle || b.dataset.searchText.includes(needle);
+                b.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            countBadge.textContent = visible + ' record' + (visible !== 1 ? 's' : '');
+        });
+
+        bodyEl.innerHTML = '';
+        bodyEl.appendChild(searchWrap);
+        bodyEl.appendChild(listWrap);
+        setTimeout(function() { searchInp.focus(); }, 60);
+    }
+
+    /* ── Phase 2: detail view for one record ── */
+    function _renderDetail(id, cachedList) {
+        titleEl.textContent = '\u23F3 Loading DPCR #' + id + '\u2026';
+        bodyEl.innerHTML    = '';
+
+        apiFetch('/api/dpcr/' + id).then(function(full) {
+            titleEl.textContent = 'DPCR Form #' + full.id + ' \u2014 ' + (full.employee_name || '');
+
+            var wrap = document.createElement('div');
+
+            /* Toolbar */
+            var toolbar = document.createElement('div');
+            toolbar.style.cssText =
+                'display:flex;align-items:center;gap:10px;margin-bottom:14px;'
+                + 'padding-bottom:12px;border-bottom:1.5px solid #dde3ef;flex-wrap:wrap;';
+
+            var backBtn = document.createElement('button');
+            backBtn.type      = 'button';
+            backBtn.innerHTML = '\u2190 Back to list';
+            backBtn.style.cssText =
+                'background:#fff;border:1.5px solid #b0c0dc;color:#1a3b6e;border-radius:3px;'
+                + 'padding:5px 14px;font-size:10.5px;font-weight:700;cursor:pointer;'
+                + 'font-family:Arial,sans-serif;';
+            backBtn.addEventListener('click', function() {
+                titleEl.textContent = 'Saved DPCR Forms \u2014 Load into SPCR';
+                _renderList(cachedList);
+            });
+
+            var loadBtn = document.createElement('button');
+            loadBtn.type      = 'button';
+            loadBtn.innerHTML = '\u2B07 Load into SPCR';
+            loadBtn.style.cssText =
+                'background:var(--navy,#1a3b6e);color:#fff;border:none;border-radius:3px;'
+                + 'padding:5px 18px;font-size:11px;font-weight:700;cursor:pointer;'
+                + 'font-family:Arial,sans-serif;letter-spacing:.3px;';
+            loadBtn.addEventListener('click', function() {
+                _loadDpcrIntoSpcr(full);
+            });
+
+            var hint = document.createElement('span');
+            hint.style.cssText = 'font-size:9.5px;color:#888;font-style:italic;';
+            hint.textContent   = 'Replaces all current SPCR rows with this DPCR\u2019s data.';
+
+            toolbar.appendChild(backBtn);
+            toolbar.appendChild(loadBtn);
+            toolbar.appendChild(hint);
+
+            /* Detail body */
+            var detail = document.createElement('div');
+            detail.className = 'view-linked-section';
+
+            var detailTitle = document.createElement('div');
+            detailTitle.className = 'view-linked-title';
+            detailTitle.style.marginBottom = '10px';
+            detailTitle.innerHTML =
+                '\uD83D\uDCCB DPCR Form #' + full.id + ' \u2014 ' + esc(full.employee_name || '');
+
+            detail.appendChild(detailTitle);
+            detail.innerHTML += _buildDpcrFullViewHtml(full);
+
+            wrap.appendChild(toolbar);
+            wrap.appendChild(detail);
+
+            bodyEl.innerHTML = '';
+            bodyEl.appendChild(wrap);
+
+        }).catch(function(err) {
+            bodyEl.innerHTML =
+                '<p style="color:#c00;padding:10px 0;">'
+                + '\u26A0 Failed to load DPCR #' + id + ': ' + esc(err.message) + '</p>';
+        });
+    }
+
+    /* Open modal immediately with loading state, then fetch */
+    titleEl.textContent = 'Saved DPCR Forms \u2014 Load into SPCR';
+    bodyEl.innerHTML    =
+        '<p style="color:#888;font-style:italic;padding:12px 0;">'
+        + '\u23F3 Loading saved DPCR forms\u2026</p>';
+    modal.classList.add('open');
+
+    try {
+        var records = await apiFetch('/api/dpcr');
+        _renderList(records);
+    } catch (err) {
+        bodyEl.innerHTML =
+            '<p style="color:#c00;padding:10px 0;">'
+            + '\u26A0 Failed to load: ' + esc(err.message) + '</p>';
+    }
 }
 
 (function _wireLoadDpcrBtn() {

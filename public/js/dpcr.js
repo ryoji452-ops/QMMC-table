@@ -702,6 +702,14 @@ function readDpcrForm() {
 /* ── HYDRATE FROM DB ── */
 function hydrateDpcrForm(form) {
     if (!form) return;
+
+    /* Reset the DPCR Rating Matrix so stale rows don't accumulate when a
+       new record is loaded.  Must happen BEFORE dpcrBody is rebuilt so
+       the _rmAutoRow / _rmSourceRow scrub can still walk the old rows. */
+    if (window.RM_DPCR && typeof window.RM_DPCR.reset === 'function') {
+        window.RM_DPCR.reset();
+    }
+
     document.getElementById('d_emp_name').value    = form.employee_name  || '';
     document.getElementById('d_emp_title').value   = form.employee_title || '';
     document.getElementById('d_approved_by').value = form.approved_by    || '';
@@ -753,6 +761,13 @@ function hydrateDpcrForm(form) {
 function pushDpcrToSpcr(dpcrData) {
     var body = document.getElementById('spcrBody');
     if (!body) return;
+
+    /* Reset the SPCR Rating Matrix so stale rows don't accumulate when
+       a new DPCR record is pushed into SPCR. */
+    if (window.RM_SPCR && typeof window.RM_SPCR.reset === 'function') {
+        window.RM_SPCR.reset();
+    }
+
     body.innerHTML = '';
     var lastType = null;
     (dpcrData.items || []).forEach(function(item) {
@@ -1264,96 +1279,210 @@ function _loadSavedDpcrIntoForm(record) {
         '\u2714 DPCR #' + record.id + ' \u2014 \u201c' + (record.employee_name || '') + '\u201d loaded into form.');
 }
 
+/* ══════════════════════════════════════════════════════════════
+   VIEW SAVED DPCR — uses #viewModal exclusively.
+
+   Phase 1 (list): renders a DPCR-only picker inside #viewModal.
+                   No #linkModal is touched, so SPCR / IPCR link
+                   flows are completely unaffected.
+   Phase 2 (detail): clicking a record fetches /api/dpcr/{id}
+                     and re-renders the detail + Load button inside
+                     the same #viewModal, with a ← Back button that
+                     returns to the Phase 1 list without a new fetch.
+══════════════════════════════════════════════════════════════ */
 async function openViewSavedDpcrModal() {
-    var listEl  = document.getElementById('linkModalList');
-    var titleEl = document.getElementById('linkModalTitle');
-    if (!listEl || !titleEl) return;
+    var modal   = document.getElementById('viewModal');
+    var titleEl = document.getElementById('viewModalTitle');
+    var bodyEl  = document.getElementById('viewModalContent');
+    if (!modal || !titleEl || !bodyEl) return;
 
-    titleEl.textContent = 'Select a saved DPCR to view or load';
-    listEl.innerHTML = '<p style="color:#888;font-style:italic;padding:10px 0;">'
-        + '\u23F3 Loading saved DPCR forms\u2026</p>';
-    document.getElementById('linkModal').classList.add('open');
+    /* ── Phase 1: show the list ── */
+    function _renderList(records) {
+        titleEl.textContent = 'Saved DPCR Forms';
 
-    var records;
-    try {
-        records = await apiFetch('/api/dpcr');
-    } catch (err) {
-        listEl.innerHTML = '<p style="color:#c00;padding:10px 0;">'
-            + '\u26A0 Failed to load: ' + esc(err.message) + '</p>';
-        return;
-    }
+        if (!Array.isArray(records) || !records.length) {
+            bodyEl.innerHTML = '<p style="color:#888;font-style:italic;padding:12px 0;">'
+                + 'No saved DPCR forms found. Save a DPCR first.</p>';
+            return;
+        }
 
-    if (!Array.isArray(records) || !records.length) {
-        listEl.innerHTML = '<p style="color:#888;font-style:italic;padding:10px 0;">'
-            + 'No saved DPCR forms found. Save a DPCR first.</p>';
-        return;
-    }
+        /* Search / filter bar */
+        var searchWrap = document.createElement('div');
+        searchWrap.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
 
-    listEl.innerHTML = '';
-    records.forEach(function(rec) {
-        var savedAt = rec.created_at
-            ? new Date(rec.created_at).toLocaleString('en-PH', {
-                month: 'short', day: 'numeric', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-              })
-            : '';
-        var itemCount = Array.isArray(rec.items) ? rec.items.length : (rec.items_count || '?');
+        var searchInp = document.createElement('input');
+        searchInp.type        = 'text';
+        searchInp.placeholder = '\uD83D\uDD0D Search by name, title, year…';
+        searchInp.style.cssText =
+            'flex:1;border:1px solid #b0c0dc;border-radius:3px;padding:5px 10px;'
+            + 'font-size:10.5px;font-family:Arial,sans-serif;outline:none;height:28px;';
 
-        var btn = document.createElement('button');
-        btn.type      = 'button';
-        btn.className = 'link-row-btn';
-        btn.innerHTML = '<span class="link-row-num">#' + rec.id + '</span>'
-            + ' <strong>' + esc(rec.employee_name || '\u2014') + '</strong>'
-            + ' <span style="color:#555;font-weight:400;"> \u2014 '
-            +   esc(rec.employee_title || '') + '</span>'
-            + ' <span style="color:#888;font-size:9px;margin-left:6px;">'
-            +   esc(String(rec.year || '')) + ' \u00B7 ' + esc(rec.semester || '')
-            +   ' \u00B7 ' + itemCount + ' items'
-            +   (savedAt ? ' \u00B7 ' + esc(savedAt) : '')
-            + '</span>';
+        var countBadge = document.createElement('span');
+        countBadge.style.cssText = 'font-size:10px;color:#888;white-space:nowrap;';
+        countBadge.textContent   = records.length + ' record' + (records.length !== 1 ? 's' : '');
 
-        btn.onclick = function() {
-            document.getElementById('linkModal').classList.remove('open');
+        searchWrap.appendChild(searchInp);
+        searchWrap.appendChild(countBadge);
 
-            apiFetch('/api/dpcr/' + rec.id).then(function(full) {
+        /* List container */
+        var listWrap = document.createElement('div');
+        listWrap.style.cssText =
+            'display:flex;flex-direction:column;gap:5px;max-height:60vh;overflow-y:auto;padding-right:4px;';
 
-                var loadBtnHtml = '<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
-                    + '<button type="button" id="dpcrLoadIntoFormBtn"'
-                    + ' style="background:var(--navy);color:#fff;border:none;border-radius:3px;'
-                    +          'padding:6px 18px;font-size:11px;font-weight:700;cursor:pointer;'
-                    +          'font-family:Arial,sans-serif;letter-spacing:.3px;">'
-                    + '\u2B07 Load into DPCR Form'
-                    + '</button>'
-                    + '<span style="font-size:9.5px;color:#888;font-style:italic;">'
-                    +   'Replaces all current DPCR rows with this record\u2019s data.'
-                    + '</span>'
-                    + '</div>';
+        function _buildRow(rec) {
+            var savedAt = rec.created_at
+                ? new Date(rec.created_at).toLocaleString('en-PH', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  })
+                : '';
+            var semLabel  = rec.semester === '1st' ? '1st Sem (Jan–Jun)'
+                          : rec.semester === '2nd' ? '2nd Sem (Jul–Dec)'
+                          : (rec.semester || '');
+            var itemCount = Array.isArray(rec.items) ? rec.items.length : (rec.items_count || '?');
 
-                var bodyHtml = '<div class="view-linked-section">'
-                    + '<div class="view-linked-title" style="margin-bottom:10px;">'
-                    + '\uD83D\uDCCB DPCR Form #' + full.id
-                    + ' \u2014 ' + esc(full.employee_name || '')
-                    + '</div>'
-                    + _buildDpcrRecordViewHtml(full)
-                    + '</div>';
+            var btn = document.createElement('button');
+            btn.type      = 'button';
+            btn.className = 'link-row-btn';
+            btn.dataset.searchText = [
+                rec.employee_name  || '',
+                rec.employee_title || '',
+                String(rec.year    || ''),
+                rec.semester       || '',
+                rec.approved_by    || '',
+            ].join(' ').toLowerCase();
 
-                _openViewModal(
-                    'DPCR Form #' + full.id + ' \u2014 ' + esc(full.employee_name || ''),
-                    '',
-                    loadBtnHtml + bodyHtml
-                );
+            btn.innerHTML =
+                '<span class="link-row-num">#' + rec.id + '</span>'
+                + ' <strong>' + esc(rec.employee_name || '\u2014') + '</strong>'
+                + ' <span style="color:#555;font-weight:400;">'
+                +   ' \u2014 ' + esc(rec.employee_title || '') + '</span>'
+                + ' <span style="color:#888;font-size:9px;margin-left:6px;">'
+                +   esc(String(rec.year || '')) + ' \u00B7 ' + esc(semLabel)
+                +   ' \u00B7 ' + itemCount + ' item' + (itemCount !== 1 ? 's' : '')
+                +   (savedAt ? ' \u00B7 ' + esc(savedAt) : '')
+                + '</span>';
 
-                var loadBtn = document.getElementById('dpcrLoadIntoFormBtn');
-                if (loadBtn) loadBtn.onclick = function() { _loadSavedDpcrIntoForm(full); };
-
-            }).catch(function(err) {
-                _openViewModal('Error',
-                    '<p style="color:#c00;">Failed to load DPCR detail: ' + esc(err.message) + '</p>', '');
+            btn.addEventListener('click', function() {
+                _renderDetail(rec.id, records);
             });
-        };
 
-        listEl.appendChild(btn);
-    });
+            return btn;
+        }
+
+        var allButtons = records.map(_buildRow);
+        allButtons.forEach(function(b) { listWrap.appendChild(b); });
+
+        /* Live search — filters the visible buttons by searchText */
+        searchInp.addEventListener('input', function() {
+            var needle = searchInp.value.toLowerCase().trim();
+            var visible = 0;
+            allButtons.forEach(function(b) {
+                var match = !needle || b.dataset.searchText.includes(needle);
+                b.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            countBadge.textContent = visible + ' record' + (visible !== 1 ? 's' : '');
+        });
+
+        bodyEl.innerHTML = '';
+        bodyEl.appendChild(searchWrap);
+        bodyEl.appendChild(listWrap);
+
+        /* Focus search after render */
+        setTimeout(function() { searchInp.focus(); }, 60);
+    }
+
+    /* ── Phase 2: show detail for one DPCR record ── */
+    function _renderDetail(id, cachedList) {
+        titleEl.textContent = '\u23F3 Loading DPCR #' + id + '\u2026';
+        bodyEl.innerHTML    = '';
+
+        apiFetch('/api/dpcr/' + id).then(function(full) {
+            titleEl.textContent = 'DPCR Form #' + full.id
+                + ' \u2014 ' + (full.employee_name || '');
+
+            var wrap = document.createElement('div');
+
+            /* ── Toolbar: Back + Load buttons ── */
+            var toolbar = document.createElement('div');
+            toolbar.style.cssText =
+                'display:flex;align-items:center;gap:10px;margin-bottom:14px;'
+                + 'padding-bottom:12px;border-bottom:1.5px solid #dde3ef;flex-wrap:wrap;';
+
+            var backBtn = document.createElement('button');
+            backBtn.type      = 'button';
+            backBtn.innerHTML = '\u2190 Back to list';
+            backBtn.style.cssText =
+                'background:#fff;border:1.5px solid #b0c0dc;color:#1a3b6e;border-radius:3px;'
+                + 'padding:5px 14px;font-size:10.5px;font-weight:700;cursor:pointer;'
+                + 'font-family:Arial,sans-serif;';
+            backBtn.addEventListener('click', function() {
+                titleEl.textContent = 'Saved DPCR Forms';
+                _renderList(cachedList);
+            });
+
+            var loadBtn = document.createElement('button');
+            loadBtn.type      = 'button';
+            loadBtn.innerHTML = '\u2B07 Load into DPCR Form';
+            loadBtn.style.cssText =
+                'background:var(--navy,#1a3b6e);color:#fff;border:none;border-radius:3px;'
+                + 'padding:5px 18px;font-size:11px;font-weight:700;cursor:pointer;'
+                + 'font-family:Arial,sans-serif;letter-spacing:.3px;';
+            loadBtn.addEventListener('click', function() {
+                _loadSavedDpcrIntoForm(full);
+            });
+
+            var hint = document.createElement('span');
+            hint.style.cssText  = 'font-size:9.5px;color:#888;font-style:italic;';
+            hint.textContent    = 'Replaces all current DPCR rows with this record\u2019s data.';
+
+            toolbar.appendChild(backBtn);
+            toolbar.appendChild(loadBtn);
+            toolbar.appendChild(hint);
+
+            /* ── Detail body ── */
+            var detail = document.createElement('div');
+            detail.className = 'view-linked-section';
+
+            var detailTitle = document.createElement('div');
+            detailTitle.className = 'view-linked-title';
+            detailTitle.style.marginBottom = '10px';
+            detailTitle.innerHTML =
+                '\uD83D\uDCCB DPCR Form #' + full.id
+                + ' \u2014 ' + esc(full.employee_name || '');
+
+            detail.appendChild(detailTitle);
+            detail.innerHTML += _buildDpcrRecordViewHtml(full);
+
+            wrap.appendChild(toolbar);
+            wrap.appendChild(detail);
+
+            bodyEl.innerHTML = '';
+            bodyEl.appendChild(wrap);
+
+        }).catch(function(err) {
+            bodyEl.innerHTML =
+                '<p style="color:#c00;padding:10px 0;">'
+                + '\u26A0 Failed to load DPCR #' + id + ': ' + esc(err.message) + '</p>';
+        });
+    }
+
+    /* ── Open the modal immediately with a loading state, then fetch ── */
+    titleEl.textContent = 'Saved DPCR Forms';
+    bodyEl.innerHTML    =
+        '<p style="color:#888;font-style:italic;padding:12px 0;">'
+        + '\u23F3 Loading saved DPCR forms\u2026</p>';
+    modal.classList.add('open');
+
+    try {
+        var records = await apiFetch('/api/dpcr');
+        _renderList(records);
+    } catch (err) {
+        bodyEl.innerHTML =
+            '<p style="color:#c00;padding:10px 0;">'
+            + '\u26A0 Failed to load: ' + esc(err.message) + '</p>';
+    }
 }
 
 /* Wire the "View Saved DPCR" button */

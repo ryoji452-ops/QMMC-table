@@ -19,7 +19,7 @@ class QmmcController extends Controller
         ];
 
         // Saved Matrices list for the bottom table
-        $matricesRaw = SPCRRatingMatrix::latest()->get();
+        $matricesRaw  = SPCRRatingMatrix::latest()->get();
         $matricesJson = $matricesRaw->map(function ($m) {
             return [
                 'id'                => $m->id,
@@ -31,8 +31,8 @@ class QmmcController extends Controller
             ];
         })->values()->toArray();
 
-        // Latest SPCR matrix to pre-fill the form
-        $latestMatrixRaw = SPCRRatingMatrix::with('items')->latest()->first();
+        // Latest SPCR Rating Matrix to pre-fill the Rating Matrix form
+        $latestMatrixRaw  = SPCRRatingMatrix::with('items')->latest()->first();
         $latestMatrixJson = null;
         if ($latestMatrixRaw) {
             $latestMatrixJson = [
@@ -57,8 +57,8 @@ class QmmcController extends Controller
             ];
         }
 
-        // Latest DPCR form to pre-fill the DPCR tab
-        $latestDpcrRaw = SPCRForm::with('items')->latest()->first();
+        // Latest DPCR form (form_type = 'dpcr') to pre-fill the DPCR tab
+        $latestDpcrRaw  = SPCRForm::dpcr()->with('items')->latest()->first();
         $latestDpcrJson = null;
         if ($latestDpcrRaw) {
             $latestDpcrJson = [
@@ -67,10 +67,43 @@ class QmmcController extends Controller
                 'approved_by'    => $latestDpcrRaw->approved_by,
                 'items'          => $latestDpcrRaw->items->map(function ($i) {
                     return [
+                        'function_type'         => $i->function_type,
+                        'strategic_goal'        => $i->strategic_goal,
+                        'performance_indicator' => $i->performance_indicator,
+                        'target_pct'            => $i->target_pct,
+                        'allotted_budget'       => $i->allotted_budget,
+                        'section_accountable'   => $i->section_accountable,
+                        'actual_accomplishment' => $i->actual_accomplishment,
+                        'actual_pct'            => $i->actual_pct,
+                        'accomplishment_rate'   => $i->accomplishment_rate,
+                        'rating_q'              => $i->rating_q,
+                        'rating_e'              => $i->rating_e,
+                        'rating_t'              => $i->rating_t,
+                        'rating_a'              => $i->rating_a,
+                        'remarks'               => $i->remarks,
+                    ];
+                })->values()->toArray(),
+            ];
+        }
+
+        // Latest SPCR form (form_type = 'spcr') to pre-fill the SPCR tab
+        $latestSpcrRaw  = SPCRForm::spcr()->with('items')->latest()->first();
+        $latestSpcrJson = null;
+        if ($latestSpcrRaw) {
+            $latestSpcrJson = [
+                'employee_name'     => $latestSpcrRaw->employee_name,
+                'employee_position' => $latestSpcrRaw->employee_title,
+                'employee_unit'     => $latestSpcrRaw->division,
+                'period'            => $latestSpcrRaw->area,
+                'approved_by'       => $latestSpcrRaw->approved_by,
+                'items'             => $latestSpcrRaw->items->map(function ($i) {
+                    return [
+                        'is_section'            => false,
+                        'function_type'         => $i->function_type,
                         'strategic_goal'        => $i->strategic_goal,
                         'performance_indicator' => $i->performance_indicator,
                         'allotted_budget'       => $i->allotted_budget,
-                        'section_accountable'   => $i->section_accountable,
+                        'person_accountable'    => $i->section_accountable,
                         'actual_accomplishment' => $i->actual_accomplishment,
                         'accomplishment_rate'   => $i->accomplishment_rate,
                         'rating_q'              => $i->rating_q,
@@ -121,6 +154,7 @@ class QmmcController extends Controller
             'matricesJson',
             'latestMatrixJson',
             'latestDpcrJson',
+            'latestSpcrJson',
             'latestIpcrJson'
         ));
     }

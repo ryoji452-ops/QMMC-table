@@ -340,36 +340,37 @@
 .dpcr-discussed-block {
     margin-top: 10px;
     border: 1px solid #000;
-    padding: 8px 12px 12px;
+    padding: 6px 12px 8px;
 }
 
 .dpcr-discussed-label {
     font-size: 10px;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     letter-spacing: .3px;
 }
 
 .dpcr-sig-pair {
     display: flex;
-    gap: 40px;
-    justify-content: flex-start;
+    gap: 24px;
+    justify-content: space-between;
+    align-items: flex-end;
 }
 
 .dpcr-sig-box {
     flex: 1;
-    max-width: 300px;
     text-align: center;
 }
 
 .dpcr-sig-name-area {
-    min-height: 32px;
+    /* No min-height — let the input/span dictate height naturally */
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    border-bottom: 1px solid #000;
+
     margin-bottom: 2px;
-    padding-bottom: 2px;
+    padding-bottom: 1px;
+    padding-top: 2px;
 }
 
 .dpcr-sig-role {
@@ -381,7 +382,7 @@
 
 .dpcr-sig-date {
     font-size: 9px;
-    margin-top: 6px;
+    margin-top: 4px;
     text-align: left;
 }
 

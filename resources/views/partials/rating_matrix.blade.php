@@ -1,10 +1,4 @@
-{{-- resources/views/partials/rating_matrix.blade.php
-     ─────────────────────────────────────────────────
-     The Rating Matrix panel lives once in the DOM as #rm-panel.
-     shared.js::switchTab() physically moves it into the .rm-embed-slot
-     of whichever DPCR / SPCR / IPCR tab becomes active, so all
-     element IDs and JS event listeners remain intact.
---}}
+{{-- resources/views/partials/rating_matrix.blade.php --}}
 
 <div id="rm-panel">
 
@@ -14,8 +8,8 @@
 
     <div class="form-ref">PMT – DPCR Rating Matrix Rev 0 01 March 2024</div>
 
-    {{-- Header --}}
-    <div class="doc-header">
+    {{-- ─── Header ─── --}}
+    <div class="rm-header-box">
         <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
         <div class="header-text">
             <div class="org-name">PANG-ALAALANG SENTRONG MEDIKAL QUIRINO</div>
@@ -27,8 +21,9 @@
         </div>
     </div>
 
-    {{-- Signature Block --}}
+    {{-- ─── Signature Block ─── --}}
     <div class="rm-sig-block">
+        {{-- Prepared By --}}
         <div class="rm-sig-col">
             <div class="rm-sig-label">Prepared By:</div>
             <div class="rm-sig-name-wrap">
@@ -42,6 +37,8 @@
                 <input type="date" id="rm_prepared_date" class="rm-date-inp">
             </div>
         </div>
+
+        {{-- Reviewed By --}}
         <div class="rm-sig-col">
             <div class="rm-sig-label">Reviewed By:</div>
             <div class="rm-sig-name-wrap">
@@ -55,6 +52,8 @@
                 <input type="date" id="rm_reviewed_date" class="rm-date-inp">
             </div>
         </div>
+
+        {{-- Approved By --}}
         <div class="rm-sig-col">
             <div class="rm-sig-label">Approved By:</div>
             <div class="rm-sig-name-wrap">
@@ -70,7 +69,7 @@
         </div>
     </div>
 
-    {{-- Rating Matrix Table --}}
+    {{-- ─── Rating Matrix Table ─── --}}
     <table class="rm-table" id="rmTable">
         <thead>
             <tr>
@@ -89,7 +88,7 @@
         </tbody>
     </table>
 
-    {{-- Action Bar (screen only) --}}
+    {{-- ─── Action Bar (screen only) ─── --}}
     <div class="action-bar no-print" style="margin-top:14px;">
         <button type="button" class="btn-action btn-navy"   id="rmAddRowBtn">+ Add Row</button>
         <button type="button" class="btn-action btn-slate"  id="rmAddSectionBtn">+ Add Section</button>

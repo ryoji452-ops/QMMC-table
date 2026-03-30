@@ -219,7 +219,9 @@
                 <div class="dpcr-sig-box">
                     <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Discussed with:</div>
                     <div class="dpcr-sig-name-area">
-                        <span class="d-sig-name" id="i_disp_name2">&nbsp;</span>
+                        <span class="d-sig-name" id="i_disp_name2"
+                              style="border-bottom:1px solid #000;width:100%;display:block;
+                                     text-align:center;padding-bottom:1px;">&nbsp;</span>
                     </div>
                     <div class="dpcr-sig-role">Employee</div>
                     <div class="dpcr-sig-date">
@@ -234,7 +236,9 @@
                 <div class="dpcr-sig-box">
                     <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Assessed By:</div>
                     <div class="dpcr-sig-name-area">
-                        <span class="d-sig-name" id="i_disp_supervisor">&nbsp;</span>
+                        <span class="d-sig-name" id="i_disp_supervisor"
+                              style="border-bottom:1px solid #000;width:100%;display:block;
+                                     text-align:center;padding-bottom:1px;">&nbsp;</span>
                     </div>
                     <div class="dpcr-sig-role">Supervisor</div>
                     <div class="dpcr-sig-date">
@@ -253,7 +257,7 @@
                                placeholder="Division Head / Chief"
                                style="border:none;border-bottom:1px solid #000;background:transparent;
                                       font-size:10px;font-family:Arial,sans-serif;outline:none;
-                                      width:100%;font-weight:700;text-align:center;">
+                                      width:100%;font-weight:700;text-align:center;padding:0;">
                     </div>
                     <div class="dpcr-sig-role">Division Head / Chief</div>
                     <div class="dpcr-sig-date">
@@ -268,7 +272,9 @@
                 <div class="dpcr-sig-box">
                     <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Approved Final Rating:</div>
                     <div class="dpcr-sig-name-area">
-                        <span class="d-sig-name" id="i_disp_approved">&nbsp;</span>
+                        <span class="d-sig-name" id="i_disp_approved"
+                              style="border-bottom:1px solid #000;width:100%;display:block;
+                                     text-align:center;padding-bottom:1px;">&nbsp;</span>
                     </div>
                     <div class="dpcr-sig-role">Medical Center Chief II</div>
                     <div class="dpcr-sig-date">
