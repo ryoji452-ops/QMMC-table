@@ -150,9 +150,9 @@
 .rm-table td:focus-within { background: #fffde7; }
 
 /* Q / E / T column left accent */
-.rm-td-q { border-left: 3px solid #1a3b6e !important; }
-.rm-td-e { border-left: 3px solid #1e6e3a !important; }
-.rm-td-t { border-left: 3px solid #7a4f00 !important; }
+.rm-td-q { border-left: 3px solid  !important; }
+.rm-td-e { border-left: 3px solid  !important; }
+.rm-td-t { border-left: 3px solid  !important; }
 
 /* Textareas */
 .rm-table textarea {
@@ -345,7 +345,7 @@
         background: transparent !important;
     }
 
-    .rm-td-q { border-left: 3px solid #1a3b6e !important; }
-    .rm-td-e { border-left: 3px solid #1e6e3a !important; }
-    .rm-td-t { border-left: 3px solid #7a4f00 !important; }
+    .rm-td-q { border-left: 3px solid !important; }
+    .rm-td-e { border-left: 3px solid !important; }
+    .rm-td-t { border-left: 3px solid !important; }
 }

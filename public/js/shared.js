@@ -157,7 +157,74 @@ document.addEventListener('DOMContentLoaded', function _rmInitialPlace() {
     const bodyEl = document.getElementById('rm-body-dpcr');
     if (panel && bodyEl) bodyEl.appendChild(panel);
     if (typeof rmRefreshPushButtons === 'function') rmRefreshPushButtons('dpcr');
+
+    /* ══════════════════════════════════════════════════════════════
+       AUTO-FILL EMPLOYEE INFO FROM LEGACY PHP PROJECT DATABASE
+       ──────────────────────────────────────────────────────────────
+       window.EMPLOYEE_FULLNAME and window.EMPLOYEE_ROLE are injected
+       by Blade from the second (legacy) database via LegacyUser model
+       in QmmcController.
+
+       Rules:
+         • Only fills a field if it is currently EMPTY — will not
+           overwrite data already loaded from DB_LATEST_* records.
+         • Runs after the panel is placed so the DOM is fully ready.
+         • Updates both the input fields AND the display name spans
+           so the printed header also shows the correct name.
+    ══════════════════════════════════════════════════════════════ */
+    _prefillEmployeeInfo();
 });
+
+/* ══════════════════════════════════════════════════════════════
+   AUTO-FILL HELPER
+   Called once on DOMContentLoaded.
+   Uses window.EMPLOYEE_FULLNAME and window.EMPLOYEE_ROLE which
+   are set in the Blade @push('scripts') block from PHP:
+     window.EMPLOYEE_FULLNAME = @json($employeeFullName ?? null);
+     window.EMPLOYEE_ROLE     = @json($employeeRole ?? null);
+══════════════════════════════════════════════════════════════ */
+function _prefillEmployeeInfo() {
+    var name = window.EMPLOYEE_FULLNAME || null;
+    var role = window.EMPLOYEE_ROLE     || null;
+
+    /* Nothing injected from server — bail early */
+    if (!name && !role) return;
+
+    /* ── Only fills an input if it currently has no value ── */
+    function _fill(id, value) {
+        if (!value) return;
+        var el = document.getElementById(id);
+        if (el && !el.value.trim()) {
+            el.value = value;
+        }
+    }
+
+    /* ── Only fills a display span if it is blank or a non-breaking space ── */
+    function _fillSpan(id, value) {
+        if (!value) return;
+        var el = document.getElementById(id);
+        if (el) {
+            var current = el.textContent.trim().replace(/\u00a0/g, '');
+            if (!current) el.textContent = value;
+        }
+    }
+
+    /* ── DPCR tab ── */
+    _fill('d_emp_name',  name);   /* Name of Employee input        */
+    _fill('d_emp_title', role);   /* Position / Division input     */
+    _fillSpan('d_disp_name', name); /* Signature display span      */
+
+    /* ── SPCR tab ── */
+    _fill('s_emp_name',     name);  /* Name of Employee input      */
+    _fill('s_emp_position', role);  /* Unit / Section / Dept input */
+    _fillSpan('s_disp_name', name); /* Signature display span      */
+
+    /* ── IPCR tab ── */
+    _fill('i_emp_name',     name);   /* Name of Employee input     */
+    _fill('i_emp_position', role);   /* Position input             */
+    _fillSpan('i_disp_name',  name); /* Header display span #1     */
+    _fillSpan('i_disp_name2', name); /* Header display span #2     */
+}
 
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeScaleModal(); closeViewModal(); closeLinkModal(); }
@@ -518,6 +585,7 @@ function syncShared() {
     /* Intentionally blank:
        DPCR and SPCR header fields must stay independent. */
 }
+
 /* ══════════════════════════════════════════════════════════════
    FORM PERSISTENCE — localStorage auto-save + restore
    ──────────────────────────────────────────────────────────────

@@ -1,24 +1,61 @@
 <?php
 
-// app/Http/Controllers/QmmcController.php
-
 namespace App\Http\Controllers;
 
 use App\Models\SPCRRatingMatrix;
 use App\Models\SPCRForm;
 use App\Models\IPCRForm;
+use App\Models\LegacyUser;
 use Illuminate\Http\Request;
 
 class QmmcController extends Controller
 {
-    public function index()
+    public function index($empid)
     {
+        // ── Fetch employee info from the legacy database ───────────────
+        //
+        // Accessors on LegacyUser handle the name assembly:
+        //   $user->full_name      → "LASTNAME, Firstname M."
+        //   $user->division_label → division → position → section (first non-null)
+        //
+        // Wrapped in try/catch so a misconfigured or unreachable legacy DB
+        // never causes a 500 — the form simply loads empty and the employee
+        // fills in their info manually.
+        // ──────────────────────────────────────────────────────────────
+        $employeeFullName = null;
+        $employeeDivision = null;
+        $employeeSection  = null;
+
+        try {
+            /** @var LegacyUser|null $legacyUser */
+            $legacyUser = LegacyUser::find($empid);
+
+            if ($legacyUser) {
+                $employeeFullName = $legacyUser->full_name;      // "LASTNAME, Firstname M."
+                $employeeDivision = $legacyUser->division_label; // division / position fallback
+                $employeeSection  = $legacyUser->section ?? null;
+            }
+        } catch (\Exception $e) {
+            \Log::warning(
+                'QmmcController: legacy DB lookup failed for empid=' . $empid .
+                ' — ' . $e->getMessage()
+            );
+        }
+
+        // ── Static section list ────────────────────────────────────────
         $sections = [
-            'ALL SECTIONS', 'EFMS', 'IMISS', 'PMG / EFMS / PROCUREMENT',
-            'NURSING', 'MEDICAL', 'ADMINISTRATIVE', 'FINANCE', 'PHARMACY',
+            'ALL SECTIONS',
+            'EFMS',
+            'IMISS',
+            'PMG / EFMS / PROCUREMENT',
+            'NURSING',
+            'MEDICAL',
+            'ADMINISTRATIVE',
+            'FINANCE',
+            'PHARMACY',
         ];
 
-        // Saved Matrices list for the bottom table
+        // ── Rating Matrix data ─────────────────────────────────────────
         $matricesRaw  = SPCRRatingMatrix::latest()->get();
         $matricesJson = $matricesRaw->map(function ($m) {
             return [
@@ -31,7 +68,6 @@ class QmmcController extends Controller
             ];
         })->values()->toArray();
 
-        // Latest SPCR Rating Matrix to pre-fill the Rating Matrix form
         $latestMatrixRaw  = SPCRRatingMatrix::with('items')->latest()->first();
         $latestMatrixJson = null;
         if ($latestMatrixRaw) {
@@ -57,7 +93,7 @@ class QmmcController extends Controller
             ];
         }
 
-        // Latest DPCR form (form_type = 'dpcr') to pre-fill the DPCR tab
+        // ── Latest DPCR ────────────────────────────────────────────────
         $latestDpcrRaw  = SPCRForm::dpcr()->with('items')->latest()->first();
         $latestDpcrJson = null;
         if ($latestDpcrRaw) {
@@ -86,7 +122,7 @@ class QmmcController extends Controller
             ];
         }
 
-        // Latest SPCR form (form_type = 'spcr') to pre-fill the SPCR tab
+        // ── Latest SPCR ────────────────────────────────────────────────
         $latestSpcrRaw  = SPCRForm::spcr()->with('items')->latest()->first();
         $latestSpcrJson = null;
         if ($latestSpcrRaw) {
@@ -116,7 +152,7 @@ class QmmcController extends Controller
             ];
         }
 
-        // Latest IPCR form to pre-fill the IPCR tab
+        // ── Latest IPCR ────────────────────────────────────────────────
         $latestIpcrRaw  = IPCRForm::with('items')->latest()->first();
         $latestIpcrJson = null;
         if ($latestIpcrRaw) {
@@ -155,7 +191,11 @@ class QmmcController extends Controller
             'latestMatrixJson',
             'latestDpcrJson',
             'latestSpcrJson',
-            'latestIpcrJson'
+            'latestIpcrJson',
+            'empid',
+            'employeeFullName',   // "LASTNAME, Firstname M."  → window.EMPLOYEE_FULLNAME
+            'employeeDivision',   // division / position       → window.EMPLOYEE_ROLE
+            'employeeSection',    // raw section value         → window.EMPLOYEE_SECTION
         ));
     }
 }

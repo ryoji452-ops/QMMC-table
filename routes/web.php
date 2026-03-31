@@ -12,7 +12,7 @@ use App\Http\Controllers\IPCRController;
 /*
  Main page — loads both SPCR Matrix + DPCR tabs
 */
-Route::get('/', [QmmcController::class, 'index'])->name('qmmc.index');
+Route::get('/{empid}', [QmmcController::class, 'index'])->name('qmmc.index');
 
 /*
  SPCR Rating Matrix API routes (called by JS fetch)
