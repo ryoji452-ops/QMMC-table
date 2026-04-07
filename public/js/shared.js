@@ -184,13 +184,14 @@ document.addEventListener('DOMContentLoaded', function _rmInitialPlace() {
      window.EMPLOYEE_ROLE     = @json($employeeRole ?? null);
 ══════════════════════════════════════════════════════════════ */
 function _prefillEmployeeInfo() {
-    var name = window.EMPLOYEE_FULLNAME || null;
-    var role = window.EMPLOYEE_ROLE     || null;
+    var name     = window.EMPLOYEE_FULLNAME || null;
+    var role     = window.EMPLOYEE_ROLE     || null;
+    var position = window.EMPLOYEE_POSITION || role || null;
 
-    /* Nothing injected from server — bail early */
+    // Nothing from server — bail early
     if (!name && !role) return;
 
-    /* ── Only fills an input if it currently has no value ── */
+    // Fill input only if currently empty
     function _fill(id, value) {
         if (!value) return;
         var el = document.getElementById(id);
@@ -199,7 +200,7 @@ function _prefillEmployeeInfo() {
         }
     }
 
-    /* ── Only fills a display span if it is blank or a non-breaking space ── */
+    // Fill display span only if currently blank
     function _fillSpan(id, value) {
         if (!value) return;
         var el = document.getElementById(id);
@@ -209,21 +210,21 @@ function _prefillEmployeeInfo() {
         }
     }
 
-    /* ── DPCR tab ── */
-    _fill('d_emp_name',  name);   /* Name of Employee input        */
-    _fill('d_emp_title', role);   /* Position / Division input     */
-    _fillSpan('d_disp_name', name); /* Signature display span      */
+    // ── DPCR tab ──────────────────────────────────────────────────────
+    _fill('d_emp_name',  name);       // Name of Employee
+    _fill('d_emp_title', position);   // Position / Division
+    _fillSpan('d_disp_name', name);   // Signature name span
 
-    /* ── SPCR tab ── */
-    _fill('s_emp_name',     name);  /* Name of Employee input      */
-    _fill('s_emp_position', role);  /* Unit / Section / Dept input */
-    _fillSpan('s_disp_name', name); /* Signature display span      */
+    // ── SPCR tab ──────────────────────────────────────────────────────
+    _fill('s_emp_name',     name);     // Name of Employee
+    _fill('s_emp_position', position); // Unit / Section / Dept
+    _fillSpan('s_disp_name', name);    // Signature name span
 
-    /* ── IPCR tab ── */
-    _fill('i_emp_name',     name);   /* Name of Employee input     */
-    _fill('i_emp_position', role);   /* Position input             */
-    _fillSpan('i_disp_name',  name); /* Header display span #1     */
-    _fillSpan('i_disp_name2', name); /* Header display span #2     */
+    // ── IPCR tab ──────────────────────────────────────────────────────
+    _fill('i_emp_name',     name);     // Name of Employee
+    _fill('i_emp_position', position); // Position
+    _fillSpan('i_disp_name',  name);   // Header name span #1
+    _fillSpan('i_disp_name2', name);   // Header name span #2
 }
 
 document.addEventListener('keydown', e => {

@@ -1,21 +1,35 @@
 <?php
 
-// routes/web.php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QmmcController;
 use App\Http\Controllers\SPCRRatingMatrixController;
 use App\Http\Controllers\SPCRController;
 use App\Http\Controllers\SPCRFormController;
 use App\Http\Controllers\IPCRController;
+use App\Http\Controllers\LegacyUserController;
 
 /*
- Main page — loads both SPCR Matrix + DPCR tabs
+|--------------------------------------------------------------------------
+| ALL API routes must be declared BEFORE the /{empid} catch-all.
+| Otherwise Laravel matches /api/... against /{empid} and returns 404.
+|--------------------------------------------------------------------------
 */
-Route::get('/{empid}', [QmmcController::class, 'index'])->name('qmmc.index');
 
 /*
- SPCR Rating Matrix API routes (called by JS fetch)
+|--------------------------------------------------------------------------
+| Legacy Users API  (read-only — live from 190.190.0.55 / bvflh_users)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('api/legacy-users')->name('legacy.users.')->group(function () {
+    Route::get('/divisions', [LegacyUserController::class, 'divisions'])->name('divisions');
+    Route::get('/',          [LegacyUserController::class, 'index'])    ->name('index');
+    Route::get('/{id}',      [LegacyUserController::class, 'show'])     ->name('show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| SPCR Rating Matrix API
+|--------------------------------------------------------------------------
 */
 Route::prefix('api/spcr-matrix')->name('spcr.matrix.')->group(function () {
     Route::get('/',            [SPCRRatingMatrixController::class, 'index'])   ->name('index');
@@ -25,7 +39,9 @@ Route::prefix('api/spcr-matrix')->name('spcr.matrix.')->group(function () {
 });
 
 /*
- DPCR (sprc_forms) API routes (called by JS fetch)
+|--------------------------------------------------------------------------
+| DPCR API
+|--------------------------------------------------------------------------
 */
 Route::prefix('api/dpcr')->name('dpcr.')->group(function () {
     Route::get('/',          [SPCRController::class, 'index'])  ->name('index');
@@ -36,7 +52,9 @@ Route::prefix('api/dpcr')->name('dpcr.')->group(function () {
 });
 
 /*
- SPCR Form API routes (called by JS fetch from the SPCR tab)
+|--------------------------------------------------------------------------
+| SPCR Form API
+|--------------------------------------------------------------------------
 */
 Route::prefix('api/spcr')->name('spcr.form.')->group(function () {
     Route::get('/',          [SPCRFormController::class, 'index'])  ->name('index');
@@ -47,7 +65,9 @@ Route::prefix('api/spcr')->name('spcr.form.')->group(function () {
 });
 
 /*
- IPCR Form API routes (called by JS fetch from the IPCR tab)
+|--------------------------------------------------------------------------
+| IPCR Form API
+|--------------------------------------------------------------------------
 */
 Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
     Route::get('/',          [IPCRController::class, 'index'])  ->name('index');
@@ -56,3 +76,15 @@ Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
     Route::put('/{form}',    [IPCRController::class, 'update']) ->name('update');
     Route::delete('/{form}', [IPCRController::class, 'destroy'])->name('destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Main page — QMMC PCR Application
+| MUST be declared LAST — it is a catch-all for numeric segments.
+|--------------------------------------------------------------------------
+*/
+Route::get('/{empid}', [QmmcController::class, 'index'])
+    ->name('qmmc.index')
+    ->where('empid', '[0-9]+');
+
+    

@@ -12,28 +12,28 @@ class QmmcController extends Controller
 {
     public function index($empid)
     {
-        // ── Fetch employee info from the legacy database ───────────────
-        //
-        // Accessors on LegacyUser handle the name assembly:
-        //   $user->full_name      → "LASTNAME, Firstname M."
-        //   $user->division_label → division → position → section (first non-null)
-        //
-        // Wrapped in try/catch so a misconfigured or unreachable legacy DB
-        // never causes a 500 — the form simply loads empty and the employee
-        // fills in their info manually.
-        // ──────────────────────────────────────────────────────────────
+        // ── Validate empid is numeric ──────────────────────────────────
+        if (!is_numeric($empid)) {
+            abort(404, 'Invalid employee ID.');
+        }
+
+        // ── Fetch employee info from legacy database ───────────────────
         $employeeFullName = null;
+        $employeePosition = null;
         $employeeDivision = null;
         $employeeSection  = null;
 
         try {
             /** @var LegacyUser|null $legacyUser */
-            $legacyUser = LegacyUser::find($empid);
+            $legacyUser = LegacyUser::find((int) $empid);
 
             if ($legacyUser) {
-                $employeeFullName = $legacyUser->full_name;      // "LASTNAME, Firstname M."
-                $employeeDivision = $legacyUser->division_label; // division / position fallback
-                $employeeSection  = $legacyUser->section ?? null;
+                $employeeFullName = $legacyUser->full_name;
+                $employeePosition = $legacyUser->position   ?? null;
+                $employeeDivision = $legacyUser->division_label;
+                $employeeSection  = $legacyUser->section    ?? null;
+            } else {
+                \Log::info('QmmcController: no employee found for empid=' . $empid);
             }
         } catch (\Exception $e) {
             \Log::warning(
@@ -193,9 +193,10 @@ class QmmcController extends Controller
             'latestSpcrJson',
             'latestIpcrJson',
             'empid',
-            'employeeFullName',   // "LASTNAME, Firstname M."  → window.EMPLOYEE_FULLNAME
-            'employeeDivision',   // division / position       → window.EMPLOYEE_ROLE
-            'employeeSection',    // raw section value         → window.EMPLOYEE_SECTION
+            'employeeFullName',   // "LASTNAME, Firstname M."
+            'employeePosition',   // raw position column
+            'employeeDivision',   // division / position fallback
+            'employeeSection',    // raw section column
         ));
     }
 }
