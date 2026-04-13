@@ -827,6 +827,12 @@ function hydrateIpcrForm(form) {
     document.getElementById('i_disp_supervisor').textContent = form.supervisor     || '\u00a0';
     document.getElementById('i_disp_approved').textContent   = form.approved_by   || '\u00a0';
 
+    /* Re-expand upgraded intro-field textareas whose values were just set */
+    ['i_emp_name', 'i_emp_position', 'i_emp_unit', 'i_period'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.tagName === 'TEXTAREA') autoExpand(el);
+    });
+
     _ipcrPctOverrides = {};
 
     document.getElementById('ipcrBody').innerHTML = '';
@@ -897,7 +903,11 @@ document.getElementById('iClearBtn').addEventListener('click', function() {
     if (!confirm('Clear all IPCR data?')) return;
     ['i_emp_name','i_emp_position','i_emp_unit','i_period',
      'i_supervisor','i_approved_by','i_recommending'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.value = '';
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.value = '';
+        /* Collapse upgraded intro textareas back to single-row height */
+        if (el.tagName === 'TEXTAREA') autoExpand(el);
     });
     document.getElementById('i_disp_name').textContent       = '\u00a0';
     document.getElementById('i_disp_name2').textContent      = '\u00a0';

@@ -10,8 +10,24 @@ use Illuminate\Http\Request;
 
 class QmmcController extends Controller
 {
-    public function index($empid)
+    /**
+     * Handle the main display.
+     * We made $empid optional (= null) so the root URL (/) works.
+     */
+    public function index($empid = null)
     {
+        // 1. If no empid is provided (visiting the home page), 
+        // try to find the first employee in the DB to show as a default.
+        if (!$empid) {
+            $firstUser = LegacyUser::first();
+            $empid = $firstUser ? $firstUser->id : null;
+            
+            // If there are absolutely no users in the DB, show an error or return a blank view.
+            if (!$empid) {
+                return "No employees found in the database. Please check your connection to 190.190.0.55.";
+            }
+        }
+
         // ── Validate empid is numeric ──────────────────────────────────
         if (!is_numeric($empid)) {
             abort(404, 'Invalid employee ID.');
@@ -193,10 +209,10 @@ class QmmcController extends Controller
             'latestSpcrJson',
             'latestIpcrJson',
             'empid',
-            'employeeFullName',   // "LASTNAME, Firstname M."
-            'employeePosition',   // raw position column
-            'employeeDivision',   // division / position fallback
-            'employeeSection',    // raw section column
+            'employeeFullName',   
+            'employeePosition',   
+            'employeeDivision',   
+            'employeeSection',    
         ));
     }
 }

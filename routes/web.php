@@ -10,14 +10,17 @@ use App\Http\Controllers\LegacyUserController;
 
 /*
 |--------------------------------------------------------------------------
-| ALL API routes must be declared BEFORE the /{empid} catch-all.
-| Otherwise Laravel matches /api/... against /{empid} and returns 404.
+| 1. Landing Page
 |--------------------------------------------------------------------------
+| Instead of the default 'welcome' view, we now point to your Controller.
+| Note: If your index method requires an ID, you may need to adjust the 
+| controller logic to handle a null ID or redirect to a login/search page.
 */
+Route::get('/', [QmmcController::class, 'index'])->name('home');
 
 /*
 |--------------------------------------------------------------------------
-| Legacy Users API  (read-only — live from 190.190.0.55 / bvflh_users)
+| 2. Legacy Users API (read-only)
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/legacy-users')->name('legacy.users.')->group(function () {
@@ -28,7 +31,7 @@ Route::prefix('api/legacy-users')->name('legacy.users.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| SPCR Rating Matrix API
+| 3. SPCR Rating Matrix API
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/spcr-matrix')->name('spcr.matrix.')->group(function () {
@@ -40,7 +43,7 @@ Route::prefix('api/spcr-matrix')->name('spcr.matrix.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| DPCR API
+| 4. DPCR API
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/dpcr')->name('dpcr.')->group(function () {
@@ -53,7 +56,7 @@ Route::prefix('api/dpcr')->name('dpcr.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| SPCR Form API
+| 5. SPCR Form API
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/spcr')->name('spcr.form.')->group(function () {
@@ -66,7 +69,7 @@ Route::prefix('api/spcr')->name('spcr.form.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| IPCR Form API
+| 6. IPCR Form API
 |--------------------------------------------------------------------------
 */
 Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
@@ -79,12 +82,10 @@ Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Main page — QMMC PCR Application
-| MUST be declared LAST — it is a catch-all for numeric segments.
+| 7. Catch-All Route (Employee ID)
 |--------------------------------------------------------------------------
+| This matches numeric IDs (e.g., http://190.190.0.64:8000/12345).
 */
-Route::get('/{empid}', [QmmcController::class, 'index'])
+Route::match(['get', 'post'], '/{empid}', [QmmcController::class, 'index'])
     ->name('qmmc.index')
     ->where('empid', '[0-9]+');
-
-    

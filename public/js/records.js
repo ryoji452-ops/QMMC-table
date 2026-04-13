@@ -460,6 +460,11 @@ function buildFlatRow(r) {
     const editFn = r._type === 'dpcr' ? `recEditDpcr(${r.id})`  : r._type === 'spcr' ? `recEditSpcr(${r.id})`  : `recEditIpcr(${r.id})`;
     const delFn  = r._type === 'dpcr' ? `recDeleteDpcr(${r.id})`: r._type === 'spcr' ? `recDeleteSpcr(${r.id})`: `recDeleteIpcr(${r.id})`;
 
+    /* ID badge — colour-coded per form type so it's instantly scannable */
+    const idBadgeClass = r._type === 'dpcr' ? 'rec-id-badge rec-id-dpcr'
+                       : r._type === 'spcr' ? 'rec-id-badge rec-id-spcr'
+                       :                      'rec-id-badge rec-id-ipcr';
+
     return `<tr class="rec-flat-row${isSelected ? ' rec-row-selected' : ''}">
         <td class="no-print" style="text-align:center;padding:4px 6px;border:1px solid #e0e5ee;">
             <input type="checkbox" class="rec-row-chk"
@@ -467,7 +472,9 @@ function buildFlatRow(r) {
                    onchange="recToggleSelect('${r._type}', ${r.id}, this.checked)"
                    title="Select this record">
         </td>
-        <td style="text-align:center;color:var(--muted);">${r.id}</td>
+        <td style="text-align:center;">
+            <span class="${idBadgeClass}" title="${esc(r.type_label)} record #${r.id}">#${r.id}</span>
+        </td>
         <td style="text-align:center;"><span class="rec-type-chip ${r._type}">${esc(r.type_label)}</span></td>
         <td><strong>${esc(r.name)}</strong></td>
         <td style="color:var(--muted);font-size:9.5px;">${esc(r.title)}</td>

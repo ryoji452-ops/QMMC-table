@@ -11,7 +11,7 @@
         <button class="tab-btn"        onclick="switchTab('spcr', this)">SPCR</button>
         <button class="tab-btn"        onclick="switchTab('ipcr', this)">IPCR</button>
         <button class="tab-btn"        onclick="switchTab('records', this)">Records</button>
-        <button class="tab-btn"        onclick="switchTab('employees', this)">👥 Employees</button>
+        <button class="tab-btn"        onclick="switchTab('employees', this)">Employees</button>
     </div>
 
     {{-- Rating Matrix Panel — ONE instance, moved by JS on tab switch --}}

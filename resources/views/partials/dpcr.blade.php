@@ -6,8 +6,7 @@
     <div id="d-alertInfo" class="alert-info"></div>
     <div id="transferBanner" class="transfer-banner"></div>
 
-    <div class="form-ref">DOH – SPMS Form 2 {{ $empid }}</div>
-
+<div class="form-ref">DOH – SPMS Form 2 &nbsp;|&nbsp; Employee ID: {{ $empid }}</div>
 
 
 

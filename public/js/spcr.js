@@ -599,6 +599,12 @@ function hydrateSpcrForm(form) {
     setVal('s_supervisor',   form.supervisor        || form.reviewed_by   || '');
     setVal('s_approved_by',  form.approved_by       || '');
 
+    /* Re-expand upgraded intro-field textareas whose values were just set */
+    ['s_emp_name', 's_emp_position', 's_period'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.tagName === 'TEXTAREA') autoExpand(el);
+    });
+
     var disp = document.getElementById('s_disp_name');
     if (disp) disp.textContent = form.employee_name || '\u00a0';
 
@@ -1124,7 +1130,11 @@ document.getElementById('sAddSectionBtn').addEventListener('click', function() {
 document.getElementById('sClearBtn').addEventListener('click', function() {
     if (!confirm('Clear all SPCR data?')) return;
     ['s_emp_name','s_emp_position','s_period','s_supervisor','s_approved_by'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.value = '';
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.value = '';
+        /* Collapse upgraded intro textareas back to single-row height */
+        if (el.tagName === 'TEXTAREA') autoExpand(el);
     });
     var disp = document.getElementById('s_disp_name');
     if (disp) disp.textContent = '\u00a0';

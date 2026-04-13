@@ -191,12 +191,13 @@ function _prefillEmployeeInfo() {
     // Nothing from server — bail early
     if (!name && !role) return;
 
-    // Fill input only if currently empty
+    // Fill input/textarea only if currently empty; autoExpand if upgraded
     function _fill(id, value) {
         if (!value) return;
         var el = document.getElementById(id);
         if (el && !el.value.trim()) {
             el.value = value;
+            if (el.tagName === 'TEXTAREA') autoExpand(el);
         }
     }
 
@@ -647,3 +648,86 @@ function _persistWireBody(bodyId, storageKey, readFn) {
 var PERSIST_KEY_DPCR = 'qmmc_dpcr_draft';
 var PERSIST_KEY_SPCR = 'qmmc_spcr_draft';
 var PERSIST_KEY_IPCR = 'qmmc_ipcr_draft';
+
+/* ══════════════════════════════════════════════════════════════
+   INTRO-FIELD AUTO-EXPAND
+   ──────────────────────────────────────────────────────────────
+   The .intro-field elements in the DPCR / SPCR / IPCR header
+   sentence are plain <input type="text"> elements. Plain inputs
+   cannot grow vertically when text wraps, so long names get
+   clipped at the right edge.
+
+   This progressive-enhancement replaces every .intro-field
+   <input> with a single-row <textarea> that is styled identically
+   (same border-bottom underline, same font, same inline layout)
+   but grows in height automatically as the user types — matching
+   the existing autoExpand() behaviour used by table row textareas.
+
+   The replacement:
+     • Preserves id, placeholder, value, style attributes exactly.
+     • Keeps the element inline (display:inline-block) so it flows
+       naturally inside the intro sentence.
+     • Fires autoExpand() on every input event.
+     • Syncs the display-name <span> elements (i_disp_name, etc.)
+       in the same way the original input listeners did, so no
+       other JS needs to change.
+     • Is idempotent — calling it twice is safe (checks for the
+       data-intro-upgraded attribute).
+══════════════════════════════════════════════════════════════ */
+function _upgradeIntroFields() {
+    document.querySelectorAll('input.intro-field').forEach(function(inp) {
+        if (inp.dataset.introUpgraded) return;
+
+        var ta = document.createElement('textarea');
+        if (inp.id)          ta.id          = inp.id;
+        if (inp.placeholder) ta.placeholder = inp.placeholder;
+        if (inp.value)       ta.value       = inp.value;
+        ta.className = inp.className;
+        ta.style.cssText = inp.style.cssText;
+        ta.style.resize        = 'none';
+        ta.style.overflow      = 'hidden';
+        ta.style.verticalAlign = 'bottom';
+        ta.style.lineHeight    = '1.45';
+        ta.style.minHeight     = '18px';
+        ta.style.height        = 'auto';
+        /* FIX: grow horizontally, not vertically */
+        ta.style.whiteSpace    = 'nowrap';   // keep on one line
+        ta.style.overflowX     = 'hidden';
+        ta.rows = 1;
+        ta.dataset.introUpgraded = '1';
+
+        ta.addEventListener('input', function() {
+            autoExpand(ta);
+        });
+
+        inp.parentNode.replaceChild(ta, inp);
+        autoExpand(ta);
+    });
+}
+
+/* Run once the DOM is ready.
+   DOMContentLoaded fires before any of our form-hydration JS
+   (hydrateDpcrForm etc.) runs, so we also need to re-upgrade
+   after hydration replaces field values.  We use a MutationObserver
+   on the three intro-block containers to catch that. */
+document.addEventListener('DOMContentLoaded', function() {
+    _upgradeIntroFields();
+
+    /* Watch each intro-block for attribute/value changes so that
+       when hydrateDpcrForm / hydrateSpcrForm / hydrateIpcrForm
+       writes a value into the field we can re-trigger autoExpand. */
+    ['page-dpcr', 'page-spcr', 'page-ipcr'].forEach(function(pageId) {
+        var page = document.getElementById(pageId);
+        if (!page) return;
+
+        /* Delegate: re-run autoExpand whenever any intro textarea
+           in this page receives a programmatic value change.
+           We observe the page subtree for character-data mutations
+           (covers direct .value writes). */
+        new MutationObserver(function() {
+            page.querySelectorAll('textarea.intro-field[data-intro-upgraded]').forEach(function(ta) {
+                autoExpand(ta);
+            });
+        }).observe(page, { subtree: true, characterData: true, childList: true });
+    });
+});

@@ -181,6 +181,27 @@ body {
     font-weight: bold;
     outline: none;
 }
+
+/*
+ * When _upgradeIntroFields() replaces <input class="intro-field"> with
+ * <textarea class="intro-field">, these additional rules keep the textarea
+ * visually identical to the original input while allowing it to grow.
+ */
+textarea.intro-field {
+    display: inline-block;
+    vertical-align: bottom;
+    resize: none;
+    overflow: hidden;
+    line-height: 1.45;
+    min-height: 18px;
+    padding-top: 0;
+    padding-bottom: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* ADD THIS: */
+    min-width: 220px;
+    width: auto;
+}
 .label-small {
     font-size: 9px;
     color: #333;

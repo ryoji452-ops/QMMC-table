@@ -715,6 +715,12 @@ function hydrateDpcrForm(form) {
     document.getElementById('d_approved_by').value = form.approved_by    || '';
     document.getElementById('d_disp_name').textContent = form.employee_name || '\u00a0';
 
+    /* Re-expand any upgraded intro-field textareas whose values were just set */
+    ['d_emp_name', 'd_emp_title'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.tagName === 'TEXTAREA') autoExpand(el);
+    });
+
     document.getElementById('dpcrBody').innerHTML = '';
     var lastType = null;
 

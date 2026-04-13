@@ -177,6 +177,35 @@
 .rec-sort-none   { color: #b0b8cc; }
 .rec-sort-active { color: var(--navy); }
 
+/* ── RECORD ID BADGE ── */
+.rec-id-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: Arial, sans-serif;
+    letter-spacing: .4px;
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    line-height: 1.6;
+    border: 1.5px solid;
+}
+.rec-id-dpcr {
+    background: #d4edda;
+    color: #1e6e3a;
+    border-color: #a8d5b5;
+}
+.rec-id-spcr {
+    background: #dce4f0;
+    color: var(--navy);
+    border-color: #b0c4dc;
+}
+.rec-id-ipcr {
+    background: #ede0f7;
+    color: #6a3e9e;
+    border-color: #c9aee8;
+}
+
 /* ── TYPE CHIP ── */
 .rec-type-chip {
     display: inline-block;
