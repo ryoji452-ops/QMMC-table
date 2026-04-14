@@ -13,7 +13,7 @@ class LegacyUser extends Model
 
     protected $fillable = [
         'id', 'l_name', 'f_name', 'm_name',
-        'division', 'position', 'section', 'name',
+        'division', 'position', 'name',
     ];
 
     public function getFullNameAttribute(): ?string
@@ -35,6 +35,6 @@ class LegacyUser extends Model
 
     public function getDivisionLabelAttribute(): ?string
     {
-        return $this->division ?? $this->position ?? $this->section ?? null;
+        return $this->division ?? $this->position ?? null;
     }
 }

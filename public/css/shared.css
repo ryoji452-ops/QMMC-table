@@ -168,10 +168,31 @@ body {
     padding: 6px 10px 4px;
     margin-bottom: 0;
 }
+
+/*
+ * intro-line uses flex-wrap so that .intro-field textareas can grow
+ * horizontally to fill available space and then wrap to a new line
+ * vertically when the text content is long — instead of overflowing
+ * or being clipped at a fixed width.
+ */
 .intro-line {
     font-size: 11px;
     line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 2px 4px;
 }
+
+/* Plain text nodes and inline elements inside intro-line sit
+   at the baseline alongside the textareas */
+.intro-line > span,
+.intro-line > .label-small {
+    white-space: nowrap;
+    align-self: flex-end;
+    margin-bottom: 2px;
+}
+
 .intro-field {
     border: none;
     border-bottom: 1px solid #000;
@@ -184,23 +205,34 @@ body {
 
 /*
  * When _upgradeIntroFields() replaces <input class="intro-field"> with
- * <textarea class="intro-field">, these additional rules keep the textarea
- * visually identical to the original input while allowing it to grow.
+ * <textarea class="intro-field">, the textarea participates in the
+ * flex layout of .intro-line:
+ *   • flex: 1 1 auto  — grows to fill remaining row space
+ *   • min-width       — prevents collapse below a readable size
+ *   • width: 100%     — fills its flex slot fully
+ * Text wraps vertically (pre-wrap + word-break) so long values
+ * are always fully visible without horizontal scrolling.
  */
 textarea.intro-field {
-    display: inline-block;
+    display: block;
+    flex: 1 1 auto;
     vertical-align: bottom;
+    align-self: flex-end;
     resize: none;
     overflow: hidden;
+    overflow-x: hidden;
     line-height: 1.45;
-    min-height: 18px;
-    padding-top: 0;
-    padding-bottom: 0;
+    min-height: 20px;
+    height: auto;
+    padding-top: 1px;
+    padding-bottom: 1px;
     white-space: pre-wrap;
+    word-wrap: break-word;
     word-break: break-word;
-    /* ADD THIS: */
-    min-width: 220px;
-    width: auto;
+    overflow-wrap: break-word;
+    min-width: 160px;
+    width: 100%;
+    box-sizing: border-box;
 }
 .label-small {
     font-size: 9px;

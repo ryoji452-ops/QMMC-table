@@ -45,7 +45,7 @@ async function loadEmployees() {
         var res = await fetch('/api/legacy-users?' + params.toString(), {
             headers: {
                 'Accept':       'application/json',
-                'X-CSRF-TOKEN': CSRF,
+                'X-CSRF-TOKEN': _getCsrfToken(),
             },
         });
 
@@ -96,7 +96,6 @@ function _buildEmpTable(rows) {
         + '<th>Middle Name</th>'
         + '<th>Division</th>'
         + '<th>Position</th>'
-        + '<th>Section</th>'
         + '<th style="width:80px;text-align:center;" class="no-print">Use</th>'
         + '</tr></thead><tbody>';
 
@@ -111,7 +110,6 @@ function _buildEmpTable(rows) {
             + '<td>' + esc(u.m_name    || '—') + '</td>'
             + '<td>' + esc(u.division  || '—') + '</td>'
             + '<td style="font-size:9.5px;">' + esc(u.position || '—') + '</td>'
-            + '<td style="font-size:9.5px;">' + esc(u.section  || '—') + '</td>'
             + '<td class="no-print" style="text-align:center;padding:3px;">'
             +   '<button type="button" class="rec-btn rec-btn-view" '
             +           'style="white-space:nowrap;" '
@@ -169,7 +167,7 @@ async function loadEmpIntoForms(id) {
         var res = await fetch('/api/legacy-users/' + id, {
             headers: {
                 'Accept':       'application/json',
-                'X-CSRF-TOKEN': CSRF,
+                'X-CSRF-TOKEN': _getCsrfToken(),
             },
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -178,7 +176,6 @@ async function loadEmpIntoForms(id) {
         var name     = u.full_name      || '';
         var position = u.position       || u.division_label || '';
         var division = u.division       || '';
-        var section  = u.section        || '';
 
         function fill(elId, val) {
             var el = document.getElementById(elId);
@@ -202,7 +199,7 @@ async function loadEmpIntoForms(id) {
         /* IPCR */
         fill('i_emp_name',     name);
         fill('i_emp_position', position);
-        fill('i_emp_unit',     division || section);
+        fill('i_emp_unit',     division);
         fillSpan('i_disp_name',  name);
         fillSpan('i_disp_name2', name);
 
@@ -233,7 +230,7 @@ async function loadEmpDivisions() {
         var res = await fetch('/api/legacy-users/divisions', {
             headers: {
                 'Accept':       'application/json',
-                'X-CSRF-TOKEN': CSRF,
+                'X-CSRF-TOKEN': _getCsrfToken(),
             },
         });
         if (!res.ok) return;
@@ -253,23 +250,15 @@ async function loadEmpDivisions() {
 
 /* ══════════════════════════════════════════════════════════════
    TAB INTEGRATION
-   records.js patches window.switchTab for lazy loading.
-   We do the same — but we must chain properly.
-
-   Strategy: use a DOMContentLoaded listener to register AFTER
-   records.js has already run its patch. This avoids the race
-   condition of two scripts both trying to patch at load time.
 ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function () {
     var _prevSwitchTab = window.switchTab;
 
     window.switchTab = function (tab, btn) {
-        /* Always call the previous switchTab (handles all other tabs) */
         if (typeof _prevSwitchTab === 'function') {
             _prevSwitchTab(tab, btn);
         }
 
-        /* Lazy-load the employee directory on first visit */
         if (tab === 'employees' && !EMP_LOADED) {
             EMP_LOADED = true;
             loadEmpDivisions();

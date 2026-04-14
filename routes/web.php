@@ -12,9 +12,6 @@ use App\Http\Controllers\LegacyUserController;
 |--------------------------------------------------------------------------
 | 1. Landing Page
 |--------------------------------------------------------------------------
-| Instead of the default 'welcome' view, we now point to your Controller.
-| Note: If your index method requires an ID, you may need to adjust the 
-| controller logic to handle a null ID or redirect to a login/search page.
 */
 Route::get('/', [QmmcController::class, 'index'])->name('home');
 
@@ -84,7 +81,6 @@ Route::prefix('api/ipcr')->name('ipcr.form.')->group(function () {
 |--------------------------------------------------------------------------
 | 7. Catch-All Route (Employee ID)
 |--------------------------------------------------------------------------
-| This matches numeric IDs (e.g., http://190.190.0.64:8000/12345).
 */
 Route::match(['get', 'post'], '/{empid}', [QmmcController::class, 'index'])
     ->name('qmmc.index')

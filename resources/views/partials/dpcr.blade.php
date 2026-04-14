@@ -269,7 +269,7 @@
     <div class="rm-embed-slot" id="rm-slot-dpcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">
-                <span class="rm-section-divider-icon">▦</span>
+                <span class="rm-section-divider-icon"></span>
                 Rating Matrix
                 <span class="rm-section-divider-sub">— source document for DPCR row</span>
             </div>

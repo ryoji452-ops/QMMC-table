@@ -38,6 +38,7 @@
     // ── App config ────────────────────────────────────────────────────
     window.CSRF_TOKEN       = @json(csrf_token());
     window.SECTIONS         = @json($sections);
+    window.EMPID            = @json($empid);
 
     // ── Database pre-loads ────────────────────────────────────────────
     window.DB_MATRICES      = @json($matricesJson);

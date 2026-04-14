@@ -328,7 +328,7 @@
     <div class="rm-embed-slot" id="rm-slot-ipcr">
         <div class="rm-section-divider no-print">
             <div class="rm-section-divider-label">
-                <span class="rm-section-divider-icon">▦</span>
+                <span class="rm-section-divider-icon"></span>
                 Rating Matrix
                 <span class="rm-section-divider-sub">— source document for IPCR row</span>
             </div>

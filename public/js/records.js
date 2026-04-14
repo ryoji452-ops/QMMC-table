@@ -40,9 +40,10 @@ async function loadAllRecords() {
             safeGet('/api/ipcr'),
         ]);
 
-        REC_SPCR = (Array.isArray(spcr) ? spcr : []).map(r => ({ ...r, _type: 'spcr' }));
-        REC_DPCR = (Array.isArray(dpcr) ? dpcr : []).map(r => ({ ...r, _type: 'dpcr' }));
-        REC_IPCR = (Array.isArray(ipcr) ? ipcr : []).map(r => ({ ...r, _type: 'ipcr' }));
+        const _empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
+        REC_SPCR = (Array.isArray(spcr) ? spcr : []).map(r => ({ ...r, _type: 'spcr', _empid: r._empid || _empid }));
+        REC_DPCR = (Array.isArray(dpcr) ? dpcr : []).map(r => ({ ...r, _type: 'dpcr', _empid: r._empid || _empid }));
+        REC_IPCR = (Array.isArray(ipcr) ? ipcr : []).map(r => ({ ...r, _type: 'ipcr', _empid: r._empid || _empid }));
 
         REC_SELECTED.clear();
         populateYearFilter();
@@ -100,6 +101,7 @@ function normaliseRecord(r) {
         id:         r.id,
         _type:      type,
         _raw:       r,
+        _empid:     r._empid || null,
         type_label: type === 'dpcr' ? 'DPCR' : type === 'spcr' ? 'SPCR' : 'IPCR',
         name:       r.employee_name || r.prepared_by || '—',
         title:      r.employee_title || r.employee_position || r.prepared_by_title || '—',
@@ -265,7 +267,7 @@ async function recConfirmBulkDelete() {
             const res = await fetch(endpoint, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': CSRF,
+                    'X-CSRF-TOKEN': _getCsrfToken(),
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                 },
@@ -460,10 +462,16 @@ function buildFlatRow(r) {
     const editFn = r._type === 'dpcr' ? `recEditDpcr(${r.id})`  : r._type === 'spcr' ? `recEditSpcr(${r.id})`  : `recEditIpcr(${r.id})`;
     const delFn  = r._type === 'dpcr' ? `recDeleteDpcr(${r.id})`: r._type === 'spcr' ? `recDeleteSpcr(${r.id})`: `recDeleteIpcr(${r.id})`;
 
-    /* ID badge — colour-coded per form type so it's instantly scannable */
+    /* ID badge — colour-coded per form type so it's instantly scannable.
+       The visible # shows the employee's legacy user ID (_empid) so every
+       DPCR / SPCR / IPCR row for employee 661 displays #661.
+       All internal API calls (view / edit / delete) still use r.id (DB PK). */
     const idBadgeClass = r._type === 'dpcr' ? 'rec-id-badge rec-id-dpcr'
                        : r._type === 'spcr' ? 'rec-id-badge rec-id-spcr'
                        :                      'rec-id-badge rec-id-ipcr';
+    const displayId = r._empid
+                    ? r._empid
+                    : ((typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : r.id);
 
     return `<tr class="rec-flat-row${isSelected ? ' rec-row-selected' : ''}">
         <td class="no-print" style="text-align:center;padding:4px 6px;border:1px solid #e0e5ee;">
@@ -473,7 +481,7 @@ function buildFlatRow(r) {
                    title="Select this record">
         </td>
         <td style="text-align:center;">
-            <span class="${idBadgeClass}" title="${esc(r.type_label)} record #${r.id}">#${r.id}</span>
+            <span class="${idBadgeClass}" title="${esc(r.type_label)} Employee #${displayId}">#${displayId}</span>
         </td>
         <td style="text-align:center;"><span class="rec-type-chip ${r._type}">${esc(r.type_label)}</span></td>
         <td><strong>${esc(r.name)}</strong></td>
@@ -642,6 +650,8 @@ function recEditIpcr(id) {
    SAVE INTERCEPT
 ══════════════════════════════════════════ */
 (function patchSaveButtons() {
+    const _empid = () => (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
+
     const dBtn = document.getElementById('dSaveBtn');
     if (dBtn) dBtn.addEventListener('click', async (e) => {
         const editId = REC_EDITING.dpcr; if (!editId) return;
@@ -650,7 +660,7 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('d-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/dpcr/${editId}`,'PUT',data);
-            REC_DPCR = REC_DPCR.filter(r=>r.id!==editId); REC_DPCR.unshift({...(saved.form??saved),_type:'dpcr'});
+            REC_DPCR = REC_DPCR.filter(r=>r.id!==editId); REC_DPCR.unshift({...(saved.form??saved),_type:'dpcr',_empid:_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.dpcr=null; _recSetEditBanner('page-dpcr','dpcr',null);
             showAlert('d-alertOk','ok',`✔ DPCR #${editId} updated successfully.`);
         } catch(err){showAlert('d-alertErr','err','Update failed: '+err.message);}
@@ -664,7 +674,7 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('s-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/spcr/${editId}`,'PUT',data);
-            REC_SPCR = REC_SPCR.filter(r=>r.id!==editId); REC_SPCR.unshift({...(saved.form??saved),_type:'spcr'});
+            REC_SPCR = REC_SPCR.filter(r=>r.id!==editId); REC_SPCR.unshift({...(saved.form??saved),_type:'spcr',_empid:_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.spcr=null; _recSetEditBanner('page-spcr','spcr',null);
             showAlert('s-alertOk','ok',`✔ SPCR #${editId} updated successfully.`);
         } catch(err){showAlert('s-alertErr','err','Update failed: '+err.message);}
@@ -678,7 +688,7 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('i-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/ipcr/${editId}`,'PUT',data);
-            REC_IPCR = REC_IPCR.filter(r=>r.id!==editId); REC_IPCR.unshift({...(saved.form??saved.ipcr??saved),_type:'ipcr'});
+            REC_IPCR = REC_IPCR.filter(r=>r.id!==editId); REC_IPCR.unshift({...(saved.form??saved.ipcr??saved),_type:'ipcr',_empid:_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.ipcr=null; _recSetEditBanner('page-ipcr','ipcr',null);
             showAlert('i-alertOk','ok',`✔ IPCR #${editId} updated successfully.`);
         } catch(err){showAlert('i-alertErr','err','Update failed: '+err.message);}
@@ -720,7 +730,8 @@ async function recDeleteIpcr(id) {
 ══════════════════════════════════════════ */
 function notifyRecordSaved(type, record) {
     if (!record) return;
-    const r = { ...record, _type: type };
+    const _empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
+    const r = { ...record, _type: type, _empid: record._empid || _empid };
     if (type==='dpcr') { REC_DPCR=REC_DPCR.filter(x=>x.id!==r.id); REC_DPCR.unshift(r); }
     else if (type==='spcr') {
         REC_SPCR=REC_SPCR.filter(x=>x.id!==r.id); REC_SPCR.unshift(r);

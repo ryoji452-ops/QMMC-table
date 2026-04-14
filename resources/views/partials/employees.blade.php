@@ -20,7 +20,7 @@
         </div>
         <div class="rec-toolbar-right">
             <input type="text" id="emp-search" class="rec-search-input"
-                   placeholder="🔍  Search by name, position, section…"
+                   placeholder="🔍  Search by name, position…"
                    oninput="debounceEmpSearch()">
             <button class="rec-refresh-btn" onclick="loadEmployees()">⟳ Refresh</button>
         </div>

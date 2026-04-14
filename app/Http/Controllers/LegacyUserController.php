@@ -23,7 +23,6 @@ class LegacyUserController extends Controller
                   ->orWhere('m_name',   'like', "%{$search}%")
                   ->orWhere('division', 'like', "%{$search}%")
                   ->orWhere('position', 'like', "%{$search}%")
-                  ->orWhere('section',  'like', "%{$search}%")
                   ->orWhere('name',     'like', "%{$search}%");
             });
         }
@@ -36,7 +35,6 @@ class LegacyUserController extends Controller
 
         $users = $query->orderBy('l_name')->orderBy('f_name')->paginate($perPage);
 
-        // Map each user to include the computed full_name attribute
         $mapped = collect($users->items())->map(function ($u) {
             return [
                 'id'             => $u->id,
@@ -46,7 +44,6 @@ class LegacyUserController extends Controller
                 'm_name'         => $u->m_name,
                 'division'       => $u->division,
                 'position'       => $u->position,
-                'section'        => $u->section,
                 'name'           => $u->name,
                 'division_label' => $u->division_label,
             ];
@@ -77,7 +74,6 @@ class LegacyUserController extends Controller
             'm_name'         => $user->m_name,
             'division'       => $user->division,
             'position'       => $user->position,
-            'section'        => $user->section,
             'name'           => $user->name,
             'division_label' => $user->division_label,
         ]);

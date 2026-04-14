@@ -7,6 +7,20 @@
 
 /* ── CONFIG (injected by Blade in index.blade.php) ── */
 const CSRF  = window.CSRF_TOKEN || '';
+
+/* ── Dynamic CSRF reader ──────────────────────────────────────────────
+   Always reads from the <meta name="csrf-token"> tag that Laravel
+   renders in <head> — this is the most reliable source because it is
+   set before any script runs and Laravel keeps it in sync.
+   Falls back to window.CSRF_TOKEN (set by the Blade @push block) and
+   then to an empty string as a last resort.
+─────────────────────────────────────────────────────────────────── */
+function _getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.getAttribute('content')) return meta.getAttribute('content');
+    if (window.CSRF_TOKEN) return window.CSRF_TOKEN;
+    return '';
+}
 const SECTS = window.SECTIONS  || [
     'ALL SECTIONS', 'EFMS', 'IMISS', 'PMG / EFMS / PROCUREMENT',
     'CAO', 'EFMS AND HEMS', 'HRMS/HRMPSB',
@@ -54,7 +68,7 @@ async function apiFetch(url, method = 'GET', body = null) {
         method,
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': CSRF,
+            'X-CSRF-TOKEN': _getCsrfToken(),
             'Accept': 'application/json',
         },
     };
@@ -683,25 +697,39 @@ function _upgradeIntroFields() {
         if (inp.placeholder) ta.placeholder = inp.placeholder;
         if (inp.value)       ta.value       = inp.value;
         ta.className = inp.className;
-        ta.style.cssText = inp.style.cssText;
-        ta.style.resize        = 'none';
-        ta.style.overflow      = 'hidden';
-        ta.style.verticalAlign = 'bottom';
-        ta.style.lineHeight    = '1.45';
-        ta.style.minHeight     = '18px';
-        ta.style.height        = 'auto';
-        /* FIX: grow horizontally, not vertically */
-        ta.style.whiteSpace    = 'nowrap';   // keep on one line
-        ta.style.overflowX     = 'hidden';
+
+        /* Copy only the inline min-width hint from the original <input>
+           (e.g. style="min-width:220px") so each field keeps its intended
+           minimum readable width. All other sizing is now handled by the
+           CSS flex rules on .intro-line / textarea.intro-field so we do
+           NOT copy the full style string — that would override flex: 1
+           and prevent the textarea from growing to fill the line. */
+        var originalMinWidth = inp.style.minWidth;
+        if (originalMinWidth) {
+            ta.style.minWidth = originalMinWidth;
+        }
+
+        ta.style.resize   = 'none';
+        ta.style.overflow = 'hidden';
+        ta.style.height   = 'auto';
         ta.rows = 1;
         ta.dataset.introUpgraded = '1';
 
-        ta.addEventListener('input', function() {
-            autoExpand(ta);
-        });
+        function _expand() {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        }
+
+        ta.addEventListener('input',  _expand);
+        ta.addEventListener('keyup',  _expand);
+        ta.addEventListener('change', _expand);
 
         inp.parentNode.replaceChild(ta, inp);
-        autoExpand(ta);
+
+        /* Call expand immediately and after layout settles */
+        _expand();
+        setTimeout(_expand, 0);
+        setTimeout(_expand, 100);
     });
 }
 
@@ -726,8 +754,26 @@ document.addEventListener('DOMContentLoaded', function() {
            (covers direct .value writes). */
         new MutationObserver(function() {
             page.querySelectorAll('textarea.intro-field[data-intro-upgraded]').forEach(function(ta) {
-                autoExpand(ta);
+                ta.style.height = 'auto';
+                ta.style.height = ta.scrollHeight + 'px';
             });
         }).observe(page, { subtree: true, characterData: true, childList: true });
     });
+
+    /* Also re-expand all intro fields whenever a tab becomes visible,
+       since textareas in hidden tabs have scrollHeight = 0. */
+    var _origSwitchTab = window.switchTab;
+    if (typeof _origSwitchTab === 'function') {
+        window.switchTab = function(tab, btn) {
+            _origSwitchTab(tab, btn);
+            setTimeout(function() {
+                var page = document.getElementById('page-' + tab);
+                if (!page) return;
+                page.querySelectorAll('textarea.intro-field[data-intro-upgraded]').forEach(function(ta) {
+                    ta.style.height = 'auto';
+                    ta.style.height = ta.scrollHeight + 'px';
+                });
+            }, 50);
+        };
+    }
 });

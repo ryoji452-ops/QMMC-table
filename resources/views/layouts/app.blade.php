@@ -18,7 +18,12 @@
 
     @yield('content')
 
+    {{-- Inline config MUST run before any JS file so that
+         window.CSRF_TOKEN and window.DB_* are available when
+         shared.js / dpcr.js / ipcr.js execute their top-level
+         init code and DOMContentLoaded handlers. --}}
     @stack('scripts')
+
     <script src="{{ asset('js/shared.js') }}"></script>
     <script src="{{ asset('js/dpcr.js') }}"></script>
     <script src="{{ asset('js/spcr.js') }}"></script>
