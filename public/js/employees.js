@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════
    employees.js
    Employee directory — live from 190.190.0.55
-   Depends on: shared.js (esc, CSRF, apiFetch)
+   Depends on: shared.js (esc, CSRF, apiFetch, _getAppBase)
    Load AFTER shared.js, BEFORE print_modes.js
 ═══════════════════════════════════════════ */
 
@@ -41,8 +41,10 @@ async function loadEmployees() {
     if (search.trim())   params.set('search',   search.trim());
     if (division.trim()) params.set('division', division.trim());
 
+    var base = (typeof _getAppBase === 'function') ? _getAppBase() : (window.APP_BASE || '');
+
     try {
-        var res = await fetch('/api/legacy-users?' + params.toString(), {
+        var res = await fetch(base + '/api/legacy-users?' + params.toString(), {
             headers: {
                 'Accept':       'application/json',
                 'X-CSRF-TOKEN': _getCsrfToken(),
@@ -163,8 +165,9 @@ function empGoTo(page) {
 
 /* ── "Use" button: auto-fill all form tabs ── */
 async function loadEmpIntoForms(id) {
+    var base = (typeof _getAppBase === 'function') ? _getAppBase() : (window.APP_BASE || '');
     try {
-        var res = await fetch('/api/legacy-users/' + id, {
+        var res = await fetch(base + '/api/legacy-users/' + id, {
             headers: {
                 'Accept':       'application/json',
                 'X-CSRF-TOKEN': _getCsrfToken(),
@@ -208,7 +211,6 @@ async function loadEmpIntoForms(id) {
             '#emp-container button[onclick="loadEmpIntoForms(' + id + ')"]'
         );
         btns.forEach(function (b) {
-            var orig = b.textContent;
             b.textContent = '✔ Loaded!';
             b.style.background = '#1e6e3a';
             b.style.color      = '#fff';
@@ -226,8 +228,9 @@ async function loadEmpIntoForms(id) {
 
 /* ── Load divisions dropdown ── */
 async function loadEmpDivisions() {
+    var base = (typeof _getAppBase === 'function') ? _getAppBase() : (window.APP_BASE || '');
     try {
-        var res = await fetch('/api/legacy-users/divisions', {
+        var res = await fetch(base + '/api/legacy-users/divisions', {
             headers: {
                 'Accept':       'application/json',
                 'X-CSRF-TOKEN': _getCsrfToken(),

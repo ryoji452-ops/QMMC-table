@@ -60,11 +60,16 @@ function showAlert(elId, type, msg) {
 
 /* Central fetch wrapper — handles CSRF + JSON */
 async function apiFetch(url, method = 'GET', body = null) {
+    // Always read the token dynamically from the <meta> tag so it is never
+    // stale (the const CSRF captured window.CSRF_TOKEN before Blade injected it).
+    const csrfToken = (typeof _getCsrfToken === 'function')
+        ? _getCsrfToken()
+        : (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || window.CSRF_TOKEN || '');
     const opts = {
         method,
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': CSRF,
+            'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json',
         },
     };

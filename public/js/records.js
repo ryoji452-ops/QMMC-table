@@ -260,18 +260,20 @@ async function recConfirmBulkDelete() {
         const displayName = rec ? (rec.employee_name || rec.prepared_by || ('#' + id)) : ('#' + id);
 
         try {
-            const endpoint = type === 'dpcr' ? `/api/dpcr/${id}`
-                           : type === 'spcr' ? `/api/spcr/${id}`
-                           : `/api/ipcr/${id}`;
+            const base = (typeof _getAppBase === 'function') ? _getAppBase() : (window.APP_BASE || '');
 
-            const res = await fetch(endpoint, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': _getCsrfToken(),
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            });
+                    const endpoint = type === 'dpcr' ? `${base}/api/dpcr/${id}`
+                                : type === 'spcr' ? `${base}/api/spcr/${id}`
+                                : `${base}/api/ipcr/${id}`;
+
+                    const res = await fetch(endpoint, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': _getCsrfToken(),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                    });
 
             if (res.ok || res.status === 404) {
                 /* 404 = already deleted — treat as success, remove from local list */

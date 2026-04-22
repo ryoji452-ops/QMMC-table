@@ -18,12 +18,12 @@ class LegacyUserController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('l_name',   'like', "%{$search}%")
-                  ->orWhere('f_name',   'like', "%{$search}%")
-                  ->orWhere('m_name',   'like', "%{$search}%")
+                $q->where('l_name', 'like', "%{$search}%")
+                  ->orWhere('f_name', 'like', "%{$search}%")
+                  ->orWhere('m_name', 'like', "%{$search}%")
                   ->orWhere('division', 'like', "%{$search}%")
                   ->orWhere('position', 'like', "%{$search}%")
-                  ->orWhere('name',     'like', "%{$search}%");
+                  ->orWhere('name', 'like', "%{$search}%");
             });
         }
 

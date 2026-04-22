@@ -19,13 +19,80 @@ function _getCsrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     if (meta && meta.getAttribute('content')) return meta.getAttribute('content');
     if (window.CSRF_TOKEN) return window.CSRF_TOKEN;
+    var cookie = document.cookie || '';
+    var match = cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    if (match && match[1]) {
+        try { return decodeURIComponent(match[1]); } catch (e) { return match[1]; }
+    }
     return '';
 }
+
+/* ── APP BASE PATH ────────────────────────────────────────────────────
+   Injected by app.blade.php as window.APP_BASE (e.g. "/ipcr" or "").
+   Used by apiFetch() and any raw fetch() calls so every request
+   correctly targets the subdirectory the app is deployed under.
+   Example: APP_URL=http://190.190.0.64/ipcr → APP_BASE="/ipcr"
+            apiFetch('/api/dpcr') → fetch('/ipcr/api/dpcr')
+─────────────────────────────────────────────────────────────────── */
+function _getAppBase() {
+    return (typeof window.APP_BASE === 'string') ? window.APP_BASE : '';
+}
+
+function _patchChosenOnce() {
+    try {
+        var lib = window.jQuery || window.$;
+        if (lib && lib.fn && typeof lib.fn.chosen !== 'function') {
+            lib.fn.chosen = function () { return this; };
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+(function _installChosenShim() {
+    if (_patchChosenOnce()) return;
+
+    try {
+        var boundJQ = window.jQuery;
+        var bound$  = window.$;
+
+        if (typeof window.jQuery === 'undefined') {
+            Object.defineProperty(window, 'jQuery', {
+                configurable: true,
+                get: function () { return boundJQ; },
+                set: function (lib) {
+                    boundJQ = lib;
+                    _patchChosenOnce();
+                }
+            });
+        }
+
+        if (typeof window.$ === 'undefined' || window.$ === boundJQ) {
+            Object.defineProperty(window, '$', {
+                configurable: true,
+                get: function () { return bound$; },
+                set: function (lib) {
+                    bound$ = lib;
+                    _patchChosenOnce();
+                }
+            });
+        }
+    } catch (e) {
+        // If property hooks are not available, the direct patch above is enough.
+    }
+
+    var shimTimer = setInterval(function () {
+        if (_patchChosenOnce()) clearInterval(shimTimer);
+    }, 200);
+    setTimeout(function () { clearInterval(shimTimer); }, 10000);
+})();
+
 const SECTS = window.SECTIONS  || [
     'ALL SECTIONS', 'EFMS', 'IMISS', 'PMG / EFMS / PROCUREMENT',
     'CAO', 'EFMS AND HEMS', 'HRMS/HRMPSB',
     'NURSING', 'MEDICAL', 'ADMINISTRATIVE', 'FINANCE', 'PHARMACY'
 ];
+
 
 /* Performance/Success Indicator options (DPCR dropdown) */
 const PERF_INDICATORS = [
@@ -62,18 +129,23 @@ function showAlert(elId, type, msg) {
     setTimeout(() => { el.style.display = 'none'; }, 4500);
 }
 
-/* Central fetch wrapper — handles CSRF + JSON */
+/* Central fetch wrapper — handles CSRF + JSON + subdirectory base path */
 async function apiFetch(url, method = 'GET', body = null) {
+    const base = _getAppBase();
+    const csrf = _getCsrfToken();
     const opts = {
         method,
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': _getCsrfToken(),
+            'X-CSRF-TOKEN': csrf,
+            'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json',
         },
     };
     if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
+    const res = await fetch(base + url, opts);
+
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `HTTP ${res.status}`);
