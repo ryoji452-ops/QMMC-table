@@ -33,6 +33,9 @@ class QmmcController extends Controller
             abort(404, 'Invalid employee ID.');
         }
 
+        // ── Store empid in session so API controllers can filter by it ─
+        session(['current_empid' => (int) $empid]);
+
         // ── Fetch employee info from legacy database ───────────────────
         $employeeFullName = null;
         $employeePosition = null;
@@ -109,8 +112,8 @@ class QmmcController extends Controller
             ];
         }
 
-        // ── Latest DPCR ────────────────────────────────────────────────
-        $latestDpcrRaw  = SPCRForm::dpcr()->with('items')->latest()->first();
+        // ── Latest DPCR (filtered by current empid) ────────────────────
+        $latestDpcrRaw  = SPCRForm::dpcr()->forCurrentUser()->with('items')->latest()->first();
         $latestDpcrJson = null;
         if ($latestDpcrRaw) {
             $latestDpcrJson = [
@@ -138,8 +141,8 @@ class QmmcController extends Controller
             ];
         }
 
-        // ── Latest SPCR ────────────────────────────────────────────────
-        $latestSpcrRaw  = SPCRForm::spcr()->with('items')->latest()->first();
+        // ── Latest SPCR (filtered by current empid) ────────────────────
+        $latestSpcrRaw  = SPCRForm::spcr()->forCurrentUser()->with('items')->latest()->first();
         $latestSpcrJson = null;
         if ($latestSpcrRaw) {
             $latestSpcrJson = [
@@ -168,8 +171,8 @@ class QmmcController extends Controller
             ];
         }
 
-        // ── Latest IPCR ────────────────────────────────────────────────
-        $latestIpcrRaw  = IPCRForm::with('items')->latest()->first();
+        // ── Latest IPCR (filtered by current empid) ────────────────────
+        $latestIpcrRaw  = IPCRForm::forCurrentUser()->with('items')->latest()->first();
         $latestIpcrJson = null;
         if ($latestIpcrRaw) {
             $latestIpcrJson = [
@@ -209,10 +212,10 @@ class QmmcController extends Controller
             'latestSpcrJson',
             'latestIpcrJson',
             'empid',
-            'employeeFullName',   
-            'employeePosition',   
-            'employeeDivision',   
-            'employeeSection',    
+            'employeeFullName',
+            'employeePosition',
+            'employeeDivision',
+            'employeeSection',
         ));
     }
 }

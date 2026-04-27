@@ -15,6 +15,7 @@ class IPCRForm extends Model
     protected $table = 'ipcr_forms';
 
     protected $fillable = [
+        'user_id',
         'employee_name',
         'employee_position',
         'employee_unit',
@@ -35,5 +36,20 @@ class IPCRForm extends Model
     public function items(): HasMany
     {
         return $this->hasMany(IPCRItem::class, 'ipcr_form_id')->orderBy('sort_order');
+    }
+
+    /**
+     * Filter records belonging to the currently logged-in employee.
+     * Uses session('current_empid') set by QmmcController when the
+     * page is loaded — this app does not use Laravel Auth.
+     */
+    public function scopeForCurrentUser($query)
+    {
+        $empid = session('current_empid');
+        if ($empid) {
+            return $query->where('user_id', (int) $empid);
+        }
+        // No session empid — return nothing so no data leaks
+        return $query->whereRaw('1 = 0');
     }
 }

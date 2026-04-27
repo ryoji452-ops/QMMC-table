@@ -975,17 +975,13 @@ document.getElementById('i_approved_by').addEventListener('input', function() {
 
     rebuildSpcrSectionFilter();
 
+    /* ── RBAC: do NOT auto-activate any page/tab here.
+       The form-selector screen (selectForm()) handles first activation.
+       If the user arrives without going through the selector
+       (e.g. a direct URL), the sessionStorage restore in index.blade.php
+       will call selectForm() 120 ms after DOMContentLoaded. ── */
     document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    var rmPage = document.getElementById('page-rating-matrix');
-    if (rmPage) {
-        rmPage.classList.add('active');
-        var firstBtn = document.querySelector('.tab-btn');
-        if (firstBtn) firstBtn.classList.add('active');
-    } else {
-        var fp = document.querySelector('.page'); if (fp) fp.classList.add('active');
-        var fb = document.querySelector('.tab-btn'); if (fb) fb.classList.add('active');
-    }
 })();
 
 /* ══════════════════════════════════════════════════════════════

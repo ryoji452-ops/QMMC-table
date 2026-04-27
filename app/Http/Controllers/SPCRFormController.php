@@ -12,10 +12,10 @@ use Illuminate\Http\JsonResponse;
 
 class SPCRFormController extends Controller
 {
-    /** Return all SPCR forms (form_type = 'spcr') as JSON. */
+    /** Return all SPCR forms (form_type = 'spcr') for current employee. */
     public function index(): JsonResponse
     {
-        $forms = SPCRForm::spcr()->with('items')->latest()->get();
+        $forms = SPCRForm::spcr()->forCurrentUser()->with('items')->latest()->get();
         return response()->json($forms);
     }
 
@@ -25,7 +25,8 @@ class SPCRFormController extends Controller
         $validated = $this->validatePayload($request);
 
         $form = SPCRForm::create([
-            'form_type'      => 'spcr',                   // ← always SPCR
+            'form_type'      => 'spcr',
+            'user_id'        => $this->currentEmpid(),
             'employee_name'  => $validated['employee_name'],
             'employee_title' => $validated['employee_position'] ?? null,
             'division'       => $validated['employee_unit']     ?? '—',
@@ -53,6 +54,7 @@ class SPCRFormController extends Controller
     public function show(SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'spcr', 404);
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
         $form->load('items');
         return response()->json($form);
     }
@@ -61,6 +63,7 @@ class SPCRFormController extends Controller
     public function update(Request $request, SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'spcr', 404);
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
 
         $validated = $this->validatePayload($request);
 
@@ -92,12 +95,22 @@ class SPCRFormController extends Controller
     public function destroy(SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'spcr', 404);
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
         $form->items()->delete();
         $form->delete();
         return response()->json(['success' => true, 'message' => 'SPCR form deleted.']);
     }
 
     /* ── Private helpers ── */
+
+    /**
+     * Return the current employee ID from session.
+     */
+    private function currentEmpid(): ?int
+    {
+        $empid = session('current_empid');
+        return $empid ? (int) $empid : null;
+    }
 
     private function validatePayload(Request $request): array
     {

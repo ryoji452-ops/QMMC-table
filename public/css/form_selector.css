@@ -1,0 +1,284 @@
+/* ═══════════════════════════════════════════════════════════════
+   form_selector.css
+   Styles for the RBAC form-selector landing screen.
+   Add a <link> for this file in app.blade.php BEFORE shared.css.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── SELECTOR SCREEN WRAPPER ── */
+.form-selector-screen {
+    width: 1160px;
+    margin: 0 auto;
+    padding: 32px 28px 40px;
+    background: #fff;
+    border: 2px solid var(--navy, #1a3b6e);
+    border-radius: 4px;
+    box-shadow: 4px 4px 18px rgba(0,0,0,.35);
+    font-family: Arial, sans-serif;
+}
+
+/* ── HEADER ── */
+.form-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 2.5px solid var(--navy, #1a3b6e);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.form-selector-logo {
+    max-width: 72px;
+    max-height: 72px;
+    object-fit: contain;
+}
+
+.form-selector-title-wrap {
+    flex: 1;
+}
+
+.form-selector-org {
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--navy, #1a3b6e);
+}
+
+.form-selector-sub {
+    font-size: 11px;
+    color: #555;
+    margin-top: 3px;
+    letter-spacing: .3px;
+}
+
+/* ── EMPLOYEE BADGE ── */
+.form-selector-employee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #eef2fb;
+    border: 1.5px solid #b0c4dc;
+    border-radius: 4px;
+    padding: 7px 16px;
+    font-size: 11.5px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.form-selector-emp-icon { font-size: 14px; }
+
+.form-selector-emp-name {
+    font-weight: 700;
+    color: var(--navy, #1a3b6e);
+    font-size: 12px;
+}
+
+.form-selector-emp-sep { color: #aaa; font-size: 12px; }
+
+.form-selector-emp-pos,
+.form-selector-emp-div {
+    color: #555;
+    font-size: 11px;
+}
+
+/* ── PROMPT ── */
+.form-selector-prompt {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+    letter-spacing: .2px;
+}
+
+/* ── CARDS ROW ── */
+.form-selector-cards {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+
+/* ── INDIVIDUAL CARD ── */
+.form-card {
+    flex: 1;
+    min-width: 260px;
+    max-width: 340px;
+    border: 2px solid #cdd4de;
+    border-radius: 8px;
+    padding: 26px 22px 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .18s, box-shadow .18s, transform .12s;
+    background: #fafbfd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    user-select: none;
+}
+
+.form-card:hover {
+    border-color: var(--navy, #1a3b6e);
+    box-shadow: 0 6px 24px rgba(26,59,110,.18);
+    transform: translateY(-3px);
+    background: #fff;
+}
+
+.form-card:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(26,59,110,.12);
+}
+
+/* Icon */
+.form-card-icon {
+    font-size: 38px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+/* Acronym */
+.form-card-acronym {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--navy, #1a3b6e);
+    line-height: 1.1;
+}
+
+/* Long name */
+.form-card-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a3b6e;
+    line-height: 1.45;
+    letter-spacing: .2px;
+}
+
+/* Description */
+.form-card-desc {
+    font-size: 10.5px;
+    color: #666;
+    line-height: 1.55;
+    padding: 0 4px;
+    flex: 1;
+}
+
+/* Form reference badge */
+.form-card-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    border-radius: 3px;
+    padding: 2px 10px;
+    margin-top: 4px;
+}
+
+.form-card-badge--dpcr {
+    background: #d4edda;
+    color: #1e6e3a;
+    border: 1px solid #a8d5b5;
+}
+
+.form-card-badge--spcr {
+    background: #dce4f0;
+    color: var(--navy, #1a3b6e);
+    border: 1px solid #b0c4dc;
+}
+
+.form-card-badge--ipcr {
+    background: #ede0f7;
+    color: #6a3e9e;
+    border: 1px solid #c9aee8;
+}
+
+/* CTA Button */
+.form-card-btn {
+    margin-top: 10px;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 24px;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    letter-spacing: .3px;
+    transition: background .15s, opacity .15s;
+    pointer-events: none; /* card click handles it */
+    width: 100%;
+}
+
+.form-card-btn--dpcr {
+    background: #1e6e3a;
+    color: #fff;
+}
+.form-card:hover .form-card-btn--dpcr { background: #155230; }
+
+.form-card-btn--spcr {
+    background: var(--navy, #1a3b6e);
+    color: #fff;
+}
+.form-card:hover .form-card-btn--spcr { background: #0f2651; }
+
+.form-card-btn--ipcr {
+    background: #6a3e9e;
+    color: #fff;
+}
+.form-card:hover .form-card-btn--ipcr { background: #512d7a; }
+
+/* ── FOOTER UTILITY BUTTONS ── */
+.form-selector-footer {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1.5px solid #e0e5ee;
+}
+
+.form-selector-records-btn {
+    background: #fff;
+    border: 1.5px solid #aab2c4;
+    color: #444;
+    border-radius: 4px;
+    padding: 7px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    letter-spacing: .2px;
+    transition: background .14s, border-color .14s, color .14s;
+}
+
+.form-selector-records-btn:hover {
+    background: #f0f4fb;
+    border-color: var(--navy, #1a3b6e);
+    color: var(--navy, #1a3b6e);
+}
+
+/* ── BACK TAB BUTTON ── */
+.tab-btn--back {
+    background: #f0f3f8 !important;
+    color: var(--navy, #1a3b6e) !important;
+    border-color: #b0bac8 !important;
+    border-bottom: 2px solid #b0bac8 !important;
+    font-size: 11px !important;
+    padding: 8px 18px !important;
+    margin-left: auto;
+}
+
+.tab-btn--back:hover {
+    background: #dce4f0 !important;
+    border-color: var(--navy, #1a3b6e) !important;
+}
+
+/* ── FORM-SPECIFIC TAB ACCENT COLOURS ── */
+.tab-btn--dpcr.active { color: #1e6e3a !important; border-color: #1e6e3a !important; border-bottom-color: #fff !important; }
+.tab-btn--spcr.active { color: var(--navy, #1a3b6e) !important; }
+.tab-btn--ipcr.active { color: #6a3e9e !important; border-color: #6a3e9e !important; border-bottom-color: #fff !important; }
+
+/* ── PRINT — hide selector entirely ── */
+@media print {
+    .form-selector-screen { display: none !important; }
+}

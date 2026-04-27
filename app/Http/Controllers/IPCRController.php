@@ -12,12 +12,12 @@ use Illuminate\Http\JsonResponse;
 class IPCRController extends Controller
 {
     /**
-     * Return all IPCR forms as JSON.
+     * Return the current employee's IPCR forms as JSON.
      * GET /api/ipcr
      */
     public function index(): JsonResponse
     {
-        $forms = IPCRForm::with('items')->latest()->get();
+        $forms = IPCRForm::forCurrentUser()->with('items')->latest()->get();
         return response()->json($forms);
     }
 
@@ -27,6 +27,7 @@ class IPCRController extends Controller
      */
     public function show(IPCRForm $form): JsonResponse
     {
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
         $form->load('items');
         return response()->json($form);
     }
@@ -67,6 +68,7 @@ class IPCRController extends Controller
         ]);
 
         $form = IPCRForm::create([
+            'user_id'           => $this->currentEmpid(),
             'employee_name'     => $validated['employee_name'],
             'employee_position' => $validated['employee_position']  ?? null,
             'employee_unit'     => $validated['employee_unit']      ?? null,
@@ -116,6 +118,7 @@ class IPCRController extends Controller
      */
     public function destroy(IPCRForm $form): JsonResponse
     {
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
         $form->items()->delete();
         $form->delete();
 
@@ -128,6 +131,7 @@ class IPCRController extends Controller
      */
     public function update(Request $request, IPCRForm $form): JsonResponse
     {
+        abort_if($form->user_id !== $this->currentEmpid(), 403);
         $validated = $request->validate([
             'employee_name'                  => 'required|string|max:255',
             'employee_position'              => 'nullable|string|max:255',
@@ -203,5 +207,17 @@ class IPCRController extends Controller
             'message' => 'IPCR updated successfully.',
             'form'    => $form,
         ]);
+    }
+
+    /* ── Private helper ── */
+
+    /**
+     * Return the current employee ID from session.
+     * Falls back to null if no session exists (API called without page load).
+     */
+    private function currentEmpid(): ?int
+    {
+        $empid = session('current_empid');
+        return $empid ? (int) $empid : null;
     }
 }

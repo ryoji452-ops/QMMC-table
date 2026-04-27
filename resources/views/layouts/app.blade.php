@@ -6,6 +6,8 @@
     <title>@yield('title', 'QMMC – DPCR | SPCR | IPCR')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Form-selector CSS must come FIRST so its :root vars are available --}}
+    <link rel="stylesheet" href="{{ asset('css/form_selector.css') }}">
     <link rel="stylesheet" href="{{ asset('css/shared.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dpcr.css') }}">
     <link rel="stylesheet" href="{{ asset('css/spcr.css') }}">
