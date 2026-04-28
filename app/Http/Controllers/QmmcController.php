@@ -16,13 +16,22 @@ class QmmcController extends Controller
      */
     public function index($empid = null)
     {
-        // 1. If no empid is provided (visiting the home page), 
-        // try to find the first employee in the DB to show as a default.
+        // 1. If no empid is provided in the URL (visiting the root /),
+        //    try to reuse the empid already stored in the session so we don't
+        //    accidentally overwrite a real employee's session with LegacyUser::first().
         if (!$empid) {
-            $firstUser = LegacyUser::first();
-            $empid = $firstUser ? $firstUser->id : null;
-            
-            // If there are absolutely no users in the DB, show an error or return a blank view.
+            $existing = session('current_empid');
+            if ($existing && is_numeric($existing)) {
+                // Preserve the already-authenticated employee's session.
+                $empid = (int) $existing;
+            } else {
+                // No session yet — pick the first employee as a safe default
+                // (anonymous / first-time access with no URL param).
+                $firstUser = LegacyUser::first();
+                $empid = $firstUser ? $firstUser->id : null;
+            }
+
+            // If there are absolutely no users in the DB, show an error.
             if (!$empid) {
                 return "No employees found in the database. Please check your connection to 190.190.0.55.";
             }
@@ -113,7 +122,9 @@ class QmmcController extends Controller
         }
 
         // ── Latest DPCR (filtered by current empid) ────────────────────
-        $latestDpcrRaw  = SPCRForm::dpcr()->forCurrentUser()->with('items')->latest()->first();
+        // Query directly by $empid rather than through forCurrentUser() scope
+        // to avoid any session timing issues during page load.
+        $latestDpcrRaw  = SPCRForm::dpcr()->where('user_id', (int) $empid)->with('items')->latest()->first();
         $latestDpcrJson = null;
         if ($latestDpcrRaw) {
             $latestDpcrJson = [
@@ -142,7 +153,7 @@ class QmmcController extends Controller
         }
 
         // ── Latest SPCR (filtered by current empid) ────────────────────
-        $latestSpcrRaw  = SPCRForm::spcr()->forCurrentUser()->with('items')->latest()->first();
+        $latestSpcrRaw  = SPCRForm::spcr()->where('user_id', (int) $empid)->with('items')->latest()->first();
         $latestSpcrJson = null;
         if ($latestSpcrRaw) {
             $latestSpcrJson = [
@@ -172,7 +183,7 @@ class QmmcController extends Controller
         }
 
         // ── Latest IPCR (filtered by current empid) ────────────────────
-        $latestIpcrRaw  = IPCRForm::forCurrentUser()->with('items')->latest()->first();
+        $latestIpcrRaw  = IPCRForm::where('user_id', (int) $empid)->with('items')->latest()->first();
         $latestIpcrJson = null;
         if ($latestIpcrRaw) {
             $latestIpcrJson = [

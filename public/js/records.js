@@ -41,9 +41,9 @@ async function loadAllRecords() {
         ]);
 
         const _empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
-        REC_SPCR = (Array.isArray(spcr) ? spcr : []).map(r => ({ ...r, _type: 'spcr', _empid: r._empid || _empid }));
-        REC_DPCR = (Array.isArray(dpcr) ? dpcr : []).map(r => ({ ...r, _type: 'dpcr', _empid: r._empid || _empid }));
-        REC_IPCR = (Array.isArray(ipcr) ? ipcr : []).map(r => ({ ...r, _type: 'ipcr', _empid: r._empid || _empid }));
+        REC_SPCR = (Array.isArray(spcr) ? spcr : []).map(r => ({ ...r, _type: 'spcr', _empid: r.user_id || r._empid || _empid }));
+        REC_DPCR = (Array.isArray(dpcr) ? dpcr : []).map(r => ({ ...r, _type: 'dpcr', _empid: r.user_id || r._empid || _empid }));
+        REC_IPCR = (Array.isArray(ipcr) ? ipcr : []).map(r => ({ ...r, _type: 'ipcr', _empid: r.user_id || r._empid || _empid }));
 
         REC_SELECTED.clear();
         populateYearFilter();
@@ -662,7 +662,8 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('d-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/dpcr/${editId}`,'PUT',data);
-            REC_DPCR = REC_DPCR.filter(r=>r.id!==editId); REC_DPCR.unshift({...(saved.form??saved),_type:'dpcr',_empid:_empid()});
+            const _savedDpcr = saved.form ?? saved;
+            REC_DPCR = REC_DPCR.filter(r=>r.id!==editId); REC_DPCR.unshift({..._savedDpcr,_type:'dpcr',_empid:_savedDpcr.user_id||_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.dpcr=null; _recSetEditBanner('page-dpcr','dpcr',null);
             showAlert('d-alertOk','ok',`✔ DPCR #${editId} updated successfully.`);
         } catch(err){showAlert('d-alertErr','err','Update failed: '+err.message);}
@@ -676,7 +677,8 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('s-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/spcr/${editId}`,'PUT',data);
-            REC_SPCR = REC_SPCR.filter(r=>r.id!==editId); REC_SPCR.unshift({...(saved.form??saved),_type:'spcr',_empid:_empid()});
+            const _savedSpcr = saved.form ?? saved;
+            REC_SPCR = REC_SPCR.filter(r=>r.id!==editId); REC_SPCR.unshift({..._savedSpcr,_type:'spcr',_empid:_savedSpcr.user_id||_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.spcr=null; _recSetEditBanner('page-spcr','spcr',null);
             showAlert('s-alertOk','ok',`✔ SPCR #${editId} updated successfully.`);
         } catch(err){showAlert('s-alertErr','err','Update failed: '+err.message);}
@@ -690,7 +692,8 @@ function recEditIpcr(id) {
         if (!data.employee_name) { showAlert('i-alertErr','err','Please fill in the employee name.'); return; }
         try {
             const saved = await apiFetch(`/api/ipcr/${editId}`,'PUT',data);
-            REC_IPCR = REC_IPCR.filter(r=>r.id!==editId); REC_IPCR.unshift({...(saved.form??saved.ipcr??saved),_type:'ipcr',_empid:_empid()});
+            const _savedIpcr = saved.form ?? saved.ipcr ?? saved;
+            REC_IPCR = REC_IPCR.filter(r=>r.id!==editId); REC_IPCR.unshift({..._savedIpcr,_type:'ipcr',_empid:_savedIpcr.user_id||_empid()});
             populateYearFilter(); renderRecords(); REC_EDITING.ipcr=null; _recSetEditBanner('page-ipcr','ipcr',null);
             showAlert('i-alertOk','ok',`✔ IPCR #${editId} updated successfully.`);
         } catch(err){showAlert('i-alertErr','err','Update failed: '+err.message);}
@@ -733,7 +736,7 @@ async function recDeleteIpcr(id) {
 function notifyRecordSaved(type, record) {
     if (!record) return;
     const _empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
-    const r = { ...record, _type: type, _empid: record._empid || _empid };
+    const r = { ...record, _type: type, _empid: record.user_id || record._empid || _empid };
     if (type==='dpcr') { REC_DPCR=REC_DPCR.filter(x=>x.id!==r.id); REC_DPCR.unshift(r); }
     else if (type==='spcr') {
         REC_SPCR=REC_SPCR.filter(x=>x.id!==r.id); REC_SPCR.unshift(r);

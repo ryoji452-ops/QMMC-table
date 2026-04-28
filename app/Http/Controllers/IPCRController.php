@@ -55,7 +55,7 @@ class IPCRController extends Controller
             'final_avg'                      => 'nullable|string|max:20',
             'adjectival_rating'              => 'nullable|string|max:50',
             'items'                          => 'required|array|min:1',
-            'items.*.function_type'          => 'required|in:Core,Support',
+            'items.*.function_type'          => 'required|in:Core,Support,Strategic',
             'items.*.strategic_goal'         => 'required|string',
             'items.*.performance_indicator'  => 'required|string',
             'items.*.actual_accomplishment'  => 'nullable|string',
@@ -67,8 +67,10 @@ class IPCRController extends Controller
             'items.*.remarks'                => 'nullable|string',
         ]);
 
+        $empid = $this->currentEmpid();
+
         $form = IPCRForm::create([
-            'user_id'           => $this->currentEmpid(),
+            'user_id'           => $empid,
             'employee_name'     => $validated['employee_name'],
             'employee_position' => $validated['employee_position']  ?? null,
             'employee_unit'     => $validated['employee_unit']      ?? null,
@@ -87,8 +89,11 @@ class IPCRController extends Controller
         ]);
 
         foreach ($validated['items'] as $idx => $itemData) {
+            // Stamp user_id on every item row so items can be queried
+            // directly by owner without joining ipcr_forms.
             IPCRItem::create([
                 'ipcr_form_id'          => $form->id,
+                'user_id'               => $empid,        // ← stamps owner on every item
                 'sort_order'            => $idx,
                 'function_type'         => $itemData['function_type'],
                 'strategic_goal'        => $itemData['strategic_goal'],
@@ -132,6 +137,7 @@ class IPCRController extends Controller
     public function update(Request $request, IPCRForm $form): JsonResponse
     {
         abort_if($form->user_id !== $this->currentEmpid(), 403);
+
         $validated = $request->validate([
             'employee_name'                  => 'required|string|max:255',
             'employee_position'              => 'nullable|string|max:255',
@@ -164,6 +170,8 @@ class IPCRController extends Controller
             'items.*.remarks'               => 'nullable|string',
         ]);
 
+        $empid = $this->currentEmpid();
+
         $form->update([
             'employee_name'     => $validated['employee_name'],
             'employee_position' => $validated['employee_position']  ?? null,
@@ -182,11 +190,12 @@ class IPCRController extends Controller
             'adjectival_rating' => $validated['adjectival_rating']  ?? null,
         ]);
 
-        // Replace all items
+        // Replace all items, stamping the current user on every new row.
         $form->items()->delete();
         foreach ($validated['items'] as $idx => $itemData) {
             IPCRItem::create([
                 'ipcr_form_id'          => $form->id,
+                'user_id'               => $empid,        // ← stamps owner on every item
                 'sort_order'            => $idx,
                 'function_type'         => $itemData['function_type'],
                 'strategic_goal'        => $itemData['strategic_goal'],
@@ -207,17 +216,5 @@ class IPCRController extends Controller
             'message' => 'IPCR updated successfully.',
             'form'    => $form,
         ]);
-    }
-
-    /* ── Private helper ── */
-
-    /**
-     * Return the current employee ID from session.
-     * Falls back to null if no session exists (API called without page load).
-     */
-    private function currentEmpid(): ?int
-    {
-        $empid = session('current_empid');
-        return $empid ? (int) $empid : null;
     }
 }

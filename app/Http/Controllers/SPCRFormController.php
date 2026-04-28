@@ -23,10 +23,11 @@ class SPCRFormController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $this->validatePayload($request);
+        $empid     = $this->currentEmpid();
 
         $form = SPCRForm::create([
             'form_type'      => 'spcr',
-            'user_id'        => $this->currentEmpid(),
+            'user_id'        => $empid,
             'employee_name'  => $validated['employee_name'],
             'employee_title' => $validated['employee_position'] ?? null,
             'division'       => $validated['employee_unit']     ?? '—',
@@ -38,7 +39,9 @@ class SPCRFormController extends Controller
 
         foreach ($validated['items'] as $itemData) {
             if (!empty($itemData['is_section'])) continue;
-            SPCRItem::create($this->buildItemRow($form->id, $itemData));
+            // Stamp user_id on every item row so items can be queried
+            // directly by owner without joining sprc_forms.
+            SPCRItem::create($this->buildItemRow($form->id, $itemData, $empid));
         }
 
         $form->load('items');
@@ -66,6 +69,7 @@ class SPCRFormController extends Controller
         abort_if($form->user_id !== $this->currentEmpid(), 403);
 
         $validated = $this->validatePayload($request);
+        $empid     = $this->currentEmpid();
 
         $form->update([
             'employee_name'  => $validated['employee_name'],
@@ -77,10 +81,11 @@ class SPCRFormController extends Controller
             'approved_by'    => $validated['approved_by']       ?? null,
         ]);
 
+        // Replace all items, stamping the current user on every new row.
         $form->items()->delete();
         foreach ($validated['items'] as $itemData) {
             if (!empty($itemData['is_section'])) continue;
-            SPCRItem::create($this->buildItemRow($form->id, $itemData));
+            SPCRItem::create($this->buildItemRow($form->id, $itemData, $empid));
         }
 
         $form->load('items');
@@ -101,17 +106,6 @@ class SPCRFormController extends Controller
         return response()->json(['success' => true, 'message' => 'SPCR form deleted.']);
     }
 
-    /* ── Private helpers ── */
-
-    /**
-     * Return the current employee ID from session.
-     */
-    private function currentEmpid(): ?int
-    {
-        $empid = session('current_empid');
-        return $empid ? (int) $empid : null;
-    }
-
     private function validatePayload(Request $request): array
     {
         return $request->validate([
@@ -129,8 +123,7 @@ class SPCRFormController extends Controller
             'items.*.function_type'          => 'sometimes|nullable|in:Strategic,Core,Support',
             'items.*.strategic_goal'         => 'sometimes|nullable|string',
             'items.*.performance_indicator'  => 'sometimes|nullable|string',
-            'items.*.target_text'            => 'sometimes|nullable|string',
-            'items.*.target_pct'             => 'sometimes|nullable|integer|min:0|max:100',
+
             'items.*.allotted_budget'        => 'sometimes|nullable|string|max:255',
             'items.*.person_accountable'     => 'sometimes|nullable|string|max:255',
             'items.*.actual_accomplishment'  => 'sometimes|nullable|string',
@@ -146,15 +139,21 @@ class SPCRFormController extends Controller
         ]);
     }
 
-    private function buildItemRow(int $formId, array $itemData): array
+    /**
+     * Build the data array for a single SPCRItem row.
+     *
+     * @param  int        $formId   The parent sprc_forms.id
+     * @param  array      $itemData Validated item payload
+     * @param  int|null   $empid   The bvflh_users.id of the submitting user
+     */
+    private function buildItemRow(int $formId, array $itemData, ?int $empid = null): array
     {
         return [
             'sprc_form_id'          => $formId,
+            'user_id'               => $empid,            // ← stamps owner on every item
             'function_type'         => $itemData['function_type']         ?? 'Strategic',
             'strategic_goal'        => $itemData['strategic_goal']        ?? '',
             'performance_indicator' => $itemData['performance_indicator'] ?? '',
-            'target_text'           => $itemData['target_text']           ?? null,
-            'target_pct'            => isset($itemData['target_pct']) ? (int)$itemData['target_pct'] : null,
             'allotted_budget'       => $itemData['allotted_budget']       ?? null,
             'section_accountable'   => $itemData['person_accountable']    ?? 'ALL SECTIONS',
             'actual_accomplishment' => $itemData['actual_accomplishment'] ?? null,

@@ -39,16 +39,36 @@ class SPCRForm extends Model
 
     /**
      * Filter records belonging to the currently logged-in employee.
-     * Uses session('current_empid') set by QmmcController when the
-     * page is loaded — this app does not use Laravel Auth.
+     *
+     * Resolution order (matches Controller::currentEmpid()):
+     *   1. X-Employee-Id request header — authoritative; sent by JS apiFetch()
+     *      on every API call and always reflects the real window.EMPID.
+     *   2. session('current_empid') — fallback for server-side page-load queries.
+     *
+     * The header takes priority so that a stale/wrong session (e.g. set by a
+     * root-URL visit that defaulted to LegacyUser::first()) never causes the
+     * wrong employee's records to be returned.
      */
     public function scopeForCurrentUser($query)
     {
+        $fromHeader = request()->header('X-Employee-Id');
+
+        // Header is authoritative — prefer it and correct the session if needed.
+        if ($fromHeader && is_numeric($fromHeader)) {
+            $empid = (int) $fromHeader;
+            if ((int) session('current_empid') !== $empid) {
+                session(['current_empid' => $empid]);
+            }
+            return $query->where('user_id', $empid);
+        }
+
+        // Fall back to session for server-side (non-AJAX) use.
         $empid = session('current_empid');
-        if ($empid) {
+        if ($empid && is_numeric($empid)) {
             return $query->where('user_id', (int) $empid);
         }
-        // No session empid — return nothing so no data leaks
+
+        // No empid from any source — return nothing so no data leaks.
         return $query->whereRaw('1 = 0');
     }
 

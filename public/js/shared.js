@@ -131,18 +131,25 @@ function showAlert(elId, type, msg) {
 
 /* Central fetch wrapper — handles CSRF + JSON + subdirectory base path */
 async function apiFetch(url, method = 'GET', body = null) {
-    const base = _getAppBase();
-    const csrf = _getCsrfToken();
-    const opts = {
-        method,
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf,
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-        },
+    const base  = _getAppBase();
+    const csrf  = _getCsrfToken();
+    const empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? String(window.EMPID) : '';
+
+    const headers = {
+        'Content-Type':      'application/json',
+        'X-CSRF-TOKEN':      csrf,
+        'X-Requested-With':  'XMLHttpRequest',
+        'Accept':            'application/json',
     };
+
+    // Always send the employee ID so server-side scopes work even after a
+    // page refresh that didn't include the empid in the URL (which would
+    // have overwritten the session with the first-user's ID).
+    if (empid) {
+        headers['X-Employee-Id'] = empid;
+    }
+
+    const opts = { method, credentials: 'same-origin', headers };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(base + url, opts);
 
@@ -239,6 +246,57 @@ function _rmApplyCollapseState(tabKey) {
    init IIFE) runs after this file, so the panel exists when it
    binds event listeners by ID. */
 document.addEventListener('DOMContentLoaded', function _rmInitialPlace() {
+    // ── Re-sync the server-side session with window.EMPID on every page load.
+    //
+    // This is CRITICAL and must run before any other API calls (records load,
+    // form hydration, etc.).  The problem it solves:
+    //
+    //   - A user visits the root URL "/" which has no empid in the path.
+    //   - QmmcController falls back to LegacyUser::first() and sets
+    //     session('current_empid') to that first user's ID.
+    //   - All subsequent API calls (GET /api/dpcr, GET /api/ipcr, etc.) then
+    //     return that first user's records instead of the real user's records.
+    //
+    // By calling sync-session immediately and awaiting it, we guarantee the
+    // session is corrected before any record-fetching API call is made.
+    //
+    // The X-Employee-Id header on every apiFetch() call is a belt-and-suspenders
+    // fallback for individual requests, but fixing the session here ensures even
+    // page-load DB_LATEST_* queries (which run server-side before JS) use the
+    // correct empid on subsequent refreshes.
+    (async function _syncSession() {
+        var empid = (typeof window.EMPID !== 'undefined' && window.EMPID) ? window.EMPID : null;
+        if (!empid) return;
+
+        var base  = _getAppBase();
+        var csrf  = _getCsrfToken();
+
+        try {
+            var res = await fetch(base + '/api/sync-session', {
+                method:      'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type':     'application/json',
+                    'X-CSRF-TOKEN':     csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept':           'application/json',
+                    'X-Employee-Id':    String(empid),
+                },
+                body: JSON.stringify({ empid: empid }),
+            });
+
+            if (!res.ok) {
+                console.warn('[QMMC] sync-session HTTP error:', res.status);
+            }
+            // Session is now guaranteed to hold the correct empid.
+            // Any subsequent apiFetch() calls will also carry X-Employee-Id
+            // as a belt-and-suspenders fallback.
+        } catch (e) {
+            console.warn('[QMMC] sync-session failed (network):', e.message);
+            // Not fatal — X-Employee-Id header on individual requests acts as fallback.
+        }
+    })();
+
     const panel  = document.getElementById('rm-panel');
     const bodyEl = document.getElementById('rm-body-dpcr');
     if (panel && bodyEl) bodyEl.appendChild(panel);

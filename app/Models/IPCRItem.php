@@ -16,6 +16,7 @@ class IPCRItem extends Model
 
     protected $fillable = [
         'ipcr_form_id',
+        'user_id',              // ← NEW: direct link to bvflh_users.id
         'sort_order',
         'function_type',
         'strategic_goal',
@@ -40,5 +41,36 @@ class IPCRItem extends Model
     public function form(): BelongsTo
     {
         return $this->belongsTo(IPCRForm::class, 'ipcr_form_id');
+    }
+
+    /**
+     * Scope: only items that belong to the currently logged-in employee.
+     *
+     * Resolution order (matches Controller::currentEmpid()):
+     *   1. X-Employee-Id request header  — authoritative (sent by JS apiFetch)
+     *   2. session('current_empid')      — fallback for server-side calls
+     *
+     * Using this scope on the items table directly avoids a JOIN to ipcr_forms
+     * and is consistent with how forCurrentUser() works on IPCRForm / SPCRForm.
+     */
+    public function scopeForCurrentUser($query)
+    {
+        $fromHeader = request()->header('X-Employee-Id');
+
+        if ($fromHeader && is_numeric($fromHeader)) {
+            $empid = (int) $fromHeader;
+            if ((int) session('current_empid') !== $empid) {
+                session(['current_empid' => $empid]);
+            }
+            return $query->where('user_id', $empid);
+        }
+
+        $empid = session('current_empid');
+        if ($empid && is_numeric($empid)) {
+            return $query->where('user_id', (int) $empid);
+        }
+
+        // No empid from any source — return nothing so no data leaks.
+        return $query->whereRaw('1 = 0');
     }
 }

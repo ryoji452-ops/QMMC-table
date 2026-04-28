@@ -13,14 +13,13 @@ class SPCRItem extends Model
 
     protected $fillable = [
         'sprc_form_id',
+        'user_id',              
         'function_type',
         'strategic_goal',
         'performance_indicator',
         'allotted_budget',
         'section_accountable',
         'actual_accomplishment',
-        'target_pct',
-        'actual_pct',
         'accomplishment_rate',
         'rating_q',
         'rating_e',
@@ -30,14 +29,45 @@ class SPCRItem extends Model
     ];
 
     protected $casts = [
-        'rating_q' => 'float',
-        'rating_e' => 'float',
-        'rating_t' => 'float',
-        'rating_a' => 'float',
+        'rating_q'   => 'float',
+        'rating_e'   => 'float',
+        'rating_t'   => 'float',
+        'rating_a'   => 'float',
     ];
 
     public function form(): BelongsTo
     {
         return $this->belongsTo(SPCRForm::class, 'sprc_form_id');
+    }
+
+    /**
+     * Scope: only items that belong to the currently logged-in employee.
+     *
+     * Resolution order (matches Controller::currentEmpid()):
+     *   1. X-Employee-Id request header  — authoritative (sent by JS apiFetch)
+     *   2. session('current_empid')      — fallback for server-side calls
+     *
+     * Using this scope on the items table directly avoids a JOIN to sprc_forms
+     * and is consistent with how forCurrentUser() works on SPCRForm / IPCRForm.
+     */
+    public function scopeForCurrentUser($query)
+    {
+        $fromHeader = request()->header('X-Employee-Id');
+
+        if ($fromHeader && is_numeric($fromHeader)) {
+            $empid = (int) $fromHeader;
+            if ((int) session('current_empid') !== $empid) {
+                session(['current_empid' => $empid]);
+            }
+            return $query->where('user_id', $empid);
+        }
+
+        $empid = session('current_empid');
+        if ($empid && is_numeric($empid)) {
+            return $query->where('user_id', (int) $empid);
+        }
+
+        // No empid from any source — return nothing so no data leaks.
+        return $query->whereRaw('1 = 0');
     }
 }
