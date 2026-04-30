@@ -12,7 +12,13 @@ use Illuminate\Http\JsonResponse;
 
 class SPCRController extends Controller
 {
-    /** Return all DPCR forms (form_type = 'dpcr') for current employee. */
+    /**
+     * Return all DPCR forms (form_type = 'dpcr') for the current employee.
+     *
+     * Filtered by the resolved empid so that visiting the root URL (/)
+     * never leaks another employee's records even when the session holds
+     * a stale "first-user" empid.
+     */
     public function index(): JsonResponse
     {
         $forms = SPCRForm::dpcr()->forCurrentUser()->with('items')->latest()->get();
@@ -24,11 +30,15 @@ class SPCRController extends Controller
     {
         $validated = $this->validatePayload($request);
 
+        // Resolve the authoritative employee ID.
+        // currentEmpid() prefers the X-Employee-Id header (set by every JS
+        // apiFetch call from window.EMPID) over the session, so it is always
+        // correct even when the session was set from a root-URL visit.
         $empid = $this->currentEmpid();
 
         $form = SPCRForm::create([
             'form_type'         => 'dpcr',
-            'user_id'           => $empid,
+            'user_id'           => $empid,   // ← stamps the submitting user on the form
             'employee_name'     => $validated['employee_name'],
             'employee_title'    => $validated['employee_title']    ?? null,
             'division'          => $validated['division']          ?? 'Admin',
@@ -42,7 +52,7 @@ class SPCRController extends Controller
 
         foreach ($validated['items'] as $itemData) {
             // Stamp user_id on every item row so items can be queried
-            // directly by owner without joining sprc_forms.
+            // directly by owner without a JOIN to sprc_forms.
             SPCRItem::create($this->buildItemRow($form->id, $itemData, $empid));
         }
 
@@ -55,11 +65,17 @@ class SPCRController extends Controller
         ], 201);
     }
 
-    /** Return a single DPCR form. GET /api/dpcr/{id} */
+    /**
+     * Return a single DPCR form.
+     * GET /api/dpcr/{id}
+     *
+     * Ownership is verified against the resolved empid (header > session)
+     * so even if the session is stale the check is authoritative.
+     */
     public function show(SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'dpcr', 404);
-        abort_if($form->user_id !== $this->currentEmpid(), 403);
+        abort_if($form->user_id   !== $this->currentEmpid(), 403);
         $form->load('items');
         return response()->json($form);
     }
@@ -68,7 +84,7 @@ class SPCRController extends Controller
     public function update(Request $request, SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'dpcr', 404);
-        abort_if($form->user_id !== $this->currentEmpid(), 403);
+        abort_if($form->user_id   !== $this->currentEmpid(), 403);
 
         $validated = $this->validatePayload($request);
         $empid     = $this->currentEmpid();
@@ -84,6 +100,7 @@ class SPCRController extends Controller
         ]);
 
         // Replace all items, stamping the current user on every new row.
+        // The old items are deleted first so we never accumulate orphans.
         $form->items()->delete();
         foreach ($validated['items'] as $itemData) {
             SPCRItem::create($this->buildItemRow($form->id, $itemData, $empid));
@@ -101,11 +118,15 @@ class SPCRController extends Controller
     public function destroy(SPCRForm $form): JsonResponse
     {
         abort_if($form->form_type !== 'dpcr', 404);
-        abort_if($form->user_id !== $this->currentEmpid(), 403);
+        abort_if($form->user_id   !== $this->currentEmpid(), 403);
         $form->items()->delete();
         $form->delete();
         return response()->json(['success' => true, 'message' => 'DPCR deleted.']);
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ──────────────────────────────────────────────────────────────────────
 
     private function validatePayload(Request $request): array
     {
@@ -134,7 +155,7 @@ class SPCRController extends Controller
             'items.*.rating_e'              => 'nullable|numeric|min:1|max:5',
             'items.*.rating_t'              => 'nullable|numeric|min:1|max:5',
             'items.*.rating_a'              => 'nullable|numeric|min:1|max:5',
-            'items.*.remarks'                => 'nullable|string',
+            'items.*.remarks'               => 'nullable|string',
         ]);
     }
 
@@ -143,13 +164,13 @@ class SPCRController extends Controller
      *
      * @param  int        $formId   The parent sprc_forms.id
      * @param  array      $itemData Validated item payload
-     * @param  int|null   $empid   The bvflh_users.id of the submitting user
+     * @param  int|null   $empid    The bvflh_users.id of the submitting user
      */
     private function buildItemRow(int $formId, array $itemData, ?int $empid = null): array
     {
         return [
             'sprc_form_id'          => $formId,
-            'user_id'               => $empid,            // ← stamps owner on every item
+            'user_id'               => $empid,  // ← stamps owner on every item row
             'function_type'         => $itemData['function_type']         ?? 'Strategic',
             'strategic_goal'        => $itemData['strategic_goal']        ?? '',
             'performance_indicator' => $itemData['performance_indicator'] ?? '',

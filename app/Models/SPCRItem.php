@@ -13,7 +13,7 @@ class SPCRItem extends Model
 
     protected $fillable = [
         'sprc_form_id',
-        'user_id',              
+        'user_id',              // Direct link to bvflh_users.id
         'function_type',
         'strategic_goal',
         'performance_indicator',
@@ -49,11 +49,15 @@ class SPCRItem extends Model
      *
      * Using this scope on the items table directly avoids a JOIN to sprc_forms
      * and is consistent with how forCurrentUser() works on SPCRForm / IPCRForm.
+     *
+     * Security guarantee: returns an empty result set (1=0) when no empid can
+     * be resolved from any source, preventing accidental data leaks.
      */
     public function scopeForCurrentUser($query)
     {
         $fromHeader = request()->header('X-Employee-Id');
 
+        // Header is authoritative — prefer it and correct the session if needed.
         if ($fromHeader && is_numeric($fromHeader)) {
             $empid = (int) $fromHeader;
             if ((int) session('current_empid') !== $empid) {
@@ -62,6 +66,7 @@ class SPCRItem extends Model
             return $query->where('user_id', $empid);
         }
 
+        // Fall back to session for server-side (non-AJAX) use.
         $empid = session('current_empid');
         if ($empid && is_numeric($empid)) {
             return $query->where('user_id', (int) $empid);

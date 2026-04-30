@@ -16,7 +16,7 @@ class IPCRItem extends Model
 
     protected $fillable = [
         'ipcr_form_id',
-        'user_id',              // ← NEW: direct link to bvflh_users.id
+        'user_id',              // Direct link to bvflh_users.id
         'sort_order',
         'function_type',
         'strategic_goal',
@@ -52,6 +52,9 @@ class IPCRItem extends Model
      *
      * Using this scope on the items table directly avoids a JOIN to ipcr_forms
      * and is consistent with how forCurrentUser() works on IPCRForm / SPCRForm.
+     *
+     * Security guarantee: returns an empty result set (1=0) when no empid can
+     * be resolved from any source, preventing accidental data leaks.
      */
     public function scopeForCurrentUser($query)
     {

@@ -14,6 +14,11 @@ class IPCRController extends Controller
     /**
      * Return the current employee's IPCR forms as JSON.
      * GET /api/ipcr
+     *
+     * forCurrentUser() resolves empid from the X-Employee-Id header first
+     * (authoritative, set by JS on every apiFetch from window.EMPID) then
+     * falls back to the session.  A stale session value can never cause
+     * another employee's records to be returned.
      */
     public function index(): JsonResponse
     {
@@ -35,6 +40,9 @@ class IPCRController extends Controller
     /**
      * Save a new IPCR form + its items.
      * POST /api/ipcr
+     *
+     * Both the parent form row and every child item row are stamped with
+     * the same user_id so that ownership can be verified at both levels.
      */
     public function store(Request $request): JsonResponse
     {
@@ -67,10 +75,12 @@ class IPCRController extends Controller
             'items.*.remarks'                => 'nullable|string',
         ]);
 
+        // currentEmpid() prefers the X-Employee-Id header (sent by every JS
+        // apiFetch call from window.EMPID) over the session value.
         $empid = $this->currentEmpid();
 
         $form = IPCRForm::create([
-            'user_id'           => $empid,
+            'user_id'           => $empid,   // ← stamps the submitting user on the form
             'employee_name'     => $validated['employee_name'],
             'employee_position' => $validated['employee_position']  ?? null,
             'employee_unit'     => $validated['employee_unit']      ?? null,
@@ -93,7 +103,7 @@ class IPCRController extends Controller
             // directly by owner without joining ipcr_forms.
             IPCRItem::create([
                 'ipcr_form_id'          => $form->id,
-                'user_id'               => $empid,        // ← stamps owner on every item
+                'user_id'               => $empid,   // ← stamps owner on every item
                 'sort_order'            => $idx,
                 'function_type'         => $itemData['function_type'],
                 'strategic_goal'        => $itemData['strategic_goal'],
@@ -195,7 +205,7 @@ class IPCRController extends Controller
         foreach ($validated['items'] as $idx => $itemData) {
             IPCRItem::create([
                 'ipcr_form_id'          => $form->id,
-                'user_id'               => $empid,        // ← stamps owner on every item
+                'user_id'               => $empid,   // ← stamps owner on every item
                 'sort_order'            => $idx,
                 'function_type'         => $itemData['function_type'],
                 'strategic_goal'        => $itemData['strategic_goal'],
