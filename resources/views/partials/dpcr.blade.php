@@ -10,76 +10,129 @@
 
 
 
-    {{-- ─── INTRO BLOCK ─── --}}
-    <div class="intro-block">
-        <div class="doc-header">
-        <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
-        <div class="header-text">
-            <div class="org-name">Quirino Memorial Medical Center</div>
-            <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
-            <div class="form-title">Division Performance Commitment and Review (DPCR)</div>
-        </div>
-    </div>
-        <div class="intro-line">
-            I,&nbsp;
-            <input type="text" id="d_emp_name" class="intro-field"
-                   placeholder="Full Name of Employee" style="min-width:200px;">
-            <span class="label-small"><em>Name of Employee</em></span>,&nbsp;
-            <input type="text" id="d_emp_title" class="intro-field"
-                   placeholder="Position / Division / Service" style="min-width:240px;">
-            <span class="label-small"><em>Division / Service</em></span>,
-            of the Quirino Memorial Medical Center, commit to deliver and agree to be rated
-            on the attainment of the following targets in accordance with the indicated
-            measures for the period
-            <input type="text" id="d_period" class="intro-field"
-                   placeholder="e.g. January–June 2025" style="min-width:160px;">.
-        </div>
-    </div>
+    {{-- ═══════════════════════════════════════════════════════
+         DPCR HEADER + INTRO + SIGNATURE — single bordered block
+         Uses NO intro-field / intro-line / intro-block classes
+         so _upgradeIntroFields() in shared.js cannot touch the
+         inputs and force them into block-level textareas.
+    ═══════════════════════════════════════════════════════ --}}
+    <div style="border:1px solid #000;font-family:Arial,sans-serif;margin-bottom:0;">
 
-    {{-- ─── SIGNATURE ROW ─── --}}
-    <div class="d-sig-row">
-
-        {{-- Employee --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div style="margin-bottom:18px;"></div>
-            <div><span class="d-sig-name" id="d_disp_name">&nbsp;</span></div>
-            <div class="d-sig-title"><em>Division Chief / Name of Employee</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;
-                              font-size:10px;outline:none;">
+        {{-- ── TOP: Logo + Org Name + Form Title ── --}}
+        <div style="display:flex;align-items:center;gap:14px;
+                    border-bottom:2px solid #000;padding:8px 12px 6px;">
+            <div style="flex-shrink:0;">
+                <img src="img/qmmclogo1.png" alt="QMMC Logo"
+                     style="max-width:80px;max-height:70px;object-fit:contain;display:block;">
+            </div>
+            <div style="flex:1;text-align:center;">
+                <div style="font-size:14px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.6px;color:#1a3b6e;line-height:1.3;">
+                    QUIRINO MEMORIAL MEDICAL CENTER
+                </div>
+                <div style="font-size:10px;color:#555;margin:2px 0 4px;">
+                    (Pang-ALAALANG Sentrong Medikal Quirino)
+                </div>
+                <div style="font-size:13px;font-weight:700;color:#1a3b6e;
+                            text-transform:uppercase;letter-spacing:.4px;
+                            border:2px solid #1a3b6e;display:inline-block;
+                            padding:3px 20px;line-height:1.4;">
+                    Division Performance Commitment and Review (DPCR)
+                </div>
             </div>
         </div>
 
-        {{-- Approved By --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div class="sig-label">Approved By:</div>
-            <div style="margin-bottom:6px;"></div>
-            <input type="text" id="d_approved_by" class="sig-name-input"
-                   placeholder="Name of Approver" style="min-width:220px;">
-            <div class="d-sig-title"><em>Medical Center Chief II</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;
-                              font-size:10px;outline:none;">
-            </div>
+        {{-- ── MIDDLE: Inline intro sentence ── --}}
+        {{--
+            All inputs are plain <input type="text"> with NO class="intro-field"
+            so shared.js _upgradeIntroFields() will never replace them with
+            block-level textareas. All styling is inline.
+        --}}
+        <div style="padding:8px 12px 8px;border-bottom:1px solid #000;
+                    font-size:11px;font-family:Arial,sans-serif;line-height:2.2;">
+            I,&nbsp;<input type="text" id="d_emp_name"
+                   placeholder="Full Name of Employee"
+                   style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                          font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                          outline:none;min-width:260px;vertical-align:baseline;padding:0 2px;">,
+            <span style="font-size:9px;color:#444;font-style:italic;">Name of Employee</span>
+            , Chief of&nbsp;<input type="text" id="d_emp_title"
+                   placeholder="Position / Division / Service"
+                   style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                          font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                          outline:none;min-width:280px;vertical-align:baseline;padding:0 2px;">,
+            <span style="font-size:9px;color:#444;font-style:italic;">Division / Service</span>
+            , of the Quirino Memorial Medical Center, commit to deliver and agree to be rated
+            on the attainment of the following targets in accordance with the indicated measures
+            for the period&nbsp;<input type="text" id="d_period"
+                   placeholder="e.g. January–June 2025"
+                   style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                          font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                          outline:none;min-width:180px;vertical-align:baseline;padding:0 2px;">.
         </div>
 
-        {{-- Rating Scale Key --}}
-        <div class="d-sig-cell" style="flex:1;">
-            <div class="rating-key">
-                <div style="font-weight:700;margin-bottom:2px;">Rating Scale:</div>
-                <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
-                <div>4–4.99 – Very Satisfactory</div>
-                <div>3–3.99 – Satisfactory</div>
-                <div>2–2.99 – Unsatisfactory</div>
-                <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
-            </div>
-        </div>
+        {{-- ── BOTTOM: Approved By | Employee Sig | Rating Scale ── --}}
+        <div style="display:flex;align-items:stretch;">
 
-    </div>
+            {{-- LEFT col: Approved By --}}
+            <div style="flex:2;padding:8px 14px 10px;border-right:1px solid #000;">
+                <div style="font-size:10.5px;font-weight:700;margin-bottom:12px;">
+                    Approved By:
+                </div>
+                <div style="text-align:center;">
+                    <input type="text" id="d_approved_by"
+                           placeholder="Name of Approver"
+                           style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                                  font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                                  outline:none;width:88%;text-align:center;padding:0 0 2px;">
+                    <div style="font-size:9px;font-style:italic;color:#444;margin-top:2px;">
+                        Medical Center Chief II
+                    </div>
+                </div>
+                <div style="margin-top:8px;font-size:10px;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
+            </div>
+
+            {{-- CENTER col: Employee signature --}}
+            <div style="flex:2;padding:8px 14px 10px;border-right:1px solid #000;
+                        text-align:center;">
+                <div style="min-height:28px;"></div>{{-- space for handwritten signature --}}
+                <span id="d_disp_name"
+                      style="display:inline-block;border-bottom:1.5px solid #000;
+                             min-width:240px;font-size:11px;font-weight:700;font-family:Arial,sans-serif;
+                             text-align:center;padding:0 4px 2px;">
+                    &nbsp;
+                </span>
+                <div style="font-size:9px;font-style:italic;color:#444;margin-top:2px;">
+                    Division Chief / Name of Employee
+                </div>
+                <div style="margin-top:8px;font-size:10px;text-align:left;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
+            </div>
+
+            {{-- RIGHT col: Rating Scale --}}
+            <div style="flex:1;padding:8px 10px;min-width:145px;">
+                <div style="font-size:9px;font-family:Arial,sans-serif;line-height:1.7;">
+                    <div style="font-weight:700;margin-bottom:3px;">Rating Scale:</div>
+                    <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
+                    <div>4–4.99 – Very Satisfactory</div>
+                    <div>3–3.99 – Satisfactory</div>
+                    <div>2–2.99 – Unsatisfactory</div>
+                    <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
+                </div>
+            </div>
+
+        </div>{{-- /bottom sig row --}}
+
+    </div>{{-- /dpcr header+intro+sig block --}}
 
     {{-- ─── DPCR MAIN TABLE ─── --}}
     <table class="dpcr-table" id="dpcrTable" style="margin-top:8px;">
