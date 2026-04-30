@@ -7,94 +7,149 @@
 
     <div class="form-ref">DOH – SPMS Form 3</div>
 
-    {{-- ─── INTRO BLOCK (header + intro text in one bordered block, matching DPCR/IPCR) ─── --}}
-    <div class="intro-block">
-        <div class="doc-header">
-            <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
-            <div class="header-text">
-                <div class="org-name">QUIRINO MEMORIAL MEDICAL CENTER</div>
-                <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
-                <div class="form-title"
-                     style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">
-                    Section Performance Commitment and Review (SPCR)
+    {{-- ══════════════════════════════════════════════════════════
+         SPCR HEADER BLOCK — matches printed form photo exactly
+         Single bordered block: Logo + Title | Intro paragraph |
+         Signature row (Approved By | Dept Head | Rating Scale)
+    ══════════════════════════════════════════════════════════ --}}
+    <div style="border:1px solid #000;font-family:Arial,sans-serif;margin-bottom:0;">
+
+        {{-- ── TOP: Logo + Org Name + Form Title ── --}}
+        <div style="display:flex;align-items:center;gap:14px;
+                    border-bottom:2px solid #000;padding:8px 12px 6px;">
+            <div style="flex-shrink:0;">
+                <img src="img/qmmclogo1.png" alt="QMMC Logo"
+                     style="max-width:80px;max-height:70px;object-fit:contain;display:block;">
+            </div>
+            <div style="flex:1;text-align:center;">
+                <div style="font-size:14px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.6px;color:#1a3b6e;line-height:1.3;">
+                    QUIRINO MEMORIAL MEDICAL CENTER
+                </div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.4px;color:#1a3b6e;margin-top:3px;">
+                    SECTION PERFORMANCE COMMITMENT AND REVIEW (SPCR)
                 </div>
             </div>
         </div>
-        <div class="intro-line">
+
+        {{-- ── MIDDLE: Intro paragraph — inline underlined fields ── --}}
+        {{--
+            Matches the photo exactly: "I, [NAME], [POSITION/UNIT] of the Quirino
+            Memorial Medical Center, commit to deliver and agree to be rated on the
+            attainment of the following targets in accordance with the indicated
+            measures for the period [PERIOD]."
+            Employee name and position appear as bold underlined inline text.
+        --}}
+        <div style="padding:7px 12px 6px;border-bottom:1px solid #000;
+                    font-size:10.5px;font-family:Arial,sans-serif;line-height:2.0;">
             I,&nbsp;
-            <input type="text" id="s_emp_name" class="intro-field"
-                   placeholder="Full Name of Employee" style="min-width:220px;">
-            <span class="label-small"><em>Name of Employee</em></span>,&nbsp;
-            <input type="text" id="s_emp_position" class="intro-field"
-                   placeholder="Position / Unit / Section / Department" style="min-width:240px;">
-            <span class="label-small"><em>Unit / Section / Department</em></span>
-            of the Quirino Memorial Medical Center, commit to deliver and agree to be rated
-            on the attainment of the following targets in accordance with the indicated
-            measures for the period
-            <input type="text" id="s_period" class="intro-field"
-                   placeholder="e.g. July 1, 2025 to December 31, 2025" style="min-width:180px;">.
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 3px;">
+                <input type="text" id="s_emp_name"
+                       placeholder="Full Name of Employee"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:220px;text-align:center;padding:0 2px;
+                              text-decoration:none;vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">Name of Employee</span>
+            </span>
+            ,&nbsp;
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 3px;">
+                <input type="text" id="s_emp_position"
+                       placeholder="Position / Unit / Section / Department"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:240px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">Title / Section / Department</span>
+            </span>
+            of the Quirino Memorial Medical Center, commit to deliver
+            and agree to be rated on the attainment of the following targets in accordance
+            with the indicated measures for the period&nbsp;
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 3px;">
+                <input type="text" id="s_period"
+                       placeholder="e.g. July 1, 2025 to December 31, 2025"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:220px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;"></span>
+            </span>.
         </div>
-    </div>
 
-    {{-- ─── SIGNATURE ROW ─── --}}
-    <div class="d-sig-row">
+        {{-- ── BOTTOM: Signature row — matches photo layout ──
+             Photo shows: [blank left] | Name of Section/Dept Head: [NAME] | Date: | [Rating Scale]
+             Second line:  Approved By: [NAME centered below] | Date: |
+        --}}
+        <div style="display:flex;align-items:stretch;font-family:Arial,sans-serif;font-size:10px;">
 
-        {{-- Employee --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div style="margin-bottom:18px;"></div>
-            <div><span class="d-sig-name" id="s_disp_name">&nbsp;</span></div>
-            <div class="d-sig-title"><em>Name of Employee</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;
-                              font-size:10px;outline:none;">
+            {{-- LEFT col: Approved By ── --}}
+            <div style="flex:2;padding:6px 14px 8px;border-right:1px solid #000;">
+                <div style="font-size:10px;font-weight:700;margin-bottom:10px;">Approved By:</div>
+                <div style="text-align:center;">
+                    <input type="text" id="s_approved_by"
+                           placeholder="Name of Approver"
+                           style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                                  font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                                  outline:none;width:88%;text-align:center;padding:0 0 2px;">
+                    <div style="font-size:8.5px;font-style:italic;color:#444;margin-top:2px;">
+                        Name of Supervisor
+                    </div>
+                </div>
+                <div style="margin-top:6px;font-size:10px;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
             </div>
-        </div>
 
-        {{-- Section / Department Head --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div class="sig-label">Section / Department Head:</div>
-            <div style="margin-bottom:6px;"></div>
-            <input type="text" id="s_supervisor" class="sig-name-input"
-                   placeholder="Section / Department Head name" style="min-width:200px;">
-            <div class="d-sig-title"><em>Name of Section / Department Head</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;
-                              font-size:10px;outline:none;">
+            {{-- CENTER col: Name of Section/Department Head ── --}}
+            <div style="flex:2;padding:6px 14px 8px;border-right:1px solid #000;text-align:center;">
+                <div style="font-size:10px;font-weight:700;margin-bottom:10px;text-align:left;">
+                    Name of Section/Department Head :
+                </div>
+                <div>
+                    <input type="text" id="s_supervisor"
+                           placeholder="Section / Department Head name"
+                           style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                                  font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                                  outline:none;width:88%;text-align:center;padding:0 0 2px;">
+                    <div style="font-size:8.5px;font-style:italic;color:#444;margin-top:2px;">
+                        <span id="s_disp_name">&nbsp;</span>
+                    </div>
+                </div>
+                <div style="margin-top:6px;font-size:10px;text-align:left;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
             </div>
-        </div>
 
-        {{-- Approved By --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div class="sig-label">Approved By:</div>
-            <div style="margin-bottom:6px;"></div>
-            <input type="text" id="s_approved_by" class="sig-name-input"
-                   placeholder="Name of Approver" style="min-width:200px;">
-            <div class="d-sig-title"><em>Medical Center Chief II</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;
-                              font-size:10px;outline:none;">
+            {{-- RIGHT col: Rating Scale ── --}}
+            <div style="flex:1;padding:6px 10px;min-width:140px;">
+                <div style="font-size:9px;font-family:Arial,sans-serif;line-height:1.7;
+                            border:1px solid #999;padding:4px 8px;">
+                    <div style="font-weight:700;margin-bottom:3px;font-size:9px;">
+                        5 &nbsp;&nbsp;&nbsp;– Outstanding
+                    </div>
+                    <div>4–4.99 – Very Satisfactory</div>
+                    <div>3–3.99 – Satisfactory</div>
+                    <div>2–2.99 – Unsatisfactory</div>
+                    <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
+                </div>
             </div>
-        </div>
 
-        {{-- Rating Scale Key --}}
-        <div class="d-sig-cell" style="flex:1;">
-            <div class="rating-key">
-                <div style="font-weight:700;margin-bottom:2px;">Rating Scale:</div>
-                <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
-                <div>4–4.99 – Very Satisfactory</div>
-                <div>3–3.99 – Satisfactory</div>
-                <div>2–2.99 – Unsatisfactory</div>
-                <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
-            </div>
-        </div>
+        </div>{{-- /bottom sig row --}}
 
-    </div>
+    </div>{{-- /spcr header block --}}
 
     {{-- ─── SECTION FILTER BAR (screen only) ─── --}}
     <div class="spcr-filter-bar no-print">
@@ -120,18 +175,18 @@
                     style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="spcr-th-goal"  rowspan="2">STRATEGIC GOALS AND<br>OBJECTIVES</th>
                 <th class="spcr-th-ind"   rowspan="2">
-                    Performance / Success Indicator<br>
-                    <span style="font-weight:normal;font-size:8px;">(Targets + Measure)</span>
+                    Performance /Success Indicator<br>
+                    <span style="font-weight:normal;font-size:8px;">( Targets + Measure )</span>
                 </th>
                 <th class="spcr-th-bud"    rowspan="2">ALLOTTED<br>BUDGET</th>
                 <th class="spcr-th-person" rowspan="2">PERSON<br>ACCOUNTABLE</th>
                 <th class="spcr-th-actual" rowspan="2">ACTUAL ACCOMPLISHMENT</th>
                 <th class="spcr-th-rate"   rowspan="2">
-                    Accomplishment Rate<br>
-                    <span style="font-weight:normal;font-size:8px;">(Actual ÷ Target × 100%)</span>
+                    Accomplishment<br>Rate<br>
+                    <span style="font-weight:normal;font-size:8px;">(Actual÷Target<br>x 100%)</span>
                 </th>
                 <th colspan="4" class="spcr-th-rating-group">RATING</th>
-                <th class="spcr-th-remarks" rowspan="2">Remarks / Justification<br>of Unmet Targets</th>
+                <th class="spcr-th-remarks" rowspan="2">Remarks/Justification<br>of Unmet Targets</th>
                 <th class="spcr-th-del no-print" rowspan="2"></th>
              </tr>
              <tr>
@@ -211,7 +266,7 @@
             <div class="dpcr-discussed-label">Discussed with :</div>
             <div class="dpcr-sig-pair">
 
-                {{-- sig 1: Discussed with (Employee) --}}
+                {{-- sig 1: Employee --}}
                 <div class="dpcr-sig-box">
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_discussed_name"
@@ -229,7 +284,7 @@
                     </div>
                 </div>
 
-                {{-- sig 2: Assessed by (Division Head) --}}
+                {{-- sig 2: Division Head --}}
                 <div class="dpcr-sig-box">
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_assessed_by"
@@ -247,7 +302,7 @@
                     </div>
                 </div>
 
-                {{-- sig 3: Approved Final Rating (MCC) --}}
+                {{-- sig 3: Medical Center Chief II --}}
                 <div class="dpcr-sig-box">
                     <div class="dpcr-sig-name-area">
                         <input type="text" id="s_mcc_name"
