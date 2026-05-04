@@ -33,16 +33,14 @@
                 <div style="font-size:10px;color:#555;margin:2px 0 4px;">
                     (Pang-ALAALANG Sentrong Medikal Quirino)
                 </div>
-                <div style="font-size:13px;font-weight:700;color:#1a3b6e;
-                            text-transform:uppercase;letter-spacing:.4px;
-                            border:2px solid #1a3b6e;display:inline-block;
-                            padding:3px 20px;line-height:1.4;">
-                    Division Performance Commitment and Review (DPCR)
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.4px;color:#1a3b6e;margin-top:3px;">
+                    DIVISION PERFORMANCE COMMITMENT AND REVIEW (DPCR)
                 </div>
             </div>
         </div>
 
-        {{-- ── MIDDLE: Inline intro sentence ── --}}
+        {{-- ── MIDDLE: Inline intro sentence ── }}
         {{--
             All inputs are plain <input type="text"> with NO class="intro-field"
             so shared.js _upgradeIntroFields() will never replace them with

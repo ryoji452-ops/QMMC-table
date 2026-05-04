@@ -26,6 +26,9 @@
                             letter-spacing:.6px;color:#1a3b6e;line-height:1.3;">
                     QUIRINO MEMORIAL MEDICAL CENTER
                 </div>
+                <div style="font-size:10px;color:#555;margin:2px 0 4px;">
+                    (Pang-ALAALANG Sentrong Medikal Quirino)
+                </div>
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;
                             letter-spacing:.4px;color:#1a3b6e;margin-top:3px;">
                     SECTION PERFORMANCE COMMITMENT AND REVIEW (SPCR)

@@ -7,91 +7,199 @@
 
     <div class="form-ref">DOH – SPMS Form 4</div>
 
-    {{-- ─── INTRO BLOCK ─── --}}
-    <div class="intro-block">
-            <div class="doc-header">
-        <div><img class="logo" src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo"></div>
-        <div class="header-text">
-            <div class="org-name">Quirino Memorial Medical Center</div>
-            <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
-            <div class="form-title">Individual Performance Commitment and Review (IPCR)</div>
+    {{-- ═══════════════════════════════════════════════════════
+         IPCR HEADER BLOCK — single bordered block matching the
+         reference image exactly:
+           Row 1: Logo | Org Name + Form Title
+           Row 2: Intro sentence (I, NAME, POSITION, UNIT ... period)
+           Row 3: Name of Employee label + value | Date | Rating Scale
+           Row 4: Approved By label | Supervisor name | Date
+    ═══════════════════════════════════════════════════════ --}}
+    <div style="border:1px solid #000;font-family:Arial,sans-serif;margin-bottom:0;">
+
+        {{-- ── ROW 1: Logo + Org Name + Form Title ── --}}
+        <div style="display:flex;align-items:center;gap:14px;
+                    border-bottom:2px solid #000;padding:8px 12px 6px;">
+            <div style="flex-shrink:0;">
+                <img src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo"
+                     style="max-width:80px;max-height:70px;object-fit:contain;display:block;">
+            </div>
+            <div style="flex:1;text-align:center;">
+                <div style="font-size:14px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.6px;color:#1a3b6e;line-height:1.3;">
+                    QUIRINO MEMORIAL MEDICAL CENTER
+                </div>
+                <div style="font-size:10px;color:#555;margin:2px 0 4px;">
+                    (Pang-ALAALANG Sentrong Medikal Quirino)
+                </div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.4px;color:#1a3b6e;
+                            border:1.5px solid #1a3b6e;display:inline-block;
+                            padding:2px 18px;margin-top:3px;">
+                    INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)
+                </div>
+            </div>
         </div>
-    </div>
-        <div class="intro-line">
+
+        {{-- ── ROW 2: Intro sentence — matching image exactly ──
+             "I, [NAME], [POSITION], [UNIT] of the Quirino Memorial Medical Center,
+              commit to deliver and agree to be rated on the attainment of the
+              following targets in accordance with the indicated measures for the
+              period [PERIOD]."
+             All on one continuous line with bold underlined fields.
+        --}}
+        <div style="padding:7px 12px 6px;border-bottom:1px solid #000;
+                    font-size:10.5px;font-family:Arial,sans-serif;line-height:2.2;">
             I,&nbsp;
-            <input type="text" id="i_emp_name" class="intro-field"
-                   placeholder="Full Name of Employee" style="min-width:220px;">
-            <span class="label-small"><em>Name of Employee</em></span>,&nbsp;
-            <input type="text" id="i_emp_position" class="intro-field"
-                   placeholder="Position / Designation" style="min-width:200px;">
-            <span class="label-small"><em>Position</em></span>,&nbsp;
-            <input type="text" id="i_emp_unit" class="intro-field"
-                   placeholder="Unit / Section / Division" style="min-width:220px;">
-            <span class="label-small"><em>Unit / Section / Division</em></span>
-            of the Quirino Memorial Medical Center, commit to deliver and agree to be rated
-            on the attainment of the following targets in accordance with the indicated
-            measures for the period
-            <input type="text" id="i_period" class="intro-field"
-                   placeholder="e.g. January 1, 2025 to June 30, 2025" style="min-width:200px;">.
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 2px;">
+                <input type="text" id="i_emp_name"
+                       placeholder="Full Name of Employee"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:220px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">Name of Employee</span>
+            </span>
+            /&nbsp;
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 2px;">
+                <input type="text" id="i_emp_position"
+                       placeholder="Position / Designation"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:200px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">Position</span>
+            </span>
+            ,&nbsp;
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 2px;">
+                <input type="text" id="i_emp_unit"
+                       placeholder="Unit / Section / Department / Division"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:220px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">Unit / Section / Department / Division</span>
+            </span>
+            of the Quirino Memorial Medical Center,
+            commit to deliver and agree to be rated on the attainment of the following
+            targets in accordance with the indicated measures for the period&nbsp;
+            <span style="display:inline-flex;flex-direction:column;align-items:center;
+                         vertical-align:bottom;margin:0 2px;">
+                <input type="text" id="i_period"
+                       placeholder="e.g. January 1, 2025 to June 30, 2025"
+                       style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                              font-size:10.5px;font-family:Arial,sans-serif;font-weight:700;
+                              outline:none;min-width:200px;text-align:center;padding:0 2px;
+                              vertical-align:bottom;">
+                <span style="font-size:8px;color:#444;font-style:italic;margin-top:1px;
+                             white-space:nowrap;">&nbsp;</span>
+            </span>.
         </div>
-    </div>
 
-    {{-- ─── SIGNATURE ROW ─── --}}
-    <div class="d-sig-row">
+        {{-- ── ROW 3: Name of Employee (display) | Date | Rating Scale ──
+             Matches the image: right side shows "Name of Employee : [NAME]  Date:"
+             with Rating Scale box in the far right column.
+        --}}
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid #000;">
 
-        {{-- Employee --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div style="margin-bottom:18px;"></div>
-            <div><span class="d-sig-name" id="i_disp_name">&nbsp;</span></div>
-            <div class="d-sig-title"><em>Name of Employee</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;font-size:10px;outline:none;">
+            {{-- LEFT: blank / spacer (matches image left empty area) --}}
+            <div style="flex:2;padding:6px 14px 8px;border-right:1px solid #000;">
+                <div style="font-size:10px;font-weight:700;margin-bottom:8px;">
+                    Approved By:
+                </div>
+                <div style="text-align:center;">
+                    <input type="text" id="i_approved_by"
+                           placeholder="Name of Approver"
+                           style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                                  font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                                  outline:none;width:90%;text-align:center;padding:0 0 2px;">
+                    <div style="font-size:8.5px;font-style:italic;color:#444;margin-top:2px;">
+                        Medical Center Chief II
+                    </div>
+                </div>
+                <div style="margin-top:6px;font-size:10px;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
             </div>
-        </div>
 
-        {{-- Immediate Supervisor --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div class="sig-label">Immediate Supervisor:</div>
-            <div style="margin-bottom:6px;"></div>
-            <input type="text" id="i_supervisor" class="sig-name-input"
-                   placeholder="Name of Supervisor" style="min-width:200px;">
-            <div class="d-sig-title"><em>Name of Supervisor</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;font-size:10px;outline:none;">
+            {{-- CENTER: Name of Employee display + Date --}}
+            <div style="flex:2;padding:6px 14px 8px;border-right:1px solid #000;">
+                <div style="font-size:10px;color:#555;margin-bottom:6px;">
+                    Name of Employee :
+                </div>
+                <div style="text-align:center;">
+                    <span id="i_disp_name"
+                          style="display:inline-block;border-bottom:1.5px solid #000;
+                                 min-width:200px;font-size:11px;font-weight:700;
+                                 font-family:Arial,sans-serif;text-align:center;
+                                 padding:0 4px 2px;">&nbsp;</span>
+                    <div style="font-size:8.5px;font-style:italic;color:#444;margin-top:2px;">
+                        Signature of Employee
+                    </div>
+                </div>
+                <div style="margin-top:6px;font-size:10px;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
             </div>
-        </div>
 
-        {{-- Approved By --}}
-        <div class="d-sig-cell" style="flex:2;">
-            <div class="sig-label">Approved By:</div>
-            <div style="margin-bottom:6px;"></div>
-            <input type="text" id="i_approved_by" class="sig-name-input"
-                   placeholder="Name of Approver" style="min-width:200px;">
-            <div class="d-sig-title"><em>Medical Center Chief II</em></div>
-            <div style="margin-top:4px;font-size:10px;">
-                <strong>Date:</strong>
-                <input type="date"
-                       style="border:none;border-bottom:1px solid #000;background:transparent;font-size:10px;outline:none;">
+            {{-- RIGHT: Rating Scale --}}
+            <div style="flex:1;padding:6px 10px;min-width:145px;">
+                <div style="font-size:9px;font-family:Arial,sans-serif;line-height:1.7;">
+                    <div style="font-weight:700;margin-bottom:3px;">Rating Scale:</div>
+                    <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
+                    <div>4–4.99 – Very Satisfactory</div>
+                    <div>3–3.99 – Satisfactory</div>
+                    <div>2–2.99 – Unsatisfactory</div>
+                    <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
+                </div>
             </div>
+
         </div>
 
-        {{-- Rating Scale Key --}}
-        <div class="d-sig-cell" style="flex:1;">
-            <div class="rating-key">
-                <div style="font-weight:700;margin-bottom:2px;">Rating Scale:</div>
-                <div>5 &nbsp;&nbsp;&nbsp;– Outstanding</div>
-                <div>4–4.99 – Very Satisfactory</div>
-                <div>3–3.99 – Satisfactory</div>
-                <div>2–2.99 – Unsatisfactory</div>
-                <div>1 &nbsp;&nbsp;&nbsp;– Poor</div>
+        {{-- ── ROW 4: Immediate Supervisor row ── --}}
+        <div style="display:flex;align-items:stretch;">
+
+            <div style="flex:2;padding:6px 14px 8px;border-right:1px solid #000;">
+                <div style="font-size:10px;font-weight:700;margin-bottom:8px;">
+                    Immediate Supervisor:
+                </div>
+                <div style="text-align:center;">
+                    <input type="text" id="i_supervisor"
+                           placeholder="Name of Supervisor"
+                           style="border:none;border-bottom:1.5px solid #000;background:transparent;
+                                  font-size:11px;font-family:Arial,sans-serif;font-weight:700;
+                                  outline:none;width:90%;text-align:center;padding:0 0 2px;">
+                    <div style="font-size:8.5px;font-style:italic;color:#444;margin-top:2px;">
+                        Name of Supervisor
+                    </div>
+                </div>
+                <div style="margin-top:6px;font-size:10px;">
+                    <strong>Date:</strong>&nbsp;
+                    <input type="date"
+                           style="border:none;border-bottom:1px solid #000;background:transparent;
+                                  font-size:10px;outline:none;">
+                </div>
             </div>
+
+            <div style="flex:3;padding:6px 14px 8px;">
+                {{-- Intentionally blank to balance layout --}}
+            </div>
+
         </div>
 
-    </div>
+    </div>{{-- /ipcr header block --}}
 
     {{-- ─── IPCR MAIN TABLE ─── --}}
     <table class="dpcr-table ipcr-table" id="ipcrTable" style="margin-top:8px;">
@@ -103,21 +211,20 @@
                     style="width:54px;border:none;background:transparent;padding:0;" rowspan="2"></th>
                 <th class="col-goal" rowspan="2">STRATEGIC GOALS AND OBJECTIVES</th>
                 <th class="col-indicator" rowspan="2">
-                    Performance / Success Indicator<br>(Targets + Measure)
+                    Performance / Success Indicator<br>
+                    <span style="font-weight:normal;font-size:8px;">( Targets + Measure )</span>
                 </th>
                 <th class="col-actual" rowspan="2">ACTUAL ACCOMPLISHMENT</th>
-                <th class="col-rate"   rowspan="2">
-                    Accomplishment Rate<br>(Actual ÷ Target × 100%)
+                <th class="col-rate" rowspan="2">
+                    Accomplishment Rate<br>
+                    <span style="font-weight:normal;font-size:8px;">(Actual÷Target × 100%)</span>
                 </th>
-                <th colspan="4" style="text-align:center;font-size:9px;">RATING</th>
-                <th class="col-remarks" rowspan="2">Remarks / Justification<br>&amp; Unmet Targets</th>
-                {{--
-                    FIX: Delete column uses class="no-print" only.
-                    Do NOT use th:last-child / td:last-child in CSS — that
-                    was eating the A(4) rating column. The .no-print rule
-                    in print_modes.css hides this header correctly.
-                --}}
-                <th class="no-print" style="border:none;background:transparent;width:26px;" rowspan="2"></th>
+                <th colspan="4" style="text-align:center;font-size:9px;font-weight:700;">RATING</th>
+                <th class="col-remarks" rowspan="2">
+                    Remarks / Justification<br>&amp; Unmet Targets
+                </th>
+                <th class="no-print"
+                    style="border:none;background:transparent;width:26px;" rowspan="2"></th>
             </tr>
             <tr>
                 <th class="col-q" style="font-size:9px;">Q<br><span style="font-weight:normal;">(1)</span></th>
@@ -145,8 +252,6 @@
     ═══════════════════════════════════════════════════════════ --}}
     <div class="dpcr-summary-wrap" id="ipcrFuncSummary" style="margin-top:14px;">
         <table class="dpcr-func-summary-tbl" id="ipcrFuncSummaryTable">
-            {{-- Inline colgroup widths are overridden in @media print by print_modes.css
-                 to ensure all 7 columns (incl. Adjectival Rating) fit on A4 landscape. --}}
             <colgroup>
                 <col style="width:12%;">
                 <col style="width:13%;">
@@ -206,16 +311,7 @@
         <div class="dpcr-discussed-block">
             <div class="ipcr-sig-quad">
 
-                {{--
-                    sig 1: Discussed with (Employee)
-                    FIX: id="i_disp_name2" added here as a <span> that mirrors
-                    the employee name. ipcr.js references this id in:
-                      • hydrateIpcrForm()
-                      • iClearBtn handler
-                      • i_emp_name input listener
-                    Without this element the JS threw silent errors that
-                    prevented computeIpcrSummary() from completing.
-                --}}
+                {{-- sig 1: Discussed with (Employee) --}}
                 <div class="dpcr-sig-box">
                     <div style="font-size:9px;font-weight:700;margin-bottom:6px;">Discussed with:</div>
                     <div class="dpcr-sig-name-area">
