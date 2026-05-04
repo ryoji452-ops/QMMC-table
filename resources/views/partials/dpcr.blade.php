@@ -22,7 +22,7 @@
         <div style="display:flex;align-items:center;gap:14px;
                     border-bottom:2px solid #000;padding:8px 12px 6px;">
             <div style="flex-shrink:0;">
-                <img src="img/qmmclogo1.png" alt="QMMC Logo"
+                <img src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo"
                      style="max-width:80px;max-height:70px;object-fit:contain;display:block;">
             </div>
             <div style="flex:1;text-align:center;">

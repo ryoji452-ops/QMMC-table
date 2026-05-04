@@ -220,7 +220,7 @@ textarea.intro-field {
     align-self: flex-end;
     resize: none;
     overflow: hidden;
-    overflow-x: hidden;
+    overflow-x: hidden; 
     line-height: 1.45;
     min-height: 20px;
     height: auto;

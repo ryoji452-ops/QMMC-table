@@ -12,7 +12,7 @@
 
         <div class="form-selector-header">
             <div class="form-selector-logo-wrap">
-                <img src="img/qmmclogo1.png" alt="QMMC Logo" class="form-selector-logo">
+                <img src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo" class="form-selector-logo">
             </div>
             <div class="form-selector-title-wrap">
                 <div class="form-selector-org">QUIRINO MEMORIAL MEDICAL CENTER</div>
@@ -88,11 +88,8 @@
                     onclick="selectForm('records')">
                 📁 View All Records
             </button>
-            <button class="form-selector-records-btn" type="button"
-                    onclick="selectForm('employees')"
-                    style="margin-left:10px;">
-                👥 Employee Directory
-            </button>
+            {{-- Employee Directory button removed — employees should not
+                 have access to other employees' records. --}}
         </div>
 
     </div>{{-- /#form-selector-screen --}}
@@ -105,12 +102,12 @@
         {{-- Tab Navigation --}}
         <div class="tab-nav" id="main-tab-nav">
             {{-- Tabs are shown/hidden dynamically by selectForm() --}}
-            <button class="tab-btn tab-btn--dpcr"      id="tab-dpcr"      onclick="switchTab('dpcr', this)"      style="display:none;">DPCR</button>
-            <button class="tab-btn tab-btn--spcr"      id="tab-spcr"      onclick="switchTab('spcr', this)"      style="display:none;">SPCR</button>
-            <button class="tab-btn tab-btn--ipcr"      id="tab-ipcr"      onclick="switchTab('ipcr', this)"      style="display:none;">IPCR</button>
-            <button class="tab-btn"                    id="tab-records"   onclick="switchTab('records', this)"    style="display:none;">Records</button>
-            <button class="tab-btn"                    id="tab-employees" onclick="switchTab('employees', this)"  style="display:none;">Employees</button>
-            <button class="tab-btn tab-btn--back"      id="tab-back"      onclick="returnToSelector()"            style="display:none;">← Change Form</button>
+            <button class="tab-btn tab-btn--dpcr" id="tab-dpcr"    onclick="switchTab('dpcr', this)"    style="display:none;">DPCR</button>
+            <button class="tab-btn tab-btn--spcr" id="tab-spcr"    onclick="switchTab('spcr', this)"    style="display:none;">SPCR</button>
+            <button class="tab-btn tab-btn--ipcr" id="tab-ipcr"    onclick="switchTab('ipcr', this)"    style="display:none;">IPCR</button>
+            <button class="tab-btn"               id="tab-records"  onclick="switchTab('records', this)" style="display:none;">Records</button>
+            {{-- Employees tab hidden — access restricted --}}
+            <button class="tab-btn tab-btn--back" id="tab-back"    onclick="returnToSelector()"          style="display:none;">← Change Form</button>
         </div>
 
         {{-- Rating Matrix Panel — ONE instance, moved by JS on tab switch --}}
@@ -124,7 +121,7 @@
         {{-- Records --}}
         @include('partials.records')
 
-        {{-- Employee Directory --}}
+        {{-- Employee Directory page kept in DOM but tab is hidden --}}
         @include('partials.employees')
 
     </div>{{-- /#main-app --}}
@@ -155,40 +152,34 @@
     window.EMPLOYEE_SECTION  = @json($employeeSection  ?? null);
 
     // ── RBAC Form Selector ───────────────────────────────────────────
-    /**
-     * Which form the user selected from the landing screen.
-     * Valid values: 'dpcr' | 'spcr' | 'ipcr' | 'records' | 'employees'
-     */
     window.SELECTED_FORM = null;
 
     /**
-     * Tabs that are allowed to show alongside the primary selected form.
-     * Records and Employees are always available as supplementary tabs.
-     */
-    var FORM_SUPPLEMENTARY_TABS = ['records', 'employees'];
-
-    /**
      * Called when user clicks a form card on the selector screen.
-     * Shows the main app shell, activates only the relevant tab.
+     * Employee Directory ('employees') is no longer exposed in the UI
+     * but the key is kept here for safety in case sessionStorage still
+     * holds an old value — it will silently fall through to 'records'.
      */
     function selectForm(formKey) {
+        // Block direct navigation to employees
+        if (formKey === 'employees') formKey = 'records';
+
         window.SELECTED_FORM = formKey;
 
         // Hide selector, show main app
         document.getElementById('form-selector-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
 
-        // Determine which tabs to expose
+        // Determine which tabs to expose — employees tab never shown
         var tabsToShow = [];
         if (formKey === 'dpcr' || formKey === 'spcr' || formKey === 'ipcr') {
-            tabsToShow = [formKey, 'records', 'employees'];
+            tabsToShow = [formKey, 'records'];
         } else {
-            // records or employees — show both utility tabs
-            tabsToShow = ['records', 'employees'];
+            tabsToShow = ['records'];
         }
 
-        // Show/hide tab buttons
-        ['dpcr', 'spcr', 'ipcr', 'records', 'employees'].forEach(function(key) {
+        // Show/hide tab buttons (employees intentionally excluded)
+        ['dpcr', 'spcr', 'ipcr', 'records'].forEach(function(key) {
             var btn = document.getElementById('tab-' + key);
             if (btn) btn.style.display = tabsToShow.indexOf(key) !== -1 ? '' : 'none';
         });
@@ -200,8 +191,7 @@
         // Activate the chosen tab
         switchTab(formKey, document.getElementById('tab-' + formKey));
 
-        // Persist selection in sessionStorage so a page refresh
-        // (e.g. after a Laravel redirect) keeps the user on their form.
+        // Persist selection in sessionStorage
         try { sessionStorage.setItem('qmmc_selected_form', formKey); } catch(e) {}
     }
 
@@ -232,8 +222,9 @@
     document.addEventListener('DOMContentLoaded', function() {
         try {
             var saved = sessionStorage.getItem('qmmc_selected_form');
-            if (saved && ['dpcr','spcr','ipcr','records','employees'].indexOf(saved) !== -1) {
-                // Small delay so all JS (dpcr.js, spcr.js, ipcr.js) has initialised
+            // employees is blocked — redirect to records if somehow stored
+            if (saved === 'employees') saved = 'records';
+            if (saved && ['dpcr','spcr','ipcr','records'].indexOf(saved) !== -1) {
                 setTimeout(function() { selectForm(saved); }, 120);
             }
         } catch(e) {}

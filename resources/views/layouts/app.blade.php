@@ -23,7 +23,18 @@
     @yield('content')
 
     <script>
-        window.APP_BASE = @json(rtrim(request()->getBaseUrl(), '/'));
+        {{--
+            APP_BASE is the subdirectory path extracted from APP_URL in .env.
+            e.g. APP_URL=http://190.190.0.73/ipcr  →  APP_BASE = "/ipcr"
+                 APP_URL=http://190.190.0.73        →  APP_BASE = ""
+
+            We read from config('app.url') directly instead of
+            request()->getBaseUrl() because the dev server and some web
+            server configs do not set the script path correctly, causing
+            getBaseUrl() to return an empty string even when the app is
+            deployed under a subdirectory.
+        --}}
+        window.APP_BASE = @json(rtrim(parse_url(config('app.url'), PHP_URL_PATH) ?? '', '/'));
     </script>
 
     <script>

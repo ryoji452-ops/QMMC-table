@@ -589,7 +589,7 @@ function createRatingMatrix(tabKey, containerEl) {
 
   <div class="rm-header-box">
     <div class="form-ref" style="position:absolute;top:4px;right:10px;">PMT – ${tabLabel} Rating Matrix Rev 0 01 March 2024</div>
-    <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
+    <div><img class="logo" src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo"></div>
     <div class="header-text">
       <div class="org-name">PANG-ALAALANG SENTRONG MEDIKAL QUIRINO</div>
       <div class="org-sub">(Quirino Memorial Medical Center)</div>

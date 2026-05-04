@@ -10,7 +10,7 @@
     {{-- ─── INTRO BLOCK ─── --}}
     <div class="intro-block">
             <div class="doc-header">
-        <div><img class="logo" src="img/qmmclogo1.png" alt="QMMC Logo"></div>
+        <div><img class="logo" src="{{ asset('img/qmmclogo1.png') }}" alt="QMMC Logo"></div>
         <div class="header-text">
             <div class="org-name">Quirino Memorial Medical Center</div>
             <div class="org-sub">(Pang-ALAALANG Sentrong Medikal Quirino)</div>
